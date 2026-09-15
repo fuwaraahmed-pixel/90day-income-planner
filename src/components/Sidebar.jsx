@@ -13,7 +13,8 @@ import {
   X,
   LogOut,
   User as UserIcon,
-  ShieldCheck
+  ShieldCheck,
+  GraduationCap
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
@@ -25,6 +26,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
     { id: 'dashboard', label: 'ড্যাশবোর্ড (Dashboard)', icon: LayoutDashboard },
     { id: 'plan', label: '৯০ দিনের প্ল্যান (90-Day Plan)', icon: Target },
     { id: 'tasks', label: 'আজকের কাজ (Today Tasks)', icon: CheckSquare },
+    { id: 'tuition', label: 'টিউশন (Tuition)', icon: GraduationCap },
     { id: 'crm', label: 'ক্লায়েন্ট CRM (Pipeline)', icon: Users },
     { id: 'income', label: 'ইনকাম ট্র্যাকার (Income)', icon: TrendingUp },
     { id: 'expense', label: 'খরচের ট্র্যাকার (Expense)', icon: Receipt },
@@ -33,6 +35,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
     { id: 'settings', label: 'সেটিংস (Settings)', icon: SettingsIcon },
     ...(isAdmin ? [{ id: 'admin', label: 'এডমিন প্যানেল (Admin Panel)', icon: ShieldCheck }] : [])
   ];
+
 
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);

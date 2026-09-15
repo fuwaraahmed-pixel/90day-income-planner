@@ -12,6 +12,8 @@ import Settings from './components/Settings';
 import Auth from './components/Auth';
 import SubscriptionModal from './components/SubscriptionModal';
 import AdminPanel from './components/AdminPanel';
+import Tuition from './components/Tuition';
+
 
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import * as api from './lib/supabaseService';
@@ -196,6 +198,8 @@ export default function App() {
   const [reviews, setReviewsState] = useState(defaultReviews);
   const [services, setServicesState] = useState(defaultServices);
   const [planData, setPlanDataState] = useState(null);
+  const [tuitionStudents, setTuitionStudents] = useState([]);
+  const [tuitionPayments, setTuitionPayments] = useState([]);
 
   // 1. Session Setup & Auth Monitoring
   useEffect(() => {
@@ -237,7 +241,9 @@ export default function App() {
           expensesRes,
           reviewsRes,
           servicesRes,
-          planRes
+          planRes,
+          tuitionStsRes,
+          tuitionPaysRes
         ] = await Promise.all([
           api.getSubscription(userId),
           api.getPaymentRequests(userId),
@@ -248,7 +254,9 @@ export default function App() {
           api.getExpenses(userId),
           api.getWeeklyReviews(userId),
           api.getServices(userId),
-          api.get90DayPlan(userId)
+          api.get90DayPlan(userId),
+          api.getTuitionStudents(userId),
+          api.getTuitionPayments(userId)
         ]);
 
         if (!isMounted) return;
@@ -265,10 +273,10 @@ export default function App() {
         if (reviewsRes && reviewsRes.length > 0) setReviewsState(reviewsRes);
         if (servicesRes && servicesRes.length > 0) setServicesState(servicesRes);
         if (planRes && planRes.length > 0) setPlanDataState(planRes);
+        if (tuitionStsRes) setTuitionStudents(tuitionStsRes);
+        if (tuitionPaysRes) setTuitionPayments(tuitionPaysRes);
 
       } catch (err) {
-        console.error('Error fetching data from Supabase:', err);
-      } finally {
         if (isMounted) {
           setLoadingData(false);
           setLoadingSub(false);
@@ -280,6 +288,7 @@ export default function App() {
 
     return () => { isMounted = false; };
   }, [session?.user?.id]);
+
 
   // Auth Logout Action
   const handleLogout = async () => {
@@ -462,6 +471,50 @@ export default function App() {
     return res;
   };
 
+  // Tuition Handlers
+  const handleAddTuitionStudent = async (studentData) => {
+    if (session?.user?.id) {
+      const added = await api.addTuitionStudent(session.user.id, studentData);
+      if (added) {
+        setTuitionStudents(prev => [added, ...prev]);
+      }
+    } else {
+      const newSt = { id: Date.now(), ...studentData };
+      setTuitionStudents(prev => [newSt, ...prev]);
+    }
+  };
+
+  const handleUpdateTuitionStudent = async (studentId, studentData) => {
+    if (session?.user?.id) {
+      const updated = await api.updateTuitionStudent(studentId, studentData);
+      if (updated) {
+        setTuitionStudents(prev => prev.map(s => String(s.id) === String(studentId) ? updated : s));
+      }
+    } else {
+      setTuitionStudents(prev => prev.map(s => String(s.id) === String(studentId) ? { ...s, ...studentData } : s));
+    }
+  };
+
+  const handleRecordTuitionPayment = async (paymentData) => {
+    if (session?.user?.id) {
+      const res = await api.recordTuitionPayment(paymentData);
+      if (res && res.success !== false) {
+        // Refresh tuition payments & income list atomically
+        const [paysRes, incsRes] = await Promise.all([
+          api.getTuitionPayments(session.user.id),
+          api.getIncome(session.user.id)
+        ]);
+        if (paysRes) setTuitionPayments(paysRes);
+        if (incsRes) setIncomesState(incsRes);
+      }
+      return res;
+    } else {
+      const mockPay = { id: Date.now(), ...paymentData };
+      setTuitionPayments(prev => [mockPay, ...prev]);
+      return { success: true };
+    }
+  };
+
   // Dynamic Financial Calculations
   const salarySum = incomes.filter(i => i.source.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const newIncomeSum = incomes.filter(i => !i.source.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
@@ -535,6 +588,17 @@ export default function App() {
           <Tasks tasks={tasks} setTasks={handleSetTasks} />
         )}
 
+        {activeTab === 'tuition' && (
+          <Tuition
+            students={tuitionStudents}
+            payments={tuitionPayments}
+            onAddStudent={handleAddTuitionStudent}
+            onUpdateStudent={handleUpdateTuitionStudent}
+            onRecordPayment={handleRecordTuitionPayment}
+            currency={appData.currency}
+          />
+        )}
+
         {activeTab === 'crm' && (
           <Crm leads={leads} setLeads={handleSetLeads} />
         )}
@@ -547,6 +611,7 @@ export default function App() {
             currentSalary={updatedAppData.currentIncome}
           />
         )}
+
 
         {activeTab === 'expense' && (
           <ExpenseTracker 

@@ -201,7 +201,6 @@ export const getTasks = async (userId) => {
 export const createTask = async (userId, task) => {
   if (!isSupabaseConfigured || !userId) return null;
   const payload = {
-    ...(task.id ? { id: Number(task.id) } : {}),
     user_id: userId,
     name: task.name,
     category: task.category || 'Sales',
@@ -276,7 +275,6 @@ export const getCRMClients = async (userId) => {
 export const createCRMClient = async (userId, lead) => {
   if (!isSupabaseConfigured || !userId) return null;
   const payload = {
-    ...(lead.id ? { id: Number(lead.id) } : {}),
     user_id: userId,
     date: lead.date || new Date().toISOString().split('T')[0],
     client_name: lead.clientName,
@@ -354,7 +352,6 @@ export const getIncome = async (userId) => {
 export const createIncome = async (userId, incomeItem) => {
   if (!isSupabaseConfigured || !userId) return null;
   const payload = {
-    ...(incomeItem.id ? { id: Number(incomeItem.id) } : {}),
     user_id: userId,
     date: incomeItem.date || new Date().toISOString().split('T')[0],
     source: incomeItem.source,
@@ -414,7 +411,6 @@ export const getExpenses = async (userId) => {
 export const createExpense = async (userId, expenseItem) => {
   if (!isSupabaseConfigured || !userId) return null;
   const payload = {
-    ...(expenseItem.id ? { id: Number(expenseItem.id) } : {}),
     user_id: userId,
     date: expenseItem.date || new Date().toISOString().split('T')[0],
     category: expenseItem.category,
@@ -473,7 +469,6 @@ export const getWeeklyReviews = async (userId) => {
 export const createWeeklyReview = async (userId, review) => {
   if (!isSupabaseConfigured || !userId) return null;
   const payload = {
-    ...(review.id ? { id: Number(review.id) } : {}),
     user_id: userId,
     week_title: review.weekTitle,
     outreach_count: Number(review.outreachCount) || 0,
@@ -745,3 +740,130 @@ export const migrateLocalStorageToSupabase = async (userId) => {
     };
   }
 };
+
+// ====================================================================
+// TUITION MANAGEMENT SERVICES
+// ====================================================================
+export const getTuitionStudents = async (userId) => {
+  if (!isSupabaseConfigured || !userId) return [];
+  const { data, error } = await supabase
+    .from('tuition_students')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching tuition students:', error);
+    return [];
+  }
+  return data ? data.map(toCamel) : [];
+};
+
+export const addTuitionStudent = async (userId, studentData) => {
+  if (!isSupabaseConfigured || !userId) return null;
+  const payload = {
+    user_id: userId,
+    student_name: studentData.studentName,
+    guardian_name: studentData.guardianName || '',
+    mobile: studentData.mobile || '',
+    class_name: studentData.className || studentData.class || '',
+    batch: studentData.batch || '',
+    monthly_fee: Number(studentData.monthlyFee),
+    joining_date: studentData.joiningDate,
+    status: studentData.status || 'Active',
+    leaving_date: studentData.leavingDate || null,
+    leaving_reason: studentData.leavingReason || '',
+    notes: studentData.notes || ''
+  };
+
+  const { data, error } = await supabase
+    .from('tuition_students')
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding tuition student:', error);
+    if (error.message?.includes('schema cache') || error.message?.includes('does not exist') || error.code === '42P01' || error.code === 'PGRST204') {
+      throw new Error('Supabase-এ tuition_students টেবিলটি পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ নতুন SQL কোডটি Run করুন।');
+    }
+    throw new Error(error.message);
+  }
+  return data ? toCamel(data) : null;
+};
+
+export const updateTuitionStudent = async (studentId, studentData) => {
+  if (!isSupabaseConfigured) return null;
+  const payload = {
+    student_name: studentData.studentName,
+    guardian_name: studentData.guardianName || '',
+    mobile: studentData.mobile || '',
+    class_name: studentData.className || studentData.class || '',
+    batch: studentData.batch || '',
+    monthly_fee: Number(studentData.monthlyFee),
+    joining_date: studentData.joiningDate,
+    status: studentData.status,
+    leaving_date: studentData.leavingDate || null,
+    leaving_reason: studentData.leavingReason || '',
+    notes: studentData.notes || '',
+    updated_at: new Date().toISOString()
+  };
+
+  const { data, error } = await supabase
+    .from('tuition_students')
+    .update(payload)
+    .eq('id', studentId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating tuition student:', error);
+    if (error.message?.includes('schema cache') || error.message?.includes('does not exist') || error.code === '42P01') {
+      throw new Error('Supabase-এ tuition_students টেবিলটি পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ SQL কোডটি Run করুন।');
+    }
+    throw new Error(error.message);
+  }
+  return data ? toCamel(data) : null;
+};
+
+export const getTuitionPayments = async (userId) => {
+  if (!isSupabaseConfigured || !userId) return [];
+  const { data, error } = await supabase
+    .from('tuition_payments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('payment_date', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching tuition payments:', error);
+    return [];
+  }
+  return data ? data.map(toCamel) : [];
+};
+
+export const recordTuitionPayment = async (paymentData) => {
+  if (!isSupabaseConfigured) {
+    return { success: false, message: 'Supabase is not configured' };
+  }
+
+  const { data, error } = await supabase.rpc('record_tuition_payment', {
+    p_student_id: Number(paymentData.studentId),
+    p_payment_date: paymentData.paymentDate,
+    p_payment_month: paymentData.paymentMonth, // 'YYYY-MM'
+    p_amount: Number(paymentData.amount),
+    p_payment_method: paymentData.paymentMethod || 'Cash',
+    p_note: paymentData.note || ''
+  });
+
+  if (error) {
+    console.error('RPC record_tuition_payment Error:', error);
+    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
+      return { success: false, message: 'Supabase-এ record_tuition_payment ফাংশনটি পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ SQL কোডটি Run করুন।' };
+    }
+    return { success: false, message: error.message };
+  }
+
+  return data;
+};
+
+
