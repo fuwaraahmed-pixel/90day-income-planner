@@ -571,12 +571,18 @@ export default function App() {
         onLogout={handleLogout} 
       />
       
+      {/* Top Subtle Animated Sync Progress Line */}
+      {loadingData && (
+        <div className="fixed top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 z-50 animate-pulse"></div>
+      )}
+
       <main className="flex-1 md:ml-64 p-4 sm:p-6 md:p-8 max-w-7xl">
-        {/* Sleek Floating Status Pill Banner */}
+        {/* Sleek Floating Glass Cloud Sync Badge */}
         {loadingData && (
-          <div className="mb-5 bg-white/90 backdrop-blur-md border border-slate-200/90 text-slate-700 px-4 py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-2 max-w-fit shadow-xs animate-pulse">
+          <div className="mb-4 inline-flex items-center gap-2 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-xs transition-all">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <RefreshCw className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
-            <span>Supabase Cloud ডাটাবেজ থেকে ডাটা সিঙ্ক হচ্ছে...</span>
+            <span className="text-slate-600">লাইভ ক্লাউড ডাটা সিঙ্ক চলছে...</span>
           </div>
         )}
 

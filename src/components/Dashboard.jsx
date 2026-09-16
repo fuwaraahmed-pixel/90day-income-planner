@@ -260,27 +260,32 @@ export default function Dashboard({ data, setActiveTab }) {
       {/* 3. LIST & DIVIDER LAYOUT: TODAY'S FOCUS & ACTIONS (LEVEL 2 - MEDIUM) */}
       {/* ========================================================================= */}
       {activeSubView === 'overview' && (
-        <section className="bg-white border border-[#E2E8F0] rounded-2xl p-5 sm:p-6 shadow-float space-y-4">
+        <section className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/20 border border-indigo-100/80 rounded-[20px] p-5.5 sm:p-6 shadow-float space-y-4.5 relative overflow-hidden">
           
           {/* Section Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+          <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/60">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-xs">
                 <CheckSquare className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                  আজকের ফোকাস ও অগ্রাধিকার
-                </h2>
-                <p className="text-[11px] text-slate-500">আজকে আপনার যে কাজগুলো সম্পন্ন করা প্রয়োজন</p>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                    আজকের ফোকাস ও অগ্রাধিকার
+                  </h2>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100/80 text-indigo-900 border border-indigo-200 shadow-2xs">
+                    {incompleteTasks.length}টি বাকি
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium">আজকে আপনার যে কাজগুলো সম্পন্ন করা প্রয়োজন</p>
               </div>
             </div>
 
             <button 
               onClick={() => setActiveTab('tasks')}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-white/90 hover:bg-white px-3.5 py-1.5 rounded-xl border border-indigo-100 shadow-2xs transition-all hover:-translate-y-[1px]"
             >
-              <span>সব কাজ দেখুন ({incompleteTasks.length}টি বাকি)</span>
+              <span>সব কাজ দেখুন</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -291,17 +296,17 @@ export default function Dashboard({ data, setActiveTab }) {
               todayTasks.slice(0, 4).map((task) => (
                 <div 
                   key={task.id} 
-                  className={`p-3.5 rounded-xl border transition-all duration-200 hover:-translate-y-[1px] hover:shadow-xs flex items-center justify-between gap-3 cursor-pointer ${
+                  className={`p-4 rounded-xl border transition-all duration-200 hover:-translate-y-[1px] hover:shadow-xs flex items-center justify-between gap-3 cursor-pointer ${
                     task.status === 'Done'
-                      ? 'bg-gradient-to-r from-emerald-50/70 via-emerald-50/30 to-teal-50/40 border-emerald-200/80'
+                      ? 'bg-gradient-to-r from-emerald-50/80 via-emerald-50/40 to-teal-50/50 border-emerald-200/80 hover:border-emerald-300'
                       : task.status === 'InProgress'
-                      ? 'bg-gradient-to-r from-sky-50/80 via-blue-50/40 to-indigo-50/40 border-sky-200/90'
-                      : 'bg-gradient-to-r from-slate-50 via-slate-50/80 to-slate-100/60 border-slate-200/90'
+                      ? 'bg-gradient-to-r from-sky-50/90 via-blue-50/50 to-indigo-50/50 border-sky-200/90 hover:border-sky-300'
+                      : 'bg-gradient-to-r from-slate-50 via-slate-50/90 to-slate-100/70 border-slate-200/90 hover:border-slate-300'
                   }`}
                   onClick={() => setActiveTab('tasks')}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                  <div className="flex items-center gap-3.5">
+                    <span className={`w-3 h-3 rounded-full shrink-0 shadow-2xs ring-2 ring-white ${
                       task.priority === 'High' 
                         ? 'bg-rose-500' 
                         : task.priority === 'Medium' 
@@ -311,25 +316,25 @@ export default function Dashboard({ data, setActiveTab }) {
 
                     <div>
                       <div className={`text-xs sm:text-sm font-semibold ${
-                        task.status === 'Done' ? 'line-through text-slate-400' : 'text-slate-800'
+                        task.status === 'Done' ? 'line-through text-slate-400' : 'text-slate-900'
                       }`}>
                         {task.name}
                       </div>
                       <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
-                        <span className="font-medium text-slate-600 bg-white/80 border border-slate-200/60 px-2 py-0.5 rounded text-[10px]">
+                        <span className="font-semibold text-slate-700 bg-white/90 border border-slate-200 px-2 py-0.5 rounded-md text-[10px] shadow-2xs">
                           {task.category}
                         </span>
-                        <span>• প্রায়োরিটি: <strong className="text-slate-700">{task.priority}</strong></span>
+                        <span>• প্রায়োরিটি: <strong className={task.priority === 'High' ? 'text-rose-700 font-bold' : 'text-slate-700'}>{task.priority}</strong></span>
                       </div>
                     </div>
                   </div>
 
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ${
+                  <span className={`text-[11px] font-bold px-3 py-1 rounded-lg shrink-0 shadow-2xs ${
                     task.status === 'Done'
-                      ? 'bg-emerald-100/80 text-emerald-800 border border-emerald-200'
+                      ? 'bg-emerald-100/90 text-emerald-900 border border-emerald-200'
                       : task.status === 'InProgress' 
-                      ? 'bg-sky-100/80 text-sky-800 border border-sky-200' 
-                      : 'bg-slate-200/70 text-slate-700 border border-slate-300/60'
+                      ? 'bg-sky-100/90 text-sky-900 border border-sky-200' 
+                      : 'bg-white text-slate-700 border border-slate-200'
                   }`}>
                     {task.status === 'Done' ? 'সম্পন্ন' : task.status === 'InProgress' ? 'চলছে' : 'শুরু হয়নি'}
                   </span>
@@ -351,50 +356,56 @@ export default function Dashboard({ data, setActiveTab }) {
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* CRM & Sales Opportunities Compact Panel */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-float-subtle space-y-4 flex flex-col justify-between">
+          <div className="bg-gradient-to-br from-white via-slate-50/60 to-emerald-50/30 border border-emerald-100/90 rounded-[20px] p-5.5 sm:p-6 shadow-float-subtle space-y-4 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/60">
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-emerald-600" />
-                  <h3 className="text-sm font-bold text-slate-900">CRM ও সেলস সুযোগ</h3>
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100/80 text-emerald-700 flex items-center justify-center border border-emerald-200">
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900">CRM ও সেলস সুযোগ</h3>
                 </div>
-                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                <span className="text-xs font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
                   {activeLeads} সক্রিয় আলোচনা
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 my-3">
-                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                  <div className="text-[10px] text-slate-500 font-medium">অর্জিত ক্লায়েন্ট (Won)</div>
-                  <div className="text-base font-bold text-slate-900 mt-0.5">{clientsWon} জন</div>
+              <div className="grid grid-cols-2 gap-3 my-3.5">
+                <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-3 rounded-xl border border-slate-700/80 shadow-xs">
+                  <div className="text-[10px] text-slate-300 font-medium">অর্জিত ক্লায়েন্ট (Won)</div>
+                  <div className="text-lg font-black text-emerald-400 mt-0.5">{clientsWon} জন</div>
                 </div>
-                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                  <div className="text-[10px] text-slate-500 font-medium">চলমান আলোচনা</div>
-                  <div className="text-base font-bold text-emerald-700 mt-0.5">{activeLeads} জন</div>
+                <div className="bg-gradient-to-br from-emerald-50 via-teal-50/40 to-emerald-100/50 p-3 rounded-xl border border-emerald-200/90 shadow-2xs">
+                  <div className="text-[10px] text-emerald-800 font-semibold">চলমান আলোচনা</div>
+                  <div className="text-lg font-black text-emerald-900 mt-0.5">{activeLeads} জন</div>
                 </div>
               </div>
 
               {/* Minimal Leads List */}
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {leadsList.length > 0 ? (
                   leadsList.slice(0, 2).map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between p-2.5 bg-slate-50/50 rounded-lg border border-slate-200/60 text-xs hover:-translate-y-[1px] transition-all duration-200 cursor-pointer" onClick={() => setActiveTab('crm')}>
+                    <div 
+                      key={lead.id} 
+                      className="flex items-center justify-between p-3 bg-white/90 rounded-xl border border-slate-200/90 hover:border-emerald-300 text-xs hover:-translate-y-[1px] transition-all duration-200 shadow-2xs cursor-pointer" 
+                      onClick={() => setActiveTab('crm')}
+                    >
                       <div>
-                        <div className="font-semibold text-slate-800">{lead.businessName || lead.clientName}</div>
-                        <div className="text-[10px] text-slate-500">বাজেট: ৳{(lead.quotedPrice || 0).toLocaleString()}</div>
+                        <div className="font-bold text-slate-900">{lead.businessName || lead.clientName}</div>
+                        <div className="text-[10px] text-slate-500 font-medium mt-0.5">বাজেট: <strong className="text-slate-700">৳{(lead.quotedPrice || 0).toLocaleString()}</strong></div>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
                         {lead.status}
                       </span>
                     </div>
                   ))
                 ) : (
-                  <div className="flex items-center justify-between p-2.5 bg-slate-50/50 rounded-lg border border-slate-200/60 text-xs">
+                  <div className="flex items-center justify-between p-3 bg-white/90 rounded-xl border border-slate-200/90 text-xs shadow-2xs">
                     <div>
-                      <div className="font-semibold text-slate-800">আইডিয়াল মডেল স্কুল</div>
-                      <div className="text-[10px] text-slate-500">বাজেট: ৳১৫,০০০</div>
+                      <div className="font-bold text-slate-900">আইডিয়াল মডেল স্কুল</div>
+                      <div className="text-[10px] text-slate-500 font-medium mt-0.5">বাজেট: <strong className="text-slate-700">৳১৫,০০০</strong></div>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200">
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-sky-50 text-sky-700 border border-sky-200">
                       Negotiation
                     </span>
                   </div>
@@ -404,7 +415,7 @@ export default function Dashboard({ data, setActiveTab }) {
 
             <button 
               onClick={() => setActiveTab('crm')}
-              className="w-full inline-flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200/80 transition-colors"
+              className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 shadow-2xs hover:-translate-y-[1px] transition-all"
             >
               <span>সেলস পাইপলাইনে যান</span>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
@@ -412,39 +423,43 @@ export default function Dashboard({ data, setActiveTab }) {
           </div>
 
           {/* Business & Tuition Operations Overview Panel */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-float-subtle space-y-4 flex flex-col justify-between">
+          <div className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/30 border border-indigo-100/90 rounded-[20px] p-5.5 sm:p-6 shadow-float-subtle space-y-4 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/60">
                 <div className="flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-indigo-600" />
-                  <h3 className="text-sm font-bold text-slate-900">টিউশন ও অপারেশনস সামারি</h3>
+                  <div className="w-7 h-7 rounded-lg bg-indigo-100/80 text-indigo-700 flex items-center justify-center border border-indigo-200">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900">টিউশন ও অপারেশনস সামারি</h3>
                 </div>
-                <span className="text-[11px] font-medium text-slate-500">মাসিক হিসাব</span>
+                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                  মাসিক হিসাব
+                </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 my-3">
-                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+              <div className="grid grid-cols-2 gap-3 my-3.5">
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100/80 p-3 rounded-xl border border-slate-200/90 shadow-2xs">
                   <div className="text-[10px] text-slate-500 font-medium">সক্রিয় ছাত্র-ছাত্রী</div>
-                  <div className="text-base font-bold text-slate-900 mt-0.5">{activeStudentsCount} জন</div>
+                  <div className="text-base font-extrabold text-slate-900 mt-0.5">{activeStudentsCount} জন</div>
                 </div>
-                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                  <div className="text-[10px] text-slate-500 font-medium">প্রত্যাশিত ফি</div>
-                  <div className="text-base font-bold text-indigo-700 mt-0.5">৳{expectedTuitionCollection.toLocaleString()}</div>
+                <div className="bg-gradient-to-br from-indigo-50/90 via-indigo-50/40 to-blue-50/60 p-3 rounded-xl border border-indigo-200/80 shadow-2xs">
+                  <div className="text-[10px] text-indigo-800 font-semibold">প্রত্যাশিত ফি</div>
+                  <div className="text-base font-extrabold text-indigo-900 mt-0.5">৳{expectedTuitionCollection.toLocaleString()}</div>
                 </div>
-                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                  <div className="text-[10px] text-emerald-800 font-medium">আদায়কৃত ফি</div>
-                  <div className="text-base font-bold text-emerald-700 mt-0.5">৳{collectedTuitionThisMonth.toLocaleString()}</div>
+                <div className="bg-gradient-to-br from-emerald-50/90 via-emerald-50/40 to-teal-50/60 p-3 rounded-xl border border-emerald-200/80 shadow-2xs">
+                  <div className="text-[10px] text-emerald-800 font-semibold">আদায়কৃত ফি</div>
+                  <div className="text-base font-extrabold text-emerald-800 mt-0.5">৳{collectedTuitionThisMonth.toLocaleString()}</div>
                 </div>
-                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                  <div className="text-[10px] text-rose-800 font-medium">বকেয়া পরিমাণ</div>
-                  <div className="text-base font-bold text-rose-600 mt-0.5">৳{dueTuitionAmount.toLocaleString()}</div>
+                <div className="bg-gradient-to-br from-rose-50/90 via-rose-50/40 to-pink-50/60 p-3 rounded-xl border border-rose-200/80 shadow-2xs">
+                  <div className="text-[10px] text-rose-800 font-semibold">বকেয়া পরিমাণ</div>
+                  <div className="text-base font-extrabold text-rose-700 mt-0.5">৳{dueTuitionAmount.toLocaleString()}</div>
                 </div>
               </div>
             </div>
 
             <button 
               onClick={() => setActiveTab('tuition')}
-              className="w-full inline-flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200/80 transition-colors"
+              className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 shadow-2xs hover:-translate-y-[1px] transition-all"
             >
               <span>টিউশন ট্র্যাকারে যান</span>
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
@@ -456,8 +471,8 @@ export default function Dashboard({ data, setActiveTab }) {
 
       {/* Tuition View if activeSubView === 'tuition' */}
       {activeSubView === 'tuition' && (
-        <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-float-subtle space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <section className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/30 border border-indigo-100/90 rounded-[20px] p-6 shadow-float-subtle space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200/60">
             <div>
               <h2 className="text-lg font-bold text-slate-900 tracking-tight">টিউশন ফি ও পেমেন্ট সামারি</h2>
               <p className="text-xs text-slate-500 mt-0.5">ছাত্র-ছাত্রীদের ভর্তি, প্রতি মাসের প্রত্যাশিত ফি ও আদায়কৃত অর্থ</p>
@@ -471,21 +486,21 @@ export default function Dashboard({ data, setActiveTab }) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+            <div className="bg-gradient-to-br from-slate-50 to-slate-100/80 p-4 rounded-xl border border-slate-200/90 shadow-2xs">
               <div className="text-xs text-slate-500 font-medium">মোট সক্রিয় ছাত্র</div>
               <div className="text-2xl font-extrabold text-slate-900 mt-1">{activeStudentsCount} জন</div>
             </div>
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-              <div className="text-xs text-slate-500 font-medium">প্রত্যাশিত মোট আদায়</div>
-              <div className="text-2xl font-extrabold text-indigo-700 mt-1">৳{expectedTuitionCollection.toLocaleString()}</div>
+            <div className="bg-gradient-to-br from-indigo-50/90 via-indigo-50/40 to-blue-50/60 p-4 rounded-xl border border-indigo-200/80 shadow-2xs">
+              <div className="text-xs text-indigo-800 font-semibold">প্রত্যাশিত মোট আদায়</div>
+              <div className="text-2xl font-extrabold text-indigo-900 mt-1">৳{expectedTuitionCollection.toLocaleString()}</div>
             </div>
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-              <div className="text-xs text-emerald-800 font-medium">চলতি মাসে সংগৃহীত</div>
-              <div className="text-2xl font-extrabold text-emerald-700 mt-1">৳{collectedTuitionThisMonth.toLocaleString()}</div>
+            <div className="bg-gradient-to-br from-emerald-50/90 via-emerald-50/40 to-teal-50/60 p-4 rounded-xl border border-emerald-200/80 shadow-2xs">
+              <div className="text-xs text-emerald-800 font-semibold">চলতি মাসে সংগৃহীত</div>
+              <div className="text-2xl font-extrabold text-emerald-800 mt-1">৳{collectedTuitionThisMonth.toLocaleString()}</div>
             </div>
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-              <div className="text-xs text-rose-800 font-medium">বকেয়া পরিমাণ</div>
-              <div className="text-2xl font-extrabold text-rose-600 mt-1">৳{dueTuitionAmount.toLocaleString()}</div>
+            <div className="bg-gradient-to-br from-rose-50/90 via-rose-50/40 to-pink-50/60 p-4 rounded-xl border border-rose-200/80 shadow-2xs">
+              <div className="text-xs text-rose-800 font-semibold">বকেয়া পরিমাণ</div>
+              <div className="text-2xl font-extrabold text-rose-700 mt-1">৳{dueTuitionAmount.toLocaleString()}</div>
             </div>
           </div>
         </section>
@@ -495,38 +510,40 @@ export default function Dashboard({ data, setActiveTab }) {
       {/* 5. LIGHT QUIET SUMMARY SURFACE: EXECUTIVE INSIGHTS (LEVEL 4 - QUIETEST) */}
       {/* ========================================================================= */}
       {activeSubView === 'overview' && (
-        <section className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-5 shadow-none">
-          <div className="flex items-center gap-2 pb-3 mb-3 border-b border-slate-200/60">
-            <HelpCircle className="w-4 h-4 text-slate-400" />
-            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+        <section className="bg-gradient-to-br from-white via-slate-50/80 to-indigo-50/20 border border-slate-200/90 rounded-[20px] p-5 sm:p-6 shadow-float-subtle">
+          <div className="flex items-center gap-2.5 pb-3 mb-3.5 border-b border-slate-200/70">
+            <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
               দ্রুত মূল্যায়িনী (Executive Business Summary)
             </h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-            <div className="space-y-0.5">
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-200/80 space-y-0.5 shadow-2xs">
               <div className="text-[10px] text-slate-400 font-medium">১. বর্তমান অবস্থান</div>
-              <div className="font-semibold text-slate-800">Month 1 (পোর্টফোলিও ও ক্লায়েন্ট)</div>
+              <div className="font-bold text-slate-800">Month 1 (পোর্টফোলিও ও ক্লায়েন্ট)</div>
             </div>
 
-            <div className="space-y-0.5 border-l border-slate-200/60 pl-3">
-              <div className="text-[10px] text-slate-400 font-medium">২. চলতি মাসের মোট আয়</div>
-              <div className="font-bold text-emerald-700">৳{totalIncome.toLocaleString()}</div>
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-50/60 via-emerald-50/30 to-teal-50/40 border border-emerald-200/70 space-y-0.5 shadow-2xs">
+              <div className="text-[10px] text-emerald-800 font-medium">২. চলতি মাসের মোট আয়</div>
+              <div className="font-extrabold text-emerald-900">৳{totalIncome.toLocaleString()}</div>
             </div>
 
-            <div className="space-y-0.5 border-l border-slate-200/60 pl-3">
-              <div className="text-[10px] text-slate-400 font-medium">৩. টার্গেটের বাকি</div>
-              <div className="font-bold text-rose-600">৳{remainingTarget.toLocaleString()}</div>
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-rose-50/60 via-rose-50/30 to-pink-50/40 border border-rose-200/70 space-y-0.5 shadow-2xs">
+              <div className="text-[10px] text-rose-800 font-medium">৩. টার্গেটের বাকি</div>
+              <div className="font-extrabold text-rose-700">৳{remainingTarget.toLocaleString()}</div>
             </div>
 
-            <div className="space-y-0.5 border-l border-slate-200/60 pl-3">
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-200/80 space-y-0.5 shadow-2xs">
               <div className="text-[10px] text-slate-400 font-medium">৪. আজকের করণীয়</div>
-              <div className="font-semibold text-slate-800">{incompleteTasks.length}টি কাজ নির্ধারিত</div>
+              <div className="font-bold text-slate-800">{incompleteTasks.length}টি কাজ নির্ধারিত</div>
             </div>
 
-            <div className="space-y-0.5 border-l border-slate-200/60 pl-3">
-              <div className="text-[10px] text-slate-400 font-medium">৫. সক্রিয় সেলস লিড</div>
-              <div className="font-bold text-sky-700">{activeLeads} জন ক্লায়েন্ট আলোচনাধীন</div>
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-sky-50/60 via-sky-50/30 to-indigo-50/40 border border-sky-200/70 space-y-0.5 shadow-2xs">
+              <div className="text-[10px] text-sky-800 font-medium">৫. সক্রিয় সেলস লিড</div>
+              <div className="font-extrabold text-sky-900">{activeLeads} জন ক্লায়েন্ট আলোচনাধীন</div>
             </div>
           </div>
         </section>
