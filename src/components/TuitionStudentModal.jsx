@@ -96,31 +96,32 @@ export default function TuitionStudentModal({ isOpen, onClose, onSave, student =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden max-h-[92vh] sm:max-h-[85vh] flex flex-col animate-in fade-in zoom-in duration-200">
         {/* Modal Header */}
-        <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <div className="bg-slate-900 text-white px-5 sm:px-6 py-4 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 flex-shrink-0">
               <GraduationCap className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">
-                {student ? 'শিক্ষার্থী তথ্য এডিট' : 'নতুন শিক্ষার্থী যুক্ত করুন'}
+              <h3 className="text-sm sm:text-base font-bold text-white">
+                {student ? 'Edit Student Details' : 'Add New Student'}
               </h3>
-              <p className="text-xs text-slate-300">টিউশন শিক্ষার্থীর প্রোফাইল আপডেট</p>
+              <p className="text-xs text-slate-300">Enter student details & fee structure</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            aria-label="Close modal"
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors touch-manipulation"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[78vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           {error && (
             <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
@@ -128,127 +129,131 @@ export default function TuitionStudentModal({ isOpen, onClose, onSave, student =
             </div>
           )}
 
-          {/* Student Name */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              শিক্ষার্থীর নাম <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative">
-              <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <input
-                type="text"
-                name="studentName"
-                value={formData.studentName}
-                onChange={handleChange}
-                placeholder="যেমন: আব্দুর রহিম"
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Class & Batch */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Group 1: Essential Info */}
+          <div className="space-y-3">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">ক্লাস (Class)</label>
-              <input
-                type="text"
-                name="className"
-                value={formData.className}
-                onChange={handleChange}
-                placeholder="যেমন: Class 9"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">ব্যাচ (Batch)</label>
-              <input
-                type="text"
-                name="batch"
-                value={formData.batch}
-                onChange={handleChange}
-                placeholder="যেমন: Morning Batch"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
-              />
-            </div>
-          </div>
-
-          {/* Guardian & Mobile */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">অভিভাবকের নাম</label>
-              <input
-                type="text"
-                name="guardianName"
-                value={formData.guardianName}
-                onChange={handleChange}
-                placeholder="যেমন: মোঃ শফিকুল ইসলাম"
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">মোবাইল নাম্বার</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Student Name <span className="text-rose-500 font-bold">*</span>
+              </label>
               <div className="relative">
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <User className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
                 <input
                   type="text"
-                  name="mobile"
-                  value={formData.mobile}
+                  name="studentName"
+                  value={formData.studentName}
                   onChange={handleChange}
-                  placeholder="017xxxxxxxx"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+                  placeholder="e.g. Rahim Ahmed"
+                  className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 min-h-[44px]"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Class & Batch */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Class</label>
+                <input
+                  type="text"
+                  name="className"
+                  value={formData.className}
+                  onChange={handleChange}
+                  placeholder="e.g. Class 10"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 min-h-[44px]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Batch</label>
+                <input
+                  type="text"
+                  name="batch"
+                  value={formData.batch}
+                  onChange={handleChange}
+                  placeholder="e.g. Batch A"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 min-h-[44px]"
                 />
               </div>
             </div>
           </div>
 
-          {/* Monthly Fee & Joining Date */}
-          <div className="grid grid-cols-2 gap-3">
+          <hr className="border-slate-100" />
+
+          {/* Group 2: Fee & Academic Details */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                মাসিক ফি (৳) <span className="text-rose-500">*</span>
+                Monthly Fee (৳) <span className="text-rose-500 font-bold">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-2 text-sm font-bold text-slate-400">৳</span>
+                <span className="absolute left-3 top-2.5 text-sm font-bold text-slate-400">৳</span>
                 <input
                   type="number"
                   name="monthlyFee"
                   value={formData.monthlyFee}
                   onChange={handleChange}
-                  placeholder="1000"
+                  placeholder="1500"
                   min="1"
-                  className="w-full pl-8 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+                  className="w-full pl-8 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 font-bold text-emerald-700 min-h-[44px]"
                   required
                 />
               </div>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                ভর্তির তারিখ <span className="text-rose-500">*</span>
+                Joining Date <span className="text-rose-500 font-bold">*</span>
               </label>
               <input
                 type="date"
                 name="joiningDate"
                 value={formData.joiningDate}
                 onChange={handleChange}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 min-h-[44px]"
                 required
               />
             </div>
           </div>
 
-          {/* Status */}
+          {/* Group 3: Contact Info */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Guardian Name</label>
+              <input
+                type="text"
+                name="guardianName"
+                value={formData.guardianName}
+                onChange={handleChange}
+                placeholder="e.g. Shafiqul Islam"
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 min-h-[44px]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Mobile Number</label>
+              <div className="relative">
+                <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                <input
+                  type="text"
+                  name="mobile"
+                  value={formData.mobile}
+                  onChange={handleChange}
+                  placeholder="01712345678"
+                  className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 min-h-[44px]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Group 4: Status */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">স্ট্যাটাস (Status)</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
             <select
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 bg-white"
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 bg-white min-h-[44px]"
             >
-              <option value="Active">Active (পড়ছে)</option>
-              <option value="Left">Left (ছেড়ে দিয়েছে)</option>
-              <option value="Inactive">Inactive (নিষ্ক্রিয়)</option>
+              <option value="Active">Active</option>
+              <option value="Left">Left</option>
+              <option value="Inactive">Inactive</option>
             </select>
           </div>
 
@@ -257,29 +262,26 @@ export default function TuitionStudentModal({ isOpen, onClose, onSave, student =
             <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
               <div>
                 <label className="block text-xs font-bold text-amber-900 mb-1">
-                  টিউশন ছাড়ার তারিখ <span className="text-rose-500">*</span>
+                  Leaving Date <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <input
                   type="date"
                   name="leavingDate"
                   value={formData.leavingDate}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-amber-300 rounded-xl focus:outline-none focus:border-amber-900 focus:ring-1 focus:ring-amber-900 bg-white"
+                  className="w-full px-3 py-2.5 text-sm border border-amber-300 rounded-xl focus:outline-none focus:border-amber-900 focus:ring-1 focus:ring-amber-900 bg-white min-h-[44px]"
                   required
                 />
-                <p className="text-[11px] text-amber-700 mt-1">
-                  নোট: ১ তারিখে ছেড়ে দিলে সেই মাস থেকে বাদ পড়বে, অন্য তারিখ হলে সেই মাস পর্যন্ত হিসাব থাকবে।
-                </p>
               </div>
               <div>
-                <label className="block text-xs font-bold text-amber-900 mb-1">টিউশন ছাড়ার কারণ</label>
+                <label className="block text-xs font-bold text-amber-900 mb-1">Leaving Reason</label>
                 <input
                   type="text"
                   name="leavingReason"
                   value={formData.leavingReason}
                   onChange={handleChange}
-                  placeholder="যেমন: পরীক্ষা শেষ / অন্য শহরে স্থানান্তর"
-                  className="w-full px-3 py-2 text-sm border border-amber-300 rounded-xl focus:outline-none focus:border-amber-900 focus:ring-1 focus:ring-amber-900 bg-white"
+                  placeholder="e.g. Course completed / Relocated"
+                  className="w-full px-3 py-2.5 text-sm border border-amber-300 rounded-xl focus:outline-none focus:border-amber-900 focus:ring-1 focus:ring-amber-900 bg-white min-h-[44px]"
                 />
               </div>
             </div>
@@ -287,32 +289,32 @@ export default function TuitionStudentModal({ isOpen, onClose, onSave, student =
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">নোট / অতিরিক্ত তথ্য</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Notes / Remarks</label>
             <textarea
               name="notes"
               value={formData.notes}
               onChange={handleChange}
               rows="2"
-              placeholder="অতিরিক্ত বিস্তারিত নোট..."
+              placeholder="Additional notes..."
               className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
             ></textarea>
           </div>
 
           {/* Submit Button */}
-          <div className="pt-2 flex justify-end gap-3">
+          <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              className="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors min-h-[44px] flex-1 sm:flex-none"
             >
-              বাতিল
+              Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
+              className="px-5 py-2.5 text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px] flex-1 sm:flex-none"
             >
-              {submitting ? 'সেভ হচ্ছে...' : student ? 'তথ্য আপডেট করুন' : 'Save Student'}
+              {submitting ? 'Saving...' : student ? 'Update Student' : 'Save Student'}
             </button>
           </div>
         </form>

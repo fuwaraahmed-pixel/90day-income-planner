@@ -135,29 +135,30 @@ export default function TuitionPaymentModal({
   const otherStudents = students.filter(s => s.status !== 'Active');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden max-h-[92vh] sm:max-h-[85vh] flex flex-col animate-in fade-in zoom-in duration-200">
         {/* Header */}
-        <div className="bg-emerald-700 text-white px-6 py-4 flex items-center justify-between">
+        <div className="bg-emerald-700 text-white px-5 sm:px-6 py-4 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white flex-shrink-0">
               <DollarSign className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Receive Tuition Payment</h3>
-              <p className="text-xs text-emerald-100">টিউশন ফি পেমেন্ট গ্রহণ ও রসিদ</p>
+              <h3 className="text-sm sm:text-base font-bold text-white">Receive Tuition Payment</h3>
+              <p className="text-xs text-emerald-100">Record payment & issue receipt</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-emerald-100 hover:text-white hover:bg-emerald-600 transition-colors"
+            aria-label="Close modal"
+            className="p-2 rounded-lg text-emerald-100 hover:text-white hover:bg-emerald-600 transition-colors touch-manipulation"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           {error && (
             <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
@@ -175,17 +176,17 @@ export default function TuitionPaymentModal({
           {/* Student Selector */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              শিক্ষার্থী সিলেক্ট করুন <span className="text-rose-500">*</span>
+              Select Student <span className="text-rose-500 font-bold">*</span>
             </label>
             <select
               value={studentId}
               onChange={handleStudentSelect}
-              className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 bg-white"
+              className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 bg-white min-h-[44px]"
               required
             >
-              <option value="">-- শিক্ষার্থী সিলেক্ট করুন --</option>
+              <option value="">-- Select Student --</option>
               {activeStudents.length > 0 && (
-                <optgroup label="Active Students (পড়ছে)">
+                <optgroup label="Active Students">
                   {activeStudents.map(s => (
                     <option key={s.id} value={s.id}>
                       {s.studentName} {s.className ? `(${s.className})` : ''} - ৳{s.monthlyFee}
@@ -206,10 +207,10 @@ export default function TuitionPaymentModal({
           </div>
 
           {/* Amount & For Month */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                টাকার পরিমাণ (Amount) <span className="text-rose-500">*</span>
+                Amount (৳) <span className="text-rose-500 font-bold">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-sm font-bold text-slate-400">৳</span>
@@ -219,7 +220,7 @@ export default function TuitionPaymentModal({
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="1000"
                   min="1"
-                  className="w-full pl-8 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                  className="w-full pl-8 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 font-bold text-emerald-700 min-h-[44px]"
                   required
                 />
               </div>
@@ -227,44 +228,44 @@ export default function TuitionPaymentModal({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                কোন মাসের জন্য (For Month) <span className="text-rose-500">*</span>
+                For Month <span className="text-rose-500 font-bold">*</span>
               </label>
               <input
                 type="month"
                 value={paymentMonth}
                 onChange={(e) => setPaymentMonth(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 min-h-[44px]"
                 required
               />
             </div>
           </div>
 
           {/* Payment Date & Method */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                পেমেন্টের তারিখ (Date) <span className="text-rose-500">*</span>
+                Payment Date <span className="text-rose-500 font-bold">*</span>
               </label>
               <input
                 type="date"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 min-h-[44px]"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">পেমেন্ট মেথড</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Payment Method</label>
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 bg-white"
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 bg-white min-h-[44px]"
               >
-                <option value="Cash">Cash (নগদ)</option>
-                <option value="bKash">bKash (বিকাশ)</option>
-                <option value="Nagad">Nagad (নগদ অ্যাপ)</option>
-                <option value="Rocket">Rocket (রকেট)</option>
+                <option value="Cash">Cash</option>
+                <option value="bKash">bKash</option>
+                <option value="Nagad">Nagad</option>
+                <option value="Rocket">Rocket</option>
                 <option value="Bank Transfer">Bank Transfer</option>
                 <option value="Other">Other</option>
               </select>
@@ -273,31 +274,31 @@ export default function TuitionPaymentModal({
 
           {/* Note */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">নোট (Optional)</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Note (Optional)</label>
             <input
               type="text"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="পেমেন্ট সম্পর্কিত কোনো নোট..."
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+              placeholder="e.g. Paid in full"
+              className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 min-h-[44px]"
             />
           </div>
 
           {/* Submit */}
-          <div className="pt-3 flex justify-end gap-3 border-t border-slate-100">
+          <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              className="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors min-h-[44px] flex-1 sm:flex-none"
             >
-              বাতিল
+              Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
+              className="px-5 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px] flex-1 sm:flex-none"
             >
-              {submitting ? 'পেমেন্ট জমা হচ্ছে...' : '💰 Confirm Payment'}
+              {submitting ? 'Processing...' : 'Confirm Payment'}
             </button>
           </div>
         </form>
