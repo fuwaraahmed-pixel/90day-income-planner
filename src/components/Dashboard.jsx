@@ -70,72 +70,76 @@ export default function Dashboard({ data, setActiveTab }) {
     <div className="space-y-7 pb-10 max-w-7xl mx-auto font-sans antialiased text-slate-800">
       
       {/* ========================================================================= */}
-      {/* 1. COMMAND HEADER: Clean Executive Welcome Bar */}
+      {/* 1. COMMAND HEADER: Premium Floating Welcome Surface */}
       {/* ========================================================================= */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/60">
-        <div className="space-y-1">
+      <header className="bg-gradient-to-r from-white via-white to-emerald-50/30 border border-[#E2E8F0] rounded-[20px] p-6 sm:p-7 shadow-float-hero flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="space-y-2.5 z-10">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               লাইভ বিজনেস কমান্ড
             </span>
-            <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200/60">
+            <span className="text-xs text-slate-500 font-semibold bg-slate-100/90 px-3 py-1 rounded-full border border-slate-200/80">
               ৯০ দিনের লক্ষ্যমাত্রা
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
             {greeting}, {userName}! 👋
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-xl">
             আপনার ৯০ দিনে ৳১,০০,০০০ কন্টিনিউয়াস ইনকাম লক্ষ্যের রিয়েল-টাইম স্টেটাস ও দৈনিক ফোকাস।
           </p>
+
+          {/* Sub-Navigation for Dashboard views if Tuition data exists */}
+          {(tuitionStudents.length > 0 || tuitionPayments.length > 0) && (
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                onClick={() => setActiveSubView('overview')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  activeSubView === 'overview'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                মূল বিজনেস ড্যাশবোর্ড
+              </button>
+              <button
+                onClick={() => setActiveSubView('tuition')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  activeSubView === 'tuition'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span>টিউশন ট্র্যাকার সামারি</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Primary Action Buttons */}
-        <div className="flex items-center gap-2.5 self-start md:self-auto w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row items-stretch sm:items-center gap-3 z-10 self-start md:self-auto w-full md:w-auto">
           <button 
             onClick={() => setActiveTab('tasks')}
-            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs transition-all active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 shadow-2xs hover:-translate-y-[1px] transition-all active:scale-[0.98]"
           >
             <CheckSquare className="w-4 h-4 text-slate-500" />
             <span>আজকের কাজ ({incompleteTasks.length})</span>
           </button>
           <button 
             onClick={() => setActiveTab('crm')}
-            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-xs transition-all active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 shadow-xs hover:-translate-y-[1px] transition-all active:scale-[0.98]"
           >
             <PlusCircle className="w-4 h-4 text-emerald-400" />
             <span>নতুন লিড যোগ করুন</span>
           </button>
         </div>
-      </header>
 
-      {/* Sub-Navigation for Dashboard views if Tuition data exists */}
-      {(tuitionStudents.length > 0 || tuitionPayments.length > 0) && (
-        <div className="flex items-center gap-2 border-b border-slate-200/70 pb-2">
-          <button
-            onClick={() => setActiveSubView('overview')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeSubView === 'overview'
-                ? 'bg-slate-900 text-white shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-100/70'
-            }`}
-          >
-            মূল বিজনেস ড্যাশবোর্ড
-          </button>
-          <button
-            onClick={() => setActiveSubView('tuition')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-              activeSubView === 'tuition'
-                ? 'bg-indigo-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-100/70'
-            }`}
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-            <span>টিউশন ট্র্যাকার সামারি</span>
-          </button>
-        </div>
-      )}
+        {/* Decorative Ambient Soft Gradient Glow */}
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-emerald-100/30 via-teal-50/20 to-transparent pointer-events-none hidden md:block"></div>
+      </header>
 
       {/* ========================================================================= */}
       {/* 2. HERO SURFACE: PRIMARY FINANCIAL & GOAL POSITION (LEVEL 1 - STRONGEST) */}

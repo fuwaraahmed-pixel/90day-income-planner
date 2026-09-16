@@ -572,11 +572,11 @@ export default function App() {
       />
       
       <main className="flex-1 md:ml-64 p-4 sm:p-6 md:p-8 max-w-7xl">
-        {/* Loading Indicator Banner */}
+        {/* Sleek Floating Status Pill Banner */}
         {loadingData && (
-          <div className="mb-4 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
-            <span>Supabase Cloud ডাটাবেজ থেকে ডাটা লোড হচ্ছে...</span>
+          <div className="mb-5 bg-white/90 backdrop-blur-md border border-slate-200/90 text-slate-700 px-4 py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-2 max-w-fit shadow-xs animate-pulse">
+            <RefreshCw className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
+            <span>Supabase Cloud ডাটাবেজ থেকে ডাটা সিঙ্ক হচ্ছে...</span>
           </div>
         )}
 
