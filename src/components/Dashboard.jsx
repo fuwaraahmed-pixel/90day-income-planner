@@ -1,29 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   TrendingUp, 
   Target, 
   HelpCircle, 
   Users, 
   CheckCircle2, 
-  ArrowRight,
   Sparkles,
   AlertCircle,
-  Clock,
   Wallet,
   Coins,
   Receipt,
-  CalendarCheck,
   Building2,
-  Briefcase,
   ChevronRight,
   CheckSquare,
+  PlusCircle,
+  GraduationCap,
   ArrowUpRight,
-  PieChart,
-  Layers,
-  ArrowRightCircle
+  Clock,
+  Briefcase
 } from 'lucide-react';
 
 export default function Dashboard({ data, setActiveTab }) {
+  const [activeSubView, setActiveSubView] = useState('overview'); // 'overview' | 'tuition'
+
+  // Standardized Data Processing (Preserves all existing logic & fallbacks)
   const currentIncome = data?.currentIncome || 40000;
   const newIncome = data?.newIncome || 0;
   const totalIncome = currentIncome + newIncome;
@@ -31,446 +31,503 @@ export default function Dashboard({ data, setActiveTab }) {
   const remainingTarget = Math.max(0, targetIncome - totalIncome);
   const installment = data?.installment || 80000;
 
-  const activeLeads = data?.leads?.filter(l => l.status !== 'Lost' && l.status !== 'Paid').length || 4;
-  const clientsWon = data?.leads?.filter(l => l.status === 'Paid' || l.status === 'Working' || l.status === 'Advance Paid').length || 2;
+  // Expenses & Net Position calculations
+  const expensesList = data?.expenses || [];
+  const totalExpenses = expensesList.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const netPosition = totalIncome - totalExpenses;
+
+  // Leads & Pipeline
+  const leadsList = data?.leads || [];
+  const activeLeads = leadsList.filter(l => l.status !== 'Lost' && l.status !== 'Paid').length || (data?.leads ? 0 : 4);
+  const clientsWon = leadsList.filter(l => l.status === 'Paid' || l.status === 'Working' || l.status === 'Advance Paid').length || (data?.leads ? 0 : 2);
+  
+  // Tasks
   const todayTasks = data?.tasks || [
     { id: 1, name: '৫টি স্কুলে ইমেইল ও কোল্ড কল করা', category: 'Sales', priority: 'High', status: 'InProgress' },
     { id: 2, name: 'পোর্টফোলিও সাইটের হোমপেজ ডিজাইন সম্পন্ন করা', category: 'Portfolio', priority: 'High', status: 'NotStarted' },
     { id: 3, name: 'সার্ভিস প্যাকেজের পিডিএফ তৈরি করা', category: 'Admin', priority: 'Medium', status: 'Done' }
   ];
-
   const incompleteTasks = todayTasks.filter(t => t.status !== 'Done');
+
+  // Tuition Data
+  const tuitionStudents = data?.tuitionStudents || [];
+  const tuitionPayments = data?.tuitionPayments || [];
+  const activeStudentsCount = tuitionStudents.filter(s => s.status === 'active').length;
+  const expectedTuitionCollection = tuitionStudents
+    .filter(s => s.status === 'active')
+    .reduce((sum, s) => sum + (Number(s.monthlyFee) || 0), 0);
+  const collectedTuitionThisMonth = tuitionPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const dueTuitionAmount = Math.max(0, expectedTuitionCollection - collectedTuitionThisMonth);
+
   const monthlyProgressPercent = Math.min(100, Math.round((totalIncome / targetIncome) * 100));
 
+  // User details
+  const userName = data?.user?.user_metadata?.full_name || data?.user?.email?.split('@')[0] || 'উদ্যোক্তা';
+  const currentHour = new Date().getHours();
+  const greeting = currentHour < 12 ? 'শুভ সকাল' : currentHour < 17 ? 'শুভ দুপুর' : 'শুভ সন্ধ্যা';
+
   return (
-    <div className="space-y-10 sm:space-y-12 pb-12 max-w-7xl mx-auto px-1 sm:px-2">
+    <div className="space-y-7 pb-10 max-w-7xl mx-auto font-sans antialiased text-slate-800">
+      
       {/* ========================================================================= */}
-      {/* 00. DASHBOARD HEADER */}
+      {/* 1. COMMAND HEADER: Clean Executive Welcome Bar */}
       {/* ========================================================================= */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-slate-200/80">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              লাইভ ট্র্যাকার • Month 1
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/60">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              লাইভ বিজনেস কমান্ড
             </span>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200/60">
-              ৯০ দিনের লক্ষ্য
+            <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200/60">
+              ৯০ দিনের লক্ষ্যমাত্রা
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            বিজনেস ড্যাশবোর্ড
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            {greeting}, {userName}! 👋
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal leading-relaxed max-w-2xl">
-            ৯০ দিনে ১ লাখ টাকা মাসিক ইনকাম লক্ষ্য অর্জনের রিয়েল-টাইম ওভারভিউ ও বিজনেসের সামগ্রিক অবস্থা
+          <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+            আপনার ৯০ দিনে ৳১,০০,০০০ কন্টিনিউয়াস ইনকাম লক্ষ্যের রিয়েল-টাইম স্টেটাস ও দৈনিক ফোকাস।
           </p>
         </div>
+
+        {/* Primary Action Buttons */}
         <div className="flex items-center gap-2.5 self-start md:self-auto w-full md:w-auto">
           <button 
             onClick={() => setActiveTab('tasks')}
-            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-700 bg-white border border-slate-200/90 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all duration-150 active:scale-[0.99]"
+            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs transition-all active:scale-[0.98]"
           >
             <CheckSquare className="w-4 h-4 text-slate-500" />
             <span>আজকের কাজ ({incompleteTasks.length})</span>
           </button>
           <button 
             onClick={() => setActiveTab('crm')}
-            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm transition-all duration-150 active:scale-[0.99]"
+            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-xs transition-all active:scale-[0.98]"
           >
-            <Users className="w-4 h-4" />
+            <PlusCircle className="w-4 h-4 text-emerald-400" />
             <span>নতুন লিড যোগ করুন</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* ========================================================================= */}
-      {/* SECTION 01: FINANCIAL OVERVIEW */}
-      {/* ========================================================================= */}
-      <section className="space-y-4">
-        {/* Section Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-sm bg-slate-900"></span>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                আর্থিক ওভারভিউ
-              </h2>
-              <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200/60">
-                ৬টি মূল সূচক
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5 ml-4.5">
-              আর্থিক স্থিতির ৬টি মূল সূচক ও চলতি মাসের আয়-ব্যয় ট্র্যাকিং
-            </p>
-          </div>
+      {/* Sub-Navigation for Dashboard views if Tuition data exists */}
+      {(tuitionStudents.length > 0 || tuitionPayments.length > 0) && (
+        <div className="flex items-center gap-2 border-b border-slate-200/70 pb-2">
+          <button
+            onClick={() => setActiveSubView('overview')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeSubView === 'overview'
+                ? 'bg-slate-900 text-white shadow-2xs'
+                : 'text-slate-600 hover:bg-slate-100/70'
+            }`}
+          >
+            মূল বিজনেস ড্যাশবোর্ড
+          </button>
+          <button
+            onClick={() => setActiveSubView('tuition')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeSubView === 'tuition'
+                ? 'bg-indigo-600 text-white shadow-2xs'
+                : 'text-slate-600 hover:bg-slate-100/70'
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span>টিউশন ট্র্যাকার সামারি</span>
+          </button>
         </div>
+      )}
 
-        {/* 6 Financial Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
+      {/* ========================================================================= */}
+      {/* 2. HERO SURFACE: PRIMARY FINANCIAL & GOAL POSITION (LEVEL 1 - STRONGEST) */}
+      {/* ========================================================================= */}
+      {activeSubView === 'overview' && (
+        <section className="bg-white border border-[#E2E8F0] rounded-[20px] p-6 sm:p-7 shadow-float-hero space-y-6">
           
-          {/* Card 1: Current Income (Slate / Neutral Accent) */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all duration-200 flex flex-col justify-between group">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-slate-500 group-hover:text-slate-800 transition-colors">বর্তমান আয়</span>
-              <div className="w-8 h-8 rounded-xl bg-slate-100/90 text-slate-700 flex items-center justify-center border border-slate-200/70 group-hover:scale-105 transition-transform duration-200 shadow-2xs">
-                <Wallet className="w-4 h-4" />
+          {/* Main Hero Header: Combined Income & Goal Progress */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+            
+            {/* Primary Metric Focus */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
+                  বর্তমান মোট আয়
+                </span>
+                <span className="text-xs text-slate-400 font-medium">চলতি মাসের পারফরম্যান্স</span>
+              </div>
+              
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl sm:text-2xl font-bold text-slate-400">৳</span>
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+                  {totalIncome.toLocaleString()}
+                </span>
+                <span className="text-xs sm:text-sm font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-lg ml-2">
+                  {monthlyProgressPercent}% অর্জন
+                </span>
               </div>
             </div>
-            <div>
-              <div className="text-2xl sm:text-2xl font-black text-slate-900 tracking-tight">৳{currentIncome.toLocaleString()}</div>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-400 font-medium">ধরন:</span>
-                <span className="font-semibold text-slate-700 bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/60">স্থায়ী আয়</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Card 2: New Income (Emerald Accent) */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs hover:shadow-md hover:border-emerald-300 transition-all duration-200 flex flex-col justify-between group">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-slate-500 group-hover:text-emerald-800 transition-colors">নতুন ইনকাম</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200/60 group-hover:scale-105 transition-transform duration-200 shadow-2xs">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl sm:text-2xl font-black text-emerald-600 tracking-tight">৳{newIncome.toLocaleString()}</div>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-400 font-medium">উৎস:</span>
-                <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/70">নতুন ক্লায়েন্ট</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Total Income (Sky/Blue Accent) */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs hover:shadow-md hover:border-sky-300 transition-all duration-200 flex flex-col justify-between group">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-slate-500 group-hover:text-sky-800 transition-colors">সর্বমোট ইনকাম</span>
-              <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-200/60 group-hover:scale-105 transition-transform duration-200 shadow-2xs">
-                <Coins className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl sm:text-2xl font-black text-sky-600 tracking-tight">৳{totalIncome.toLocaleString()}</div>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-400 font-medium">সময়কাল:</span>
-                <span className="font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200/70">চলতি মাস</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: Monthly Target (Indigo Accent) */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex flex-col justify-between group">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-slate-500 group-hover:text-indigo-800 transition-colors">মাসিক লক্ষ্য</span>
-              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-200/60 group-hover:scale-105 transition-transform duration-200 shadow-2xs">
-                <Target className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl sm:text-2xl font-black text-slate-900 tracking-tight">৳{targetIncome.toLocaleString()}</div>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-400 font-medium">পরিকল্পনা:</span>
-                <span className="font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/70">৯০ দিনের গোল</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 5: Remaining Target (Rose Accent) */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs hover:shadow-md hover:border-rose-300 transition-all duration-200 flex flex-col justify-between group">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-slate-500 group-hover:text-rose-800 transition-colors">লক্ষ্যে বাকি</span>
-              <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200/60 group-hover:scale-105 transition-transform duration-200 shadow-2xs">
-                <AlertCircle className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl sm:text-2xl font-black text-rose-600 tracking-tight">৳{remainingTarget.toLocaleString()}</div>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-400 font-medium">স্ট্যাটাস:</span>
-                <span className="font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200/70">প্রয়োজনীয় বাকি</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 6: Monthly Installment (Amber Accent) */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs hover:shadow-md hover:border-amber-300 transition-all duration-200 flex flex-col justify-between group">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-slate-500 group-hover:text-amber-800 transition-colors">মাসিক কিস্তি</span>
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200/60 group-hover:scale-105 transition-transform duration-200 shadow-2xs">
-                <Receipt className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl sm:text-2xl font-black text-amber-600 tracking-tight">৳{installment.toLocaleString()}</div>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-400 font-medium">দেনা/কিস্তি:</span>
-                <span className="font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/70">ফিক্সড খরচ</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* SECTION 02: TARGET PROGRESS CANVAS */}
-      {/* ========================================================================= */}
-      <section className="bg-slate-900/[0.02] border border-slate-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xs relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                মাসিক লক্ষ্যের অগ্রগতি
-              </h2>
-              <Sparkles className="w-4 h-4 text-emerald-500" />
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5 ml-4.5">
-              আপনার ৯০ দিনের ১ লাখ টাকা ইনকাম লক্ষ্য অনুযায়ী চলতি মাসের অগ্রগতির সমীকরণ
-            </p>
-          </div>
-          <div className="flex items-center gap-3 self-start sm:self-auto bg-white px-3.5 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs">
-            <span className="text-xs font-semibold text-slate-500">অর্জন হার:</span>
-            <span className="text-sm font-black text-emerald-700">
-              {monthlyProgressPercent}%
-            </span>
-          </div>
-        </div>
-
-        {/* Dynamic Progress Indicator Container */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xs">
-          <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-800">
-            <div className="flex items-center gap-2">
-              <span className="text-slate-400 font-medium text-xs">অর্জিত:</span>
-              <span className="text-emerald-700 text-base font-black">৳{totalIncome.toLocaleString()}</span>
-            </div>
-            <div className="flex items-center gap-2 text-right">
-              <span className="text-slate-400 font-medium text-xs">লক্ষ্যমাত্রা:</span>
-              <span className="text-slate-900 text-base font-black">৳{targetIncome.toLocaleString()}</span>
-            </div>
-          </div>
-
-          {/* Thin Progress Bar */}
-          <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200/60 p-0.5">
-            <div 
-              className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 rounded-full transition-all duration-700 ease-out relative shadow-xs"
-              style={{ width: `${monthlyProgressPercent}%` }}
-            >
-              <div className="absolute right-0 top-0 bottom-0 w-2 bg-white/40 rounded-full"></div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs pt-1 border-t border-slate-100">
-            <div className="flex items-center gap-1.5 text-slate-600">
-              <Target className="w-3.5 h-3.5 text-slate-400" />
-              <span>লক্ষ্যের আর মাত্র <strong className="text-slate-900 font-bold">৳{remainingTarget.toLocaleString()}</strong> বাকি</span>
-            </div>
-            <div className="text-slate-400 text-[11px]">
-              * নিয়মিত ক্লায়েন্ট পেমেন্ট ও নতুন লিড কনভার্সনে এটি আপডেট হবে
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* SECTION 03: TASKS + CRM ACTIVITIES */}
-      {/* ========================================================================= */}
-      <section className="space-y-4">
-        {/* Section Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-sm bg-indigo-600"></span>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                আজকের কাজ ও CRM অ্যাক্টিভিটি
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5 ml-4.5">
-              আজকের দৈনন্দিন অগ্রাধিকার ও চলমান সেলস পাইপলাইনের রিয়েল-টাইম স্টেটাস
-            </p>
-          </div>
-        </div>
-
-        {/* 2-Column Grid for Tasks & CRM */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-          
-          {/* LEFT PANEL: TODAY'S PRIORITIES */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-colors">
-            <div>
-              <div className="flex justify-between items-center pb-4 mb-4 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 shadow-2xs">
-                    <CheckSquare className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 tracking-tight">আজকের অগ্রাধিকার</h3>
-                    <p className="text-[11px] text-slate-500">Today's Priorities & Action Plan</p>
-                  </div>
-                </div>
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/70 shadow-2xs">
-                  {incompleteTasks.length}টি কাজ বাকি
+            {/* 90-Day Goal Progress Bar Simulator */}
+            <div className="lg:w-1/2 space-y-2.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200/60">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="text-slate-700 flex items-center gap-1.5">
+                  <Target className="w-4 h-4 text-emerald-600" />
+                  ৯০ দিনের মাসিক টার্গেট: ৳{targetIncome.toLocaleString()}
+                </span>
+                <span className="text-rose-600 font-bold">
+                  বাকি ৳{remainingTarget.toLocaleString()}
                 </span>
               </div>
 
-              <div className="space-y-2.5">
-                {incompleteTasks.length > 0 ? (
-                  incompleteTasks.map((task) => (
-                    <div key={task.id} className="flex items-center justify-between p-3.5 bg-slate-50/80 hover:bg-slate-50 rounded-xl border border-slate-200/70 transition-colors group">
-                      <div className="flex items-center gap-3">
-                        <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                          task.priority === 'High' ? 'bg-rose-500 shadow-2xs' : task.priority === 'Medium' ? 'bg-amber-500' : 'bg-sky-500'
-                        }`}></span>
-                        <div>
-                          <div className="text-sm font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">{task.name}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">
-                            ক্যাটাগরি: <span className="text-slate-700 font-medium">{task.category}</span> • প্রায়োরিটি: <span className="text-slate-700 font-medium">{task.priority}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg flex-shrink-0 ${
-                        task.status === 'InProgress' 
-                          ? 'bg-sky-50 text-sky-700 border border-sky-200/80' 
-                          : 'bg-slate-100 text-slate-600 border border-slate-200/60'
+              {/* Progress Bar */}
+              <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden p-0.5">
+                <div 
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-700 ease-out shadow-xs"
+                  style={{ width: `${monthlyProgressPercent}%` }}
+                ></div>
+              </div>
+
+              <div className="flex justify-between text-[10px] text-slate-500 font-medium pt-0.5">
+                <span>৳০</span>
+                <span>৳২৫,০০০</span>
+                <span>৳৫০,০০০</span>
+                <span>৳৭৫,০০০</span>
+                <span className="font-bold text-slate-900">৳১,০০,০০০+</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Integrated Metrics Row with Subtle Soft Gradients */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-1">
+            
+            {/* Stat 1: Current Fixed Income */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/70 border border-slate-200/90 shadow-2xs space-y-1">
+              <div className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                <Wallet className="w-3.5 h-3.5 text-slate-500" />
+                বর্তমান স্থায়ী আয়
+              </div>
+              <div className="text-xl font-bold text-slate-900">
+                ৳{currentIncome.toLocaleString()}
+              </div>
+              <p className="text-[10px] text-slate-500">স্থায়ী বেতন / সাবস্ক্রিপশন</p>
+            </div>
+
+            {/* Stat 2: New Income */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-50/80 via-emerald-50/40 to-teal-50/60 border border-emerald-200/90 shadow-2xs space-y-1">
+              <div className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                নতুন আয় (চলতি মাস)
+              </div>
+              <div className="text-xl font-bold text-emerald-700">
+                ৳{newIncome.toLocaleString()}
+              </div>
+              <p className="text-[10px] text-emerald-600/80">নতুন প্রজেক্ট ও ক্লায়েন্ট</p>
+            </div>
+
+            {/* Stat 3: Target Gap */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-rose-50/80 via-rose-50/40 to-pink-50/60 border border-rose-200/90 shadow-2xs space-y-1">
+              <div className="text-[11px] font-semibold text-rose-800 uppercase tracking-wider flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                লক্ষ্যে পৌঁছাতে বাকি
+              </div>
+              <div className="text-xl font-bold text-rose-600">
+                ৳{remainingTarget.toLocaleString()}
+              </div>
+              <p className="text-[10px] text-rose-600/80">প্রয়োজনীয় অতিরিক্ত আয়</p>
+            </div>
+
+            {/* Stat 4: Monthly Installment */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-amber-50/80 via-amber-50/40 to-yellow-50/60 border border-amber-200/90 shadow-2xs space-y-1">
+              <div className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                <Receipt className="w-3.5 h-3.5 text-amber-600" />
+                মাসিক কিস্তি/দায়
+              </div>
+              <div className="text-xl font-bold text-amber-900">
+                ৳{installment.toLocaleString()}
+              </div>
+              <p className="text-[10px] text-amber-700/80">স্থায়ী মাসিক পরিশোধ</p>
+            </div>
+
+          </div>
+
+        </section>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3. LIST & DIVIDER LAYOUT: TODAY'S FOCUS & ACTIONS (LEVEL 2 - MEDIUM) */}
+      {/* ========================================================================= */}
+      {activeSubView === 'overview' && (
+        <section className="bg-white border border-[#E2E8F0] rounded-2xl p-5 sm:p-6 shadow-float space-y-4">
+          
+          {/* Section Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+                <CheckSquare className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                  আজকের ফোকাস ও অগ্রাধিকার
+                </h2>
+                <p className="text-[11px] text-slate-500">আজকে আপনার যে কাজগুলো সম্পন্ন করা প্রয়োজন</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setActiveTab('tasks')}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors"
+            >
+              <span>সব কাজ দেখুন ({incompleteTasks.length}টি বাকি)</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Task Cards Container with Individual Premium Light Backgrounds */}
+          <div className="space-y-2.5">
+            {todayTasks.length > 0 ? (
+              todayTasks.slice(0, 4).map((task) => (
+                <div 
+                  key={task.id} 
+                  className={`p-3.5 rounded-xl border transition-all duration-200 hover:-translate-y-[1px] hover:shadow-xs flex items-center justify-between gap-3 cursor-pointer ${
+                    task.status === 'Done'
+                      ? 'bg-gradient-to-r from-emerald-50/70 via-emerald-50/30 to-teal-50/40 border-emerald-200/80'
+                      : task.status === 'InProgress'
+                      ? 'bg-gradient-to-r from-sky-50/80 via-blue-50/40 to-indigo-50/40 border-sky-200/90'
+                      : 'bg-gradient-to-r from-slate-50 via-slate-50/80 to-slate-100/60 border-slate-200/90'
+                  }`}
+                  onClick={() => setActiveTab('tasks')}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                      task.priority === 'High' 
+                        ? 'bg-rose-500' 
+                        : task.priority === 'Medium' 
+                        ? 'bg-amber-500' 
+                        : 'bg-sky-500'
+                    }`} title={`Priority: ${task.priority}`}></span>
+
+                    <div>
+                      <div className={`text-xs sm:text-sm font-semibold ${
+                        task.status === 'Done' ? 'line-through text-slate-400' : 'text-slate-800'
                       }`}>
-                        {task.status === 'InProgress' ? 'চলছে' : 'শুরু হয়নি'}
+                        {task.name}
+                      </div>
+                      <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                        <span className="font-medium text-slate-600 bg-white/80 border border-slate-200/60 px-2 py-0.5 rounded text-[10px]">
+                          {task.category}
+                        </span>
+                        <span>• প্রায়োরিটি: <strong className="text-slate-700">{task.priority}</strong></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ${
+                    task.status === 'Done'
+                      ? 'bg-emerald-100/80 text-emerald-800 border border-emerald-200'
+                      : task.status === 'InProgress' 
+                      ? 'bg-sky-100/80 text-sky-800 border border-sky-200' 
+                      : 'bg-slate-200/70 text-slate-700 border border-slate-300/60'
+                  }`}>
+                    {task.status === 'Done' ? 'সম্পন্ন' : task.status === 'InProgress' ? 'চলছে' : 'শুরু হয়নি'}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                আজকের জন্য কোনো কাজ এন্ট্রি করা নেই
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 4. COMPACT PANELS: CRM PIPELINE & OPERATIONAL SUMMARY (LEVEL 3 - QUIET) */}
+      {/* ========================================================================= */}
+      {activeSubView === 'overview' && (
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* CRM & Sales Opportunities Compact Panel */}
+          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-float-subtle space-y-4 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-emerald-600" />
+                  <h3 className="text-sm font-bold text-slate-900">CRM ও সেলস সুযোগ</h3>
+                </div>
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                  {activeLeads} সক্রিয় আলোচনা
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 my-3">
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                  <div className="text-[10px] text-slate-500 font-medium">অর্জিত ক্লায়েন্ট (Won)</div>
+                  <div className="text-base font-bold text-slate-900 mt-0.5">{clientsWon} জন</div>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                  <div className="text-[10px] text-slate-500 font-medium">চলমান আলোচনা</div>
+                  <div className="text-base font-bold text-emerald-700 mt-0.5">{activeLeads} জন</div>
+                </div>
+              </div>
+
+              {/* Minimal Leads List */}
+              <div className="space-y-2">
+                {leadsList.length > 0 ? (
+                  leadsList.slice(0, 2).map((lead) => (
+                    <div key={lead.id} className="flex items-center justify-between p-2.5 bg-slate-50/50 rounded-lg border border-slate-200/60 text-xs hover:-translate-y-[1px] transition-all duration-200 cursor-pointer" onClick={() => setActiveTab('crm')}>
+                      <div>
+                        <div className="font-semibold text-slate-800">{lead.businessName || lead.clientName}</div>
+                        <div className="text-[10px] text-slate-500">বাজেট: ৳{(lead.quotedPrice || 0).toLocaleString()}</div>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
+                        {lead.status}
                       </span>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-slate-500 text-sm bg-slate-50/50 rounded-xl border border-dashed border-slate-200 font-medium">
-                    আজকের সব কাজ সফলভাবে সম্পন্ন হয়েছে! 👏
+                  <div className="flex items-center justify-between p-2.5 bg-slate-50/50 rounded-lg border border-slate-200/60 text-xs">
+                    <div>
+                      <div className="font-semibold text-slate-800">আইডিয়াল মডেল স্কুল</div>
+                      <div className="text-[10px] text-slate-500">বাজেট: ৳১৫,০০০</div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200">
+                      Negotiation
+                    </span>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="pt-4 mt-5 border-t border-slate-100">
-              <button 
-                onClick={() => setActiveTab('tasks')}
-                className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl transition-all duration-150 active:scale-[0.99] group"
-              >
-                <span>সব কাজ ও ডেইলি প্ল্যানার দেখুন</span>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            </div>
+            <button 
+              onClick={() => setActiveTab('crm')}
+              className="w-full inline-flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200/80 transition-colors"
+            >
+              <span>সেলস পাইপলাইনে যান</span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            </button>
           </div>
 
-          {/* RIGHT PANEL: CRM PIPELINE */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-colors">
+          {/* Business & Tuition Operations Overview Panel */}
+          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-float-subtle space-y-4 flex flex-col justify-between">
             <div>
-              <div className="flex justify-between items-center pb-4 mb-4 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shadow-2xs">
-                    <Users className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 tracking-tight">CRM Pipeline</h3>
-                    <p className="text-[11px] text-slate-500">Sales & Client Overview</p>
-                  </div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-indigo-600" />
+                  <h3 className="text-sm font-bold text-slate-900">টিউশন ও অপারেশনস সামারি</h3>
                 </div>
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
-                  {activeLeads} জন সক্রিয় লিড
-                </span>
+                <span className="text-[11px] font-medium text-slate-500">মাসিক হিসাব</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-slate-50/80 p-3 sm:p-3.5 rounded-xl border border-slate-200/70">
-                  <div className="text-[11px] text-slate-500 font-semibold">অর্জিত ক্লায়েন্ট</div>
-                  <div className="text-lg sm:text-xl font-black text-slate-900 mt-0.5">{clientsWon} জন</div>
+              <div className="grid grid-cols-2 gap-3 my-3">
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                  <div className="text-[10px] text-slate-500 font-medium">সক্রিয় ছাত্র-ছাত্রী</div>
+                  <div className="text-base font-bold text-slate-900 mt-0.5">{activeStudentsCount} জন</div>
                 </div>
-                <div className="bg-slate-50/80 p-3 sm:p-3.5 rounded-xl border border-slate-200/70">
-                  <div className="text-[11px] text-slate-500 font-semibold">কথা চলছে (Negotiation)</div>
-                  <div className="text-lg sm:text-xl font-black text-emerald-600 mt-0.5">{activeLeads} জন</div>
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                  <div className="text-[10px] text-slate-500 font-medium">প্রত্যাশিত ফি</div>
+                  <div className="text-base font-bold text-indigo-700 mt-0.5">৳{expectedTuitionCollection.toLocaleString()}</div>
                 </div>
-              </div>
-
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between p-3.5 bg-slate-50/80 hover:bg-slate-50 rounded-xl border border-slate-200/70 transition-colors">
-                  <div>
-                    <div className="text-sm font-semibold text-slate-800">আইডিয়াল মডেল স্কুল (Business Website)</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">বাজেট: <span className="font-bold text-slate-900">৳১৫,০০০</span></div>
-                  </div>
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 border border-sky-200/80">
-                    Negotiation
-                  </span>
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                  <div className="text-[10px] text-emerald-800 font-medium">আদায়কৃত ফি</div>
+                  <div className="text-base font-bold text-emerald-700 mt-0.5">৳{collectedTuitionThisMonth.toLocaleString()}</div>
                 </div>
-                <div className="flex items-center justify-between p-3.5 bg-slate-50/80 hover:bg-slate-50 rounded-xl border border-slate-200/70 transition-colors">
-                  <div>
-                    <div className="text-sm font-semibold text-slate-800">প্রোগ্রেস কোচিং সেন্টার (Landing Page)</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">বাজেট: <span className="font-bold text-slate-900">৳৮,০০০</span></div>
-                  </div>
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-                    Advance Paid
-                  </span>
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                  <div className="text-[10px] text-rose-800 font-medium">বকেয়া পরিমাণ</div>
+                  <div className="text-base font-bold text-rose-600 mt-0.5">৳{dueTuitionAmount.toLocaleString()}</div>
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 mt-5 border-t border-slate-100">
-              <button 
-                onClick={() => setActiveTab('crm')}
-                className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl transition-all duration-150 active:scale-[0.99] group"
-              >
-                <span>সেলস পাইপলাইনে যান</span>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            </div>
+            <button 
+              onClick={() => setActiveTab('tuition')}
+              className="w-full inline-flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200/80 transition-colors"
+            >
+              <span>টিউশন ট্র্যাকারে যান</span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            </button>
           </div>
 
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* Tuition View if activeSubView === 'tuition' */}
+      {activeSubView === 'tuition' && (
+        <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-float-subtle space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">টিউশন ফি ও পেমেন্ট সামারি</h2>
+              <p className="text-xs text-slate-500 mt-0.5">ছাত্র-ছাত্রীদের ভর্তি, প্রতি মাসের প্রত্যাশিত ফি ও আদায়কৃত অর্থ</p>
+            </div>
+            <button 
+              onClick={() => setActiveTab('tuition')}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs"
+            >
+              টিউশন ম্যানেজারে যান
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+              <div className="text-xs text-slate-500 font-medium">মোট সক্রিয় ছাত্র</div>
+              <div className="text-2xl font-extrabold text-slate-900 mt-1">{activeStudentsCount} জন</div>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+              <div className="text-xs text-slate-500 font-medium">প্রত্যাশিত মোট আদায়</div>
+              <div className="text-2xl font-extrabold text-indigo-700 mt-1">৳{expectedTuitionCollection.toLocaleString()}</div>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+              <div className="text-xs text-emerald-800 font-medium">চলতি মাসে সংগৃহীত</div>
+              <div className="text-2xl font-extrabold text-emerald-700 mt-1">৳{collectedTuitionThisMonth.toLocaleString()}</div>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+              <div className="text-xs text-rose-800 font-medium">বকেয়া পরিমাণ</div>
+              <div className="text-2xl font-extrabold text-rose-600 mt-1">৳{dueTuitionAmount.toLocaleString()}</div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ========================================================================= */}
-      {/* SECTION 04: QUICK BUSINESS REFLECTION / SUMMARY */}
+      {/* 5. LIGHT QUIET SUMMARY SURFACE: EXECUTIVE INSIGHTS (LEVEL 4 - QUIETEST) */}
       {/* ========================================================================= */}
-      <section className="bg-slate-900 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-lg shadow-slate-900/10 border border-slate-800 relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5 pb-4 border-b border-slate-800/80">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-              <HelpCircle className="w-4 h-4" />
+      {activeSubView === 'overview' && (
+        <section className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-5 shadow-none">
+          <div className="flex items-center gap-2 pb-3 mb-3 border-b border-slate-200/60">
+            <HelpCircle className="w-4 h-4 text-slate-400" />
+            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              দ্রুত মূল্যায়িনী (Executive Business Summary)
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+            <div className="space-y-0.5">
+              <div className="text-[10px] text-slate-400 font-medium">১. বর্তমান অবস্থান</div>
+              <div className="font-semibold text-slate-800">Month 1 (পোর্টফোলিও ও ক্লায়েন্ট)</div>
             </div>
-            <div>
-              <h2 className="text-base font-bold text-white tracking-tight">
-                দ্রুত মূল্যায়ন (Quick Business Summary)
-              </h2>
-              <p className="text-[11px] text-slate-400">এক নজরে আপনার ৫টি প্রধান প্রশ্নের উত্তর</p>
+
+            <div className="space-y-0.5 border-l border-slate-200/60 pl-3">
+              <div className="text-[10px] text-slate-400 font-medium">২. চলতি মাসের মোট আয়</div>
+              <div className="font-bold text-emerald-700">৳{totalIncome.toLocaleString()}</div>
+            </div>
+
+            <div className="space-y-0.5 border-l border-slate-200/60 pl-3">
+              <div className="text-[10px] text-slate-400 font-medium">৩. টার্গেটের বাকি</div>
+              <div className="font-bold text-rose-600">৳{remainingTarget.toLocaleString()}</div>
+            </div>
+
+            <div className="space-y-0.5 border-l border-slate-200/60 pl-3">
+              <div className="text-[10px] text-slate-400 font-medium">৪. আজকের করণীয়</div>
+              <div className="font-semibold text-slate-800">{incompleteTasks.length}টি কাজ নির্ধারিত</div>
+            </div>
+
+            <div className="space-y-0.5 border-l border-slate-200/60 pl-3">
+              <div className="text-[10px] text-slate-400 font-medium">৫. সক্রিয় সেলস লিড</div>
+              <div className="font-bold text-sky-700">{activeLeads} জন ক্লায়েন্ট আলোচনাধীন</div>
             </div>
           </div>
-          <span className="text-[11px] font-semibold text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700/60 self-start sm:self-auto">
-            রিয়েল-টাইম সিনক্রোনাইজড
-          </span>
-        </div>
+        </section>
+      )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-          <div className="bg-slate-800/60 hover:bg-slate-800/80 transition-colors border border-slate-700/60 rounded-xl p-4">
-            <div className="text-[11px] text-slate-400 mb-1.5 font-medium">১. এখন আমি কোথায় আছি?</div>
-            <div className="text-xs font-bold text-slate-100 leading-snug">Month 1 (পোর্টফোলিও ও ১ম ৩ ক্লায়েন্ট)</div>
-          </div>
-
-          <div className="bg-slate-800/60 hover:bg-slate-800/80 transition-colors border border-slate-700/60 rounded-xl p-4">
-            <div className="text-[11px] text-slate-400 mb-1.5 font-medium">২. এই মাসে কত আয় করেছি?</div>
-            <div className="text-base font-black text-emerald-400">৳{totalIncome.toLocaleString()}</div>
-          </div>
-
-          <div className="bg-slate-800/60 hover:bg-slate-800/80 transition-colors border border-slate-700/60 rounded-xl p-4">
-            <div className="text-[11px] text-slate-400 mb-1.5 font-medium">৩. টার্গেটে পৌঁছাতে কত বাকি?</div>
-            <div className="text-base font-black text-rose-400">৳{remainingTarget.toLocaleString()}</div>
-          </div>
-
-          <div className="bg-slate-800/60 hover:bg-slate-800/80 transition-colors border border-slate-700/60 rounded-xl p-4">
-            <div className="text-[11px] text-slate-400 mb-1.5 font-medium">৪. আজ কী কী কাজ করা দরকার?</div>
-            <div className="text-xs font-bold text-slate-100 leading-snug">{incompleteTasks.length}টি কাজ বাকি আছে</div>
-          </div>
-
-          <div className="bg-slate-800/60 hover:bg-slate-800/80 transition-colors border border-slate-700/60 rounded-xl p-4">
-            <div className="text-[11px] text-slate-400 mb-1.5 font-medium">৫. কতজন ক্লায়েন্টের কথা চলছে?</div>
-            <div className="text-base font-black text-sky-400">{activeLeads} জন লিড সক্রিয়</div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
-
-

@@ -523,8 +523,13 @@ export default function App() {
     ...appData,
     currentIncome: salarySum || 40000,
     newIncome: newIncomeSum,
+    incomes: incomes,
+    expenses: expenses,
     tasks: tasks,
-    leads: leads
+    leads: leads,
+    tuitionPayments: tuitionPayments,
+    tuitionStudents: tuitionStudents,
+    user: session?.user
   };
 
   // Loading Splash Screen
