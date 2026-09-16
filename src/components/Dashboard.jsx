@@ -70,16 +70,16 @@ export default function Dashboard({ data, setActiveTab }) {
     <div className="space-y-7 pb-10 max-w-7xl mx-auto font-sans antialiased text-slate-800">
       
       {/* ========================================================================= */}
-      {/* 1. COMMAND HEADER: Premium Floating Welcome Surface */}
+      {/* 1. COMMAND HEADER: Premium Gradient Hero Surface */}
       {/* ========================================================================= */}
-      <header className="bg-gradient-to-r from-white via-white to-emerald-50/30 border border-[#E2E8F0] rounded-[20px] p-6 sm:p-7 shadow-float-hero flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+      <header className="bg-gradient-to-br from-white via-emerald-50/25 to-teal-50/40 border border-emerald-200/80 rounded-[20px] p-6 sm:p-7 shadow-float-hero flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
         <div className="space-y-2.5 z-10">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100/80 text-emerald-900 border border-emerald-200 shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               লাইভ বিজনেস কমান্ড
             </span>
-            <span className="text-xs text-slate-500 font-semibold bg-slate-100/90 px-3 py-1 rounded-full border border-slate-200/80">
+            <span className="text-xs text-slate-600 font-semibold bg-white/90 px-3 py-1 rounded-full border border-slate-200 shadow-2xs">
               ৯০ দিনের লক্ষ্যমাত্রা
             </span>
           </div>
@@ -87,7 +87,7 @@ export default function Dashboard({ data, setActiveTab }) {
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
             {greeting}, {userName}! 👋
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-xl">
+          <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-xl">
             আপনার ৯০ দিনে ৳১,০০,০০০ কন্টিনিউয়াস ইনকাম লক্ষ্যের রিয়েল-টাইম স্টেটাস ও দৈনিক ফোকাস।
           </p>
 
@@ -99,7 +99,7 @@ export default function Dashboard({ data, setActiveTab }) {
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   activeSubView === 'overview'
                     ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200/60'
+                    : 'bg-white/90 text-slate-600 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
                 মূল বিজনেস ড্যাশবোর্ড
@@ -109,7 +109,7 @@ export default function Dashboard({ data, setActiveTab }) {
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                   activeSubView === 'tuition'
                     ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200/60'
+                    : 'bg-white/90 text-slate-600 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
                 <GraduationCap className="w-3.5 h-3.5" />
@@ -123,7 +123,7 @@ export default function Dashboard({ data, setActiveTab }) {
         <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row items-stretch sm:items-center gap-3 z-10 self-start md:self-auto w-full md:w-auto">
           <button 
             onClick={() => setActiveTab('tasks')}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 shadow-2xs hover:-translate-y-[1px] transition-all active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs hover:-translate-y-[1px] transition-all active:scale-[0.98]"
           >
             <CheckSquare className="w-4 h-4 text-slate-500" />
             <span>আজকের কাজ ({incompleteTasks.length})</span>
@@ -138,25 +138,25 @@ export default function Dashboard({ data, setActiveTab }) {
         </div>
 
         {/* Decorative Ambient Soft Gradient Glow */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-emerald-100/30 via-teal-50/20 to-transparent pointer-events-none hidden md:block"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-teal-100/40 via-emerald-100/20 to-transparent pointer-events-none hidden md:block"></div>
       </header>
 
       {/* ========================================================================= */}
       {/* 2. HERO SURFACE: PRIMARY FINANCIAL & GOAL POSITION (LEVEL 1 - STRONGEST) */}
       {/* ========================================================================= */}
       {activeSubView === 'overview' && (
-        <section className="bg-white border border-[#E2E8F0] rounded-[20px] p-6 sm:p-7 shadow-float-hero space-y-6">
+        <section className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/30 border border-indigo-100/80 rounded-[20px] p-6 sm:p-7 shadow-float-hero space-y-6 relative overflow-hidden">
           
           {/* Main Hero Header: Combined Income & Goal Progress */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-200/60">
             
             {/* Primary Metric Focus */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200">
                   বর্তমান মোট আয়
                 </span>
-                <span className="text-xs text-slate-400 font-medium">চলতি মাসের পারফরম্যান্স</span>
+                <span className="text-xs text-slate-500 font-medium">চলতি মাসের পারফরম্যান্স</span>
               </div>
               
               <div className="flex items-baseline gap-2">
@@ -164,14 +164,14 @@ export default function Dashboard({ data, setActiveTab }) {
                 <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
                   {totalIncome.toLocaleString()}
                 </span>
-                <span className="text-xs sm:text-sm font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 rounded-lg ml-2">
+                <span className="text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg ml-2 shadow-2xs">
                   {monthlyProgressPercent}% অর্জন
                 </span>
               </div>
             </div>
 
             {/* 90-Day Goal Progress Bar Simulator */}
-            <div className="lg:w-1/2 space-y-2.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200/60">
+            <div className="lg:w-1/2 space-y-2.5 bg-white/90 p-4 rounded-xl border border-slate-200/80 shadow-2xs">
               <div className="flex items-center justify-between text-xs font-semibold">
                 <span className="text-slate-700 flex items-center gap-1.5">
                   <Target className="w-4 h-4 text-emerald-600" />
@@ -183,9 +183,9 @@ export default function Dashboard({ data, setActiveTab }) {
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden p-0.5">
+              <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200/70 p-0.5">
                 <div 
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-700 ease-out shadow-xs"
+                  className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 rounded-full transition-all duration-700 ease-out shadow-xs"
                   style={{ width: `${monthlyProgressPercent}%` }}
                 ></div>
               </div>
