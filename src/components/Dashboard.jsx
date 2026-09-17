@@ -70,75 +70,102 @@ export default function Dashboard({ data, setActiveTab }) {
     <div className="space-y-7 pb-10 max-w-7xl mx-auto font-sans antialiased text-slate-800">
       
       {/* ========================================================================= */}
-      {/* 1. COMMAND HEADER: Premium Gradient Hero Surface */}
+      {/* 1. COMMAND HEADER: Executive Dark Premium Hero Banner */}
       {/* ========================================================================= */}
-      <header className="bg-gradient-to-br from-white via-emerald-50/25 to-teal-50/40 border border-emerald-200/80 rounded-[20px] p-6 sm:p-7 shadow-float-hero flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="space-y-2.5 z-10">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100/80 text-emerald-900 border border-emerald-200 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              লাইভ বিজনেস কমান্ড
-            </span>
-            <span className="text-xs text-slate-600 font-semibold bg-white/90 px-3 py-1 rounded-full border border-slate-200 shadow-2xs">
-              ৯০ দিনের লক্ষ্যমাত্রা
-            </span>
-          </div>
+      <header className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        {/* Background glow graphics */}
+        <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-1/3 -top-12 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
-            {greeting}, {userName}! 👋
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-xl">
-            আপনার ৯০ দিনে ৳১,০০,০০০ কন্টিনিউয়াস ইনকাম লক্ষ্যের রিয়েল-টাইম স্টেটাস ও দৈনিক ফোকাস।
-          </p>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                লাইভ বিজনেস কমান্ড
+              </span>
+              <span className="text-xs text-slate-300 font-semibold bg-white/10 px-3 py-1 rounded-full border border-white/15">
+                🎯 ৯০ দিনের লক্ষ্যমাত্রা
+              </span>
+            </div>
 
-          {/* Sub-Navigation for Dashboard views if Tuition data exists */}
-          {(tuitionStudents.length > 0 || tuitionPayments.length > 0) && (
-            <div className="flex items-center gap-2 pt-2">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
+              {greeting}, {userName}! 👋
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 font-normal leading-relaxed max-w-xl">
+              আপনার ৯০ দিনে <span className="font-bold text-emerald-300">৳১,০০,০০০ কন্টিনিউয়াস ইনকাম</span> লক্ষ্যের রিয়েল-টাইম স্টেটাস ও দৈনিক ফোকাস।
+            </p>
+
+            {/* Sub-Navigation Tabs */}
+            <div className="flex items-center gap-2 pt-2 flex-wrap">
               <button
                 onClick={() => setActiveSubView('overview')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   activeSubView === 'overview'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-white/90 text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm font-extrabold'
+                    : 'bg-white/10 text-slate-300 border border-white/15 hover:bg-white/20'
                 }`}
               >
-                মূল বিজনেস ড্যাশবোর্ড
+                📊 মূল বিজনেস ড্যাশবোর্ড
               </button>
-              <button
-                onClick={() => setActiveSubView('tuition')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  activeSubView === 'tuition'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-white/90 text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`}
+              {(tuitionStudents.length > 0 || tuitionPayments.length > 0) && (
+                <button
+                  onClick={() => setActiveSubView('tuition')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeSubView === 'tuition'
+                      ? 'bg-indigo-500 text-white shadow-sm font-extrabold'
+                      : 'bg-white/10 text-slate-300 border border-white/15 hover:bg-white/20'
+                  }`}
+                >
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  <span>টিউশন ট্র্যাকার সামারি</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Right Action & Stat Widget Container */}
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-4 self-start lg:self-auto shrink-0 w-full lg:w-auto">
+            {/* Quick Goal Progress Glass Widget */}
+            <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 min-w-[260px] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-emerald-400" />
+                  মাসিক আয়ের লক্ষ্য
+                </span>
+                <span className="text-sm font-bold text-emerald-400">{monthlyProgressPercent}%</span>
+              </div>
+              <div className="w-full bg-slate-700/60 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-emerald-400 to-teal-300 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${monthlyProgressPercent}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-300 pt-0.5 font-medium">
+                <span>আয়: ৳{totalIncome.toLocaleString()}</span>
+                <span>টার্গেট: ৳{targetIncome.toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2.5 w-full">
+              <button 
+                onClick={() => setActiveTab('tasks')}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold text-white bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-md transition-all active:scale-[0.98]"
               >
-                <GraduationCap className="w-3.5 h-3.5" />
-                <span>টিউশন ট্র্যাকার সামারি</span>
+                <CheckSquare className="w-4 h-4 text-emerald-300" />
+                <span>আজকের কাজ ({incompleteTasks.length})</span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('crm')}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
+              >
+                <PlusCircle className="w-4 h-4 text-slate-950" />
+                <span>নতুন লিড</span>
               </button>
             </div>
-          )}
+          </div>
         </div>
-
-        {/* Primary Action Buttons */}
-        <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row items-stretch sm:items-center gap-3 z-10 self-start md:self-auto w-full md:w-auto">
-          <button 
-            onClick={() => setActiveTab('tasks')}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs hover:-translate-y-[1px] transition-all active:scale-[0.98]"
-          >
-            <CheckSquare className="w-4 h-4 text-slate-500" />
-            <span>আজকের কাজ ({incompleteTasks.length})</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('crm')}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 shadow-xs hover:-translate-y-[1px] transition-all active:scale-[0.98]"
-          >
-            <PlusCircle className="w-4 h-4 text-emerald-400" />
-            <span>নতুন লিড যোগ করুন</span>
-          </button>
-        </div>
-
-        {/* Decorative Ambient Soft Gradient Glow */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-teal-100/40 via-emerald-100/20 to-transparent pointer-events-none hidden md:block"></div>
       </header>
 
       {/* ========================================================================= */}
