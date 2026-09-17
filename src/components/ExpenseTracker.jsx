@@ -16,10 +16,13 @@ import Button from './ui/Button';
 import Badge from './ui/Badge';
 import Input from './ui/Input';
 import Modal from './ui/Modal';
+import EmptyState from './ui/EmptyState';
+import ConfirmModal from './ui/ConfirmModal';
 
 export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
 
@@ -244,11 +247,19 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:outline-none"
+            className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             <option value="All">সব ক্যাটাগরি</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
+          {(searchQuery || filterCategory !== 'All') && (
+            <button
+              onClick={() => { setSearchQuery(''); setFilterCategory('All'); }}
+              className="text-xs font-semibold text-rose-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors"
+            >
+              রিসেট
+            </button>
+          )}
         </div>
       </div>
 
@@ -291,7 +302,7 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDeleteExpense(exp.id)}
+                    onClick={() => setDeleteConfirmId(exp.id)}
                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                     title="মুছে ফেলুন"
                   >
@@ -302,9 +313,14 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
             </div>
           ))
         ) : (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-500">
-            কোনো খরচ এন্ট্রি পাওয়া যায়নি!
-          </div>
+          <EmptyState
+            icon={Receipt}
+            title={searchQuery || filterCategory !== 'All' ? 'কোনো মেলানো এন্ট্রি পাওয়া যায়নি' : 'কোনো খরচ এন্ট্রি নেই'}
+            description={searchQuery || filterCategory !== 'All' ? 'আপনার সার্চ বা ক্যাটাগরি ফিল্টারের সাথে মিলিয়ে কোনো ফলাফল পাওয়া যায়নি।' : 'খরচের নিয়মিত হিসাব রাখতে এন্ট্রি যুক্ত করুন।'}
+            actionLabel={searchQuery || filterCategory !== 'All' ? 'ফিল্টার রিসেট করুন' : 'নতুন খরচ এন্ট্রি করুন'}
+            actionIcon={searchQuery || filterCategory !== 'All' ? undefined : Plus}
+            onAction={searchQuery || filterCategory !== 'All' ? () => { setSearchQuery(''); setFilterCategory('All'); } : () => setShowAddForm(true)}
+          />
         )}
       </div>
 
@@ -407,6 +423,20 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
           </form>
         )}
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteConfirmId)}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            handleDeleteExpense(deleteConfirmId);
+            setDeleteConfirmId(null);
+          }
+        }}
+        title="খরচ এন্ট্রি মুছে ফেলতে চান?"
+        description="এই খরচের রেকর্ডটি তালিকা থেকে স্থায়ীভাবে মুছে যাবে।"
+      />
     </div>
   );
 }

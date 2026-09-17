@@ -22,15 +22,29 @@ import Button from './ui/Button';
 import Badge from './ui/Badge';
 import Input from './ui/Input';
 import Modal from './ui/Modal';
+import EmptyState from './ui/EmptyState';
+import ConfirmModal from './ui/ConfirmModal';
 
-export default function Crm({ leads, setLeads, onRecordIncome }) {
+export default function Crm({ leads, setLeads, services = [], crmPayments = [], onRecordPayment }) {
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'kanban'
   const [showAddModal, setShowAddModal] = useState(false);
-  const [incomePrompt, setIncomePrompt] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [dragOverStatus, setDragOverStatus] = useState(null);
   const [draggedLeadId, setDraggedLeadId] = useState(null);
+
+  // Record Payment Modal State with Payment UUID Idempotency
+  const [paymentModalLead, setPaymentModalLead] = useState(null);
+  const [paymentForm, setPaymentForm] = useState({
+    paymentId: '',
+    paymentDate: new Date().toISOString().split('T')[0],
+    amount: '',
+    paymentMethod: 'bKash',
+    notes: ''
+  });
+  const [paymentError, setPaymentError] = useState(null);
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
 
   // New Lead Form State
   const [newLead, setNewLead] = useState({
@@ -39,6 +53,7 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
     businessName: '',
     contact: '',
     service: 'Business Website',
+    customService: '',
     quotedPrice: '',
     advance: '',
     status: 'New',
@@ -58,21 +73,27 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
     { value: 'Lost', label: 'Lost (হাতছাড়া হয়েছে)', badgeColor: 'bg-rose-50 text-rose-700 border-rose-200', colHeaderBg: 'bg-rose-50/80 border-rose-200 text-rose-800' }
   ];
 
-  const servicesList = [
-    'Starter Landing Page (৳৫,০০০)',
-    'Business Website (৳১০,০০০)',
-    'Professional Website (৳২০,০০০+)',
-    'Monthly Maintenance (৳১,০০০–৳৩,০০০/মাস)',
-    'E-commerce Website (৳২০,০০০+)',
+  // Services options combined with active catalog
+  const catalogServiceTitles = services.map(s => s.title);
+  const defaultServicesList = [
+    'Starter Landing Page',
+    'Business Website',
+    'Professional Website',
+    'Monthly Maintenance',
+    'E-commerce Website',
     'Small Technical Task'
   ];
+  const combinedServices = Array.from(new Set([...catalogServiceTitles, ...defaultServicesList]));
 
   const handleAddLead = (e) => {
     e.preventDefault();
     if (!newLead.clientName.trim() || !newLead.businessName.trim()) return;
 
+    const selectedService = newLead.service === 'CUSTOM' ? newLead.customService.trim() : newLead.service;
+
     const created = {
       ...newLead,
+      service: selectedService || 'Business Website',
       id: Date.now(),
       quotedPrice: Number(newLead.quotedPrice) || 0,
       advance: Number(newLead.advance) || 0
@@ -85,6 +106,7 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
       businessName: '',
       contact: '',
       service: 'Business Website',
+      customService: '',
       quotedPrice: '',
       advance: '',
       status: 'New',
@@ -94,26 +116,74 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
     setShowAddModal(false);
   };
 
+  // Status changes strictly update status without creating Income
   const handleStatusChange = (leadId, newStatus) => {
-    const lead = leads.find(l => String(l.id) === String(leadId));
-    if (!lead) return;
+    setLeads(leads.map(l => String(l.id) === String(leadId) ? { ...l, status: newStatus } : l));
+  };
 
-    if (newStatus === 'Advance Paid' || newStatus === 'Paid') {
-      let proposedAmount = 0;
-      if (newStatus === 'Advance Paid') {
-        proposedAmount = Number(lead.advance) > 0 ? Number(lead.advance) : (Number(lead.quotedPrice) || 0);
-      } else if (newStatus === 'Paid') {
-        const remaining = (Number(lead.quotedPrice) || 0) - (Number(lead.advance) || 0);
-        proposedAmount = remaining > 0 ? remaining : (Number(lead.quotedPrice) || 0);
-      }
+  // Open Record Payment Modal with stable UUID
+  const handleOpenPaymentModal = (lead) => {
+    const existingPaymentsForClient = crmPayments.filter(p => String(p.crmClientId) === String(lead.id));
+    const currentReceived = existingPaymentsForClient.reduce((sum, p) => sum + (Number(p.amount) || 0), Number(lead.advance) || 0);
+    const dueAmount = Math.max(0, (Number(lead.quotedPrice) || 0) - currentReceived);
 
-      if (proposedAmount > 0 && onRecordIncome) {
-        setIncomePrompt({ lead, newStatus, proposedAmount });
-        return;
-      }
+    // Generate unique UUID for this payment transaction session
+    const uniquePaymentId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    setPaymentModalLead(lead);
+    setPaymentForm({
+      paymentId: uniquePaymentId,
+      paymentDate: new Date().toISOString().split('T')[0],
+      amount: dueAmount > 0 ? dueAmount : '',
+      paymentMethod: 'bKash',
+      notes: ''
+    });
+    setPaymentError(null);
+  };
+
+  const handleRecordPaymentSubmit = async (e) => {
+    e.preventDefault();
+    if (!paymentModalLead) return;
+
+    const amountNum = Number(paymentForm.amount);
+    if (!amountNum || amountNum <= 0) {
+      setPaymentError('পেমেন্টের পরিমাণ শূন্যের চেয়ে বেশি হতে হবে।');
+      return;
     }
 
-    setLeads(leads.map(l => String(l.id) === String(leadId) ? { ...l, status: newStatus } : l));
+    const lead = paymentModalLead;
+    const existingPayments = crmPayments.filter(p => String(p.crmClientId) === String(lead.id));
+    const currentReceived = existingPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), Number(lead.advance) || 0);
+    const quotedPrice = Number(lead.quotedPrice) || 0;
+
+    if (quotedPrice > 0 && (currentReceived + amountNum) > (quotedPrice + 0.01)) {
+      setPaymentError(`পেমেন্টের পরিমাণ অতিরিক্ত! এই ডিলের সর্বোচ্চ বাজেট ৳${quotedPrice.toLocaleString()} (ইতিমধ্যে প্রাপ্ত: ৳${currentReceived.toLocaleString()})`);
+      return;
+    }
+
+    setIsSubmittingPayment(true);
+    setPaymentError(null);
+
+    try {
+      const res = await onRecordPayment({
+        paymentId: paymentForm.paymentId,
+        crmClientId: lead.id,
+        paymentDate: paymentForm.paymentDate,
+        amount: amountNum,
+        paymentMethod: paymentForm.paymentMethod,
+        notes: paymentForm.notes
+      });
+
+      if (res && res.success !== false) {
+        setPaymentModalLead(null);
+      } else {
+        setPaymentError(res?.message || 'পেমেন্ট যুক্ত করতে ব্যর্থ হয়েছে।');
+      }
+    } catch (err) {
+      setPaymentError(err.message || 'নেটওয়ার্ক এরর। পুনরায় চেষ্টা করুন।');
+    } finally {
+      setIsSubmittingPayment(false);
+    }
   };
 
   const handleDeleteLead = (leadId) => {
@@ -318,15 +388,30 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">সার্ভিস (Service)</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">সার্ভিস (Service Catalog)</label>
               <select
                 value={newLead.service}
                 onChange={(e) => setNewLead({ ...newLead, service: e.target.value })}
                 className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                {servicesList.map(s => <option key={s} value={s}>{s}</option>)}
+                {combinedServices.map(s => <option key={s} value={s}>{s}</option>)}
+                <option value="CUSTOM">+ কাস্টম সার্ভিস লিখুন...</option>
               </select>
             </div>
+
+            {newLead.service === 'CUSTOM' && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">কাস্টম সার্ভিসের নাম *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="যেমন: Custom Web Application"
+                  value={newLead.customService}
+                  onChange={(e) => setNewLead({ ...newLead, customService: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">সম্ভাব্য/নির্ধারিত বাজেট (Quoted Price ৳)</label>
@@ -340,7 +425,7 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">প্রাপ্ত অগ্রিম / অ্যাডভান্স (Advance ৳)</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">প্রাথমিক অগ্রিম / অ্যাডভান্স (Advance ৳)</label>
               <input
                 type="number"
                 placeholder="যেমন: 5000"
@@ -431,21 +516,34 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:outline-none"
+            className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             <option value="All">সব স্ট্যাটাস</option>
             {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
+
+          {(searchQuery || filterStatus !== 'All') && (
+            <button
+              onClick={() => { setSearchQuery(''); setFilterStatus('All'); }}
+              className="text-xs font-semibold text-rose-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors"
+            >
+              রিসেট
+            </button>
+          )}
         </div>
       </div>
 
       {/* CRM Main Content Area: Table View OR Kanban View */}
       {viewMode === 'table' ? (
-        /* TABLE VIEW (Unchanged original functionality) */
+        /* TABLE VIEW */
         <div className="space-y-3">
           {filteredLeads.length > 0 ? (
             filteredLeads.map((lead) => {
               const statusObj = statuses.find(s => s.value === lead.status) || statuses[0];
+              const leadPayments = crmPayments.filter(p => String(p.crmClientId) === String(lead.id));
+              const totalReceived = leadPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), Number(lead.advance) || 0);
+              const remainingDue = Math.max(0, (Number(lead.quotedPrice) || 0) - totalReceived);
+
               return (
                 <div 
                   key={lead.id} 
@@ -473,16 +571,24 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
                     </div>
 
                     <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <button
+                        onClick={() => handleOpenPaymentModal(lead)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all shadow-2xs"
+                      >
+                        <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>পেমেন্ট নিন</span>
+                      </button>
+
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${statusObj.badgeColor} focus:outline-none`}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${statusObj.badgeColor} focus:outline-none focus:ring-2 focus:ring-emerald-500`}
                       >
                         {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
 
                       <button
-                        onClick={() => handleDeleteLead(lead.id)}
+                        onClick={() => setDeleteConfirmId(lead.id)}
                         className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                         title="মুছে ফেলুন"
                       >
@@ -496,16 +602,16 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
                     <div className="flex items-center gap-4">
                       <div>
                         <span className="text-slate-400 font-medium">বাজেট: </span>
-                        <span className="font-bold text-slate-800">৳{(lead.quotedPrice || 0).toLocaleString()}</span>
+                        <span className="font-bold text-slate-800">৳{(Number(lead.quotedPrice) || 0).toLocaleString()}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 font-medium">অ্যাডভান্স পেমেন্ট: </span>
-                        <span className="font-bold text-emerald-600">৳{(lead.advance || 0).toLocaleString()}</span>
+                        <span className="text-slate-400 font-medium">মোট প্রাপ্তি: </span>
+                        <span className="font-bold text-emerald-600">৳{totalReceived.toLocaleString()}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 font-medium">বাকি টাকা: </span>
+                        <span className="text-slate-400 font-medium">অবশিষ্ট বাকি: </span>
                         <span className="font-bold text-amber-600">
-                          ৳{Math.max(0, (lead.quotedPrice || 0) - (lead.advance || 0)).toLocaleString()}
+                          ৳{remainingDue.toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -527,9 +633,14 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
               );
             })
           ) : (
-            <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-500">
-              কোনো ক্লায়েন্ট বা লিড পাওয়া যায়নি! নতুন লিড যোগ করতে "নতুন ক্লায়েন্ট / লিড" বাটনে ক্লিক করুন।
-            </div>
+            <EmptyState
+              icon={Users}
+              title={searchQuery || filterStatus !== 'All' ? 'কোনো মেলানো ক্লায়েন্ট বা লিড পাওয়া যায়নি' : 'কোনো ক্লায়েন্ট বা লিড নেই'}
+              description={searchQuery || filterStatus !== 'All' ? 'আপনার সার্চ বা স্ট্যাটাস ফিল্টারের সাথে মিলিয়ে কোনো ক্লায়েন্ট পাওয়া যায়নি।' : 'আপনার পাইপলাইনে সম্ভাবনাময় ক্লায়েন্টদের ট্র্যাকিং শুরু করতে নতুন লিড যুক্ত করুন।'}
+              actionLabel={searchQuery || filterStatus !== 'All' ? 'ফিল্টার রিসেট করুন' : 'নতুন ক্লায়েন্ট / লিড'}
+              actionIcon={searchQuery || filterStatus !== 'All' ? undefined : Plus}
+              onAction={searchQuery || filterStatus !== 'All' ? () => { setSearchQuery(''); setFilterStatus('All'); } : () => setShowAddModal(true)}
+            />
           )}
         </div>
       ) : (
@@ -571,6 +682,8 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
                     {colLeads.length > 0 ? (
                       colLeads.map(lead => {
                         const isBeingDragged = String(draggedLeadId) === String(lead.id);
+                        const leadPayments = crmPayments.filter(p => String(p.crmClientId) === String(lead.id));
+                        const totalReceived = leadPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), Number(lead.advance) || 0);
 
                         return (
                           <div
@@ -593,6 +706,13 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
                                 </div>
                               </div>
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => handleOpenPaymentModal(lead)}
+                                  className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                                  title="পেমেন্ট গ্রহণ করুন"
+                                >
+                                  <DollarSign className="w-3.5 h-3.5" />
+                                </button>
                                 <GripVertical className="w-3.5 h-3.5 text-slate-300" />
                                 <button
                                   onClick={() => handleDeleteLead(lead.id)}
@@ -616,8 +736,8 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
                                 <span className="font-bold text-slate-800">৳{(lead.quotedPrice || 0).toLocaleString()}</span>
                               </div>
                               <div>
-                                <span className="text-slate-400">অগ্রিম: </span>
-                                <span className="font-bold text-emerald-600">৳{(lead.advance || 0).toLocaleString()}</span>
+                                <span className="text-slate-400">প্রাপ্তি: </span>
+                                <span className="font-bold text-emerald-600">৳{totalReceived.toLocaleString()}</span>
                               </div>
                             </div>
 
@@ -658,67 +778,144 @@ export default function Crm({ leads, setLeads, onRecordIncome }) {
         </div>
       )}
 
-      {/* CRM -> Income Confirmation Modal */}
+      {/* Record Payment Modal */}
       <Modal
-        isOpen={Boolean(incomePrompt)}
-        onClose={() => setIncomePrompt(null)}
-        title="ইনকাম ট্র্যাকার-এ যোগ করবেন?"
-        description="CRM পেমেন্ট স্ট্যাটাস আপডেট"
+        isOpen={Boolean(paymentModalLead)}
+        onClose={() => setPaymentModalLead(null)}
+        title="CRM ডিল পেমেন্ট গ্রহণ করুন"
+        description="পেমেন্ট রেকর্ড করলে তা সরাসরি ইনকাম ট্র্যাকার-এ যুক্ত হবে"
         maxWidth="md"
       >
-        {incomePrompt && (
-          <div className="space-y-4 text-left">
-            <p className="text-xs text-slate-600 leading-relaxed">
-              আপনি <strong>{incomePrompt.lead.clientName}</strong> ({incomePrompt.lead.businessName})-এর স্ট্যাটাস <span className="font-bold text-slate-800">"{incomePrompt.newStatus}"</span>-এ পরিবর্তন করছেন।
-            </p>
-
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-1">
-              <div className="text-xs text-slate-500">প্রস্তাবিত ইনকাম পরিমাণ:</div>
-              <div className="text-2xl font-black text-emerald-700">৳{incomePrompt.proposedAmount.toLocaleString()}</div>
-              <div className="text-[11px] text-emerald-600 font-medium">{incomePrompt.lead.service || 'Website Project'}</div>
+        {paymentModalLead && (
+          <form onSubmit={handleRecordPaymentSubmit} className="space-y-4 text-left">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+              <div className="flex justify-between text-xs text-slate-600">
+                <span>ক্লায়েন্ট: <strong>{paymentModalLead.clientName}</strong></span>
+                <span>প্রতিষ্ঠান: <strong>{paymentModalLead.businessName}</strong></span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-2 text-center border-t border-slate-200 text-xs">
+                <div>
+                  <div className="text-slate-400">বাজেট</div>
+                  <div className="font-bold text-slate-800">৳{(Number(paymentModalLead.quotedPrice) || 0).toLocaleString()}</div>
+                </div>
+                <div>
+                  <div className="text-slate-400">মোট প্রাপ্তি</div>
+                  <div className="font-bold text-emerald-600">
+                    ৳{(crmPayments.filter(p => String(p.crmClientId) === String(paymentModalLead.id)).reduce((sum, p) => sum + Number(p.amount), Number(paymentModalLead.advance) || 0)).toLocaleString()}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-slate-400">অবশিষ্ট বাকি</div>
+                  <div className="font-bold text-amber-600">
+                    ৳{Math.max(0, (Number(paymentModalLead.quotedPrice) || 0) - (crmPayments.filter(p => String(p.crmClientId) === String(paymentModalLead.id)).reduce((sum, p) => sum + Number(p.amount), Number(paymentModalLead.advance) || 0))).toLocaleString()}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2 pt-2">
-              <Button
-                type="button"
-                variant="primary"
-                size="md"
-                className="flex-1"
-                onClick={() => {
-                  if (onRecordIncome) {
-                    onRecordIncome({
-                      id: Date.now(),
-                      date: new Date().toISOString().split('T')[0],
-                      source: incomePrompt.lead.service || 'Website (ওয়েবসাইট প্রজেক্ট)',
-                      clientDetails: `${incomePrompt.lead.clientName} - ${incomePrompt.lead.businessName}`,
-                      amount: incomePrompt.proposedAmount,
-                      paymentType: 'bKash',
-                      month: 'Month 1',
-                      notes: `CRM পেমেন্ট লিঙ্কড (${incomePrompt.newStatus})`
-                    });
-                  }
-                  setLeads(leads.map(l => String(l.id) === String(incomePrompt.lead.id) ? { ...l, status: incomePrompt.newStatus } : l));
-                  setIncomePrompt(null);
-                }}
-              >
-                হ্যাঁ, ৳{incomePrompt.proposedAmount.toLocaleString()} ইনকাম রেকর্ড করুন
-              </Button>
+            {paymentError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-700 flex items-center gap-2">
+                <span>⚠️ {paymentError}</span>
+              </div>
+            )}
 
-              <Button
-                type="button"
-                variant="outline"
-                size="md"
-                onClick={() => {
-                  setLeads(leads.map(l => String(l.id) === String(incomePrompt.lead.id) ? { ...l, status: incomePrompt.newStatus } : l));
-                  setIncomePrompt(null);
-                }}
-              >
-                শুধু স্ট্যাটাস আপডেট করুন
-              </Button>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">পেমেন্ট আইডি (Payment UUID - Auto Generated)</label>
+              <input
+                type="text"
+                readOnly
+                value={paymentForm.paymentId}
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 text-xs font-mono select-all cursor-not-allowed"
+              />
+              <span className="text-[10px] text-slate-400">এই ইউনিক আইডির মাধ্যমে ডুপ্লিকেট পেমেন্ট ও ইনকাম এন্ট্রি প্রতিরোধ করা হয়।</span>
             </div>
-          </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">পেমেন্টের পরিমাণ (Amount ৳) *</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  placeholder="যেমন: 5000"
+                  value={paymentForm.amount}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">পেমেন্ট মেথড (Payment Method)</label>
+                <select
+                  value={paymentForm.paymentMethod}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="bKash">bKash (বিকাশ)</option>
+                  <option value="Nagad">Nagad (নগদ)</option>
+                  <option value="Bank Transfer">Bank Transfer (ব্যাংক ডিরেক্ট)</option>
+                  <option value="Cash">Cash (নগদ টাকা)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">পেমেন্টের তারিখ (Date)</label>
+                <input
+                  type="date"
+                  value={paymentForm.paymentDate}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">নোটস / রেফারেন্স (Notes)</label>
+                <input
+                  type="text"
+                  placeholder="যেমন: ১ম কিস্তি বা ট্রানজ্যাকশন আইডি"
+                  value={paymentForm.notes}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t">
+              <button
+                type="button"
+                onClick={() => setPaymentModalLead(null)}
+                className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-200 transition-colors"
+                disabled={isSubmittingPayment}
+              >
+                বাতিল
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingPayment}
+                className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
+              >
+                <span>পেমেন্ট ও ইনকাম নিশ্চিত করুন</span>
+              </button>
+            </div>
+          </form>
         )}
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteConfirmId)}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            handleDeleteLead(deleteConfirmId);
+            setDeleteConfirmId(null);
+          }
+        }}
+        title="লিডটি মুছে ফেলতে চান?"
+        description="এই ক্লায়েন্ট রেকর্ডটি আপনার CRM পাইপলাইন থেকে স্থায়ীভাবে মুছে যাবে।"
+      />
     </div>
   );
 }

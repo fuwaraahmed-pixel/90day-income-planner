@@ -12,8 +12,12 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
+import EmptyState from './ui/EmptyState';
+import ConfirmModal from './ui/ConfirmModal';
+
 export default function WeeklyReview({ reviews, setReviews }) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   const [newReview, setNewReview] = useState({
     weekTitle: `Week ${reviews.length + 1} (সপ্তাহ ${reviews.length + 1})`,
@@ -264,7 +268,7 @@ export default function WeeklyReview({ reviews, setReviews }) {
                     </span>
                   )}
                   <button
-                    onClick={() => handleDeleteReview(rev.id)}
+                    onClick={() => setDeleteConfirmId(rev.id)}
                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                     title="মুছে ফেলুন"
                   >
@@ -319,11 +323,30 @@ export default function WeeklyReview({ reviews, setReviews }) {
             </div>
           ))
         ) : (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-500">
-            কোনো সপ্তাহের রিভিউ যুক্ত করা হয়নি। "নতুন সপ্তাহের রিভিউ যোগ করুন" বাটনে ক্লিক করুন।
-          </div>
+          <EmptyState
+            icon={CalendarCheck}
+            title="কোনো সপ্তাহের রিভিউ যুক্ত করা হয়নি"
+            description="আপনার প্রতি সপ্তাহের কাজের হিসেব, সাফল্য ও সমস্যা নিয়মিত ট্র্যাক করতে রিভিউ লিখুন।"
+            actionLabel="নতুন সপ্তাহের রিভিউ যোগ করুন"
+            actionIcon={Plus}
+            onAction={() => setShowAddForm(true)}
+          />
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteConfirmId)}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            handleDeleteReview(deleteConfirmId);
+            setDeleteConfirmId(null);
+          }
+        }}
+        title="রিভিউটি মুছে ফেলতে চান?"
+        description="এই সপ্তাহের পারফরম্যান্সের ডাটা স্থায়ীভাবে মুছে যাবে।"
+      />
     </div>
   );
 }

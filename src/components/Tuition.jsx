@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import TuitionStudentModal from './TuitionStudentModal';
 import TuitionPaymentModal from './TuitionPaymentModal';
+import EmptyState from './ui/EmptyState';
+import Skeleton from './ui/Skeleton';
 
 /**
  * Business Rule for Date-Based Eligibility:
@@ -431,16 +433,29 @@ export default function Tuition({
 
         {/* Loading State */}
         {loading ? (
-          <div className="p-12 text-center space-y-3">
-            <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="text-xs text-slate-500 font-medium">Loading tuition records...</p>
+          <div className="p-6 space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="w-10 h-10 rounded-xl" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="w-1/3 h-4" />
+                  <Skeleton className="w-1/4 h-3" />
+                </div>
+                <Skeleton className="w-20 h-8 rounded-xl" />
+              </div>
+            ))}
           </div>
         ) : filteredStudents.length === 0 ? (
           /* Empty State */
-          <div className="p-8 sm:p-12 text-center">
-            <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 mx-auto mb-3" />
-            <h4 className="text-sm font-bold text-slate-700">No students found</h4>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Try resetting your search query or filters, or add a new student using the button above.</p>
+          <div className="p-4">
+            <EmptyState
+              icon={GraduationCap}
+              title={searchQuery || statusFilter !== 'All' ? 'কোনো মেলানো শিক্ষার্থী পাওয়া যায়নি' : 'কোনো শিক্ষার্থী নিবন্ধিত নেই'}
+              description={searchQuery || statusFilter !== 'All' ? 'আপনার সার্চ বা স্ট্যাটাস ফিল্টারের সাথে মিলিয়ে কোনো শিক্ষার্থী পাওয়া যায়নি।' : 'নতুন শিক্ষার্থী ও মাসিক টিউটরিয়াল ফি ট্র্যাক করতে শিক্ষার্থী যুক্ত করুন।'}
+              actionLabel={searchQuery || statusFilter !== 'All' ? 'ফিল্টার রিসেট করুন' : 'নতুন শিক্ষার্থী যোগ করুন'}
+              actionIcon={searchQuery || statusFilter !== 'All' ? undefined : Plus}
+              onAction={searchQuery || statusFilter !== 'All' ? () => { setSearchQuery(''); setStatusFilter('All'); } : () => handleOpenAddStudent()}
+            />
           </div>
         ) : (
           <>

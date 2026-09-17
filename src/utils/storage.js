@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   EXPENSES: `${STORAGE_PREFIX}expenses`,
   REVIEWS: `${STORAGE_PREFIX}reviews`,
   SERVICES: `${STORAGE_PREFIX}services`,
+  CRM_PAYMENTS: `${STORAGE_PREFIX}crm_payments`,
 };
 
 /**

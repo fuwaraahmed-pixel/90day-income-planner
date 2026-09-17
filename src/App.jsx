@@ -20,12 +20,15 @@ import * as api from './lib/supabaseService';
 import { loadData, STORAGE_KEYS } from './utils/storage';
 import { RefreshCw, AlertCircle, CloudOff } from 'lucide-react';
 
+import Toast from './components/ui/Toast';
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loadingData, setLoadingData] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
+  const [globalError, setGlobalError] = useState(null);
 
   // Subscription & Admin State
   const [subscription, setSubscription] = useState(null);
@@ -198,6 +201,7 @@ export default function App() {
   const [planData, setPlanDataState] = useState(null);
   const [tuitionStudents, setTuitionStudents] = useState([]);
   const [tuitionPayments, setTuitionPayments] = useState([]);
+  const [crmPayments, setCrmPayments] = useState([]);
 
   // 1. Session Setup & Auth Monitoring
   useEffect(() => {
@@ -245,7 +249,8 @@ export default function App() {
           servicesRes,
           planRes,
           tuitionStsRes,
-          tuitionPaysRes
+          tuitionPaysRes,
+          crmPaysRes
         ] = await Promise.all([
           api.checkIsAdmin(userId, session.user.email),
           api.getSubscription(userId),
@@ -259,7 +264,8 @@ export default function App() {
           api.getServices(userId),
           api.get90DayPlan(userId),
           api.getTuitionStudents(userId),
-          api.getTuitionPayments(userId)
+          api.getTuitionPayments(userId),
+          api.getCrmPayments(userId)
         ]);
 
         if (!isMounted) return;
@@ -279,10 +285,13 @@ export default function App() {
         setPlanDataState(planRes || null);
         setTuitionStudents(tuitionStsRes || []);
         setTuitionPayments(tuitionPaysRes || []);
+        setCrmPayments(crmPaysRes || []);
 
         setLoadingData(false);
       } catch (err) {
+        console.error('Failed to load user data:', err);
         if (isMounted) {
+          setGlobalError('ডেটা লোড করতে সমস্যা হয়েছে। অনুগ্রহ করে ইন্টারনেট কানেকশন চেক করে পুনঃচেষ্টা করুন।');
           setLoadingData(false);
           setLoadingSub(false);
         }
@@ -547,6 +556,72 @@ export default function App() {
     }
   };
 
+  const handleRecordCrmPayment = async (paymentData) => {
+    if (session?.user?.id) {
+      const res = await api.rpcRecordCrmPayment(paymentData);
+      if (res && res.success !== false) {
+        // Refresh crmPayments, leads, and incomes atomically
+        const [crmPaysRes, leadsRes, incsRes] = await Promise.all([
+          api.getCrmPayments(session.user.id),
+          api.getCRMClients(session.user.id),
+          api.getIncome(session.user.id)
+        ]);
+        if (crmPaysRes) setCrmPayments(crmPaysRes);
+        if (leadsRes) setLeadsState(leadsRes);
+        if (incsRes) setIncomesState(incsRes);
+      }
+      return res;
+    } else {
+      // LocalStorage fallback mode with payment_id idempotency check
+      const existing = crmPayments.find(p => p.paymentId === paymentData.paymentId || p.id === paymentData.paymentId);
+      if (existing) {
+        return { success: true, idempotentRetry: true, message: 'Payment already recorded' };
+      }
+
+      const paymentId = paymentData.paymentId || `pay_${Date.now()}`;
+      const newPayment = {
+        id: paymentId,
+        paymentId: paymentId,
+        crmClientId: Number(paymentData.crmClientId),
+        paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+        amount: Number(paymentData.amount),
+        paymentMethod: paymentData.paymentMethod || 'bKash',
+        notes: paymentData.notes || ''
+      };
+
+      const client = leads.find(l => String(l.id) === String(paymentData.crmClientId));
+      const clientDetails = client ? `${client.clientName} (${client.businessName})` : 'CRM Client';
+
+      const newIncome = {
+        id: Date.now(),
+        date: newPayment.paymentDate,
+        source: 'CRM / Service',
+        clientDetails: clientDetails,
+        amount: newPayment.amount,
+        paymentType: newPayment.paymentMethod,
+        month: 'Month 1',
+        notes: newPayment.notes,
+        crmPaymentId: paymentId
+      };
+
+      setCrmPayments(prev => [newPayment, ...prev]);
+      setIncomesState(prev => [newIncome, ...prev]);
+
+      if (client) {
+        const newAdvance = (Number(client.advance) || 0) + newPayment.amount;
+        let newStatus = client.status;
+        if (Number(client.quotedPrice) > 0 && newAdvance >= Number(client.quotedPrice)) {
+          newStatus = 'Paid';
+        } else if (newAdvance > 0 && (client.status === 'New' || client.status === 'Negotiation' || client.status === 'Proposal Sent')) {
+          newStatus = 'Advance Paid';
+        }
+        handleSetLeads(prev => prev.map(l => String(l.id) === String(client.id) ? { ...l, advance: newAdvance, status: newStatus } : l));
+      }
+
+      return { success: true, idempotentRetry: false };
+    }
+  };
+
   // Dynamic Financial Calculations
   const salarySum = incomes.filter(i => i.source.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const newIncomeSum = incomes.filter(i => !i.source.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
@@ -559,6 +634,9 @@ export default function App() {
     expenses: expenses,
     tasks: tasks,
     leads: leads,
+    services: services,
+    planData: planData,
+    crmPayments: crmPayments,
     tuitionPayments: tuitionPayments,
     tuitionStudents: tuitionStudents,
     user: session?.user
@@ -693,6 +771,13 @@ export default function App() {
           <AdminPanel adminUser={session.user} />
         )}
       </main>
+
+      {/* Global Toast Error & Notification System */}
+      <Toast
+        message={globalError}
+        type="error"
+        onClose={() => setGlobalError(null)}
+      />
     </div>
   );
 }

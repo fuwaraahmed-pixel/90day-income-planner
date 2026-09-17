@@ -12,10 +12,24 @@ import {
   CheckSquare
 } from 'lucide-react';
 
-export default function Tasks({ tasks, setTasks }) {
+import EmptyState from './ui/EmptyState';
+import ConfirmModal from './ui/ConfirmModal';
+
+export default function Tasks({ tasks, setTasks, planData }) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterPriority, setFilterPriority] = useState('All');
+
+  // Extract Plan Weeks for Goal Linkage
+  const planWeeks = planData?.months 
+    ? planData.months.flatMap(m => (m.weeks || []).map(w => ({ id: w.id, title: `${w.week}: ${w.title}` })))
+    : [
+        { id: 'w1', title: 'Week 1: ৩টি ডেমো ওয়েবসাইট তৈরি' },
+        { id: 'w2', title: 'Week 2: সার্ভিস প্যাকেজ ও আউটরিচ লিস্ট' },
+        { id: 'w3', title: 'Week 3: প্রতিদিন ১০টি আউটরিচ/কোল্ড কল' },
+        { id: 'w4', title: 'Week 4: ক্লায়েন্ট ডেলিভারি ও ইনভয়েস' }
+      ];
 
   // Form State
   const [newTask, setNewTask] = useState({
@@ -24,6 +38,7 @@ export default function Tasks({ tasks, setTasks }) {
     priority: 'High',
     date: new Date().toISOString().split('T')[0],
     targetMetric: '',
+    planGoalId: '',
     status: 'NotStarted',
     notes: ''
   });
@@ -209,11 +224,20 @@ export default function Tasks({ tasks, setTasks }) {
           <select
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value)}
-            className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:outline-none"
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             <option value="All">সব প্রায়োরিটি</option>
             {priorities.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
+
+          {(filterCategory !== 'All' || filterPriority !== 'All') && (
+            <button
+              onClick={() => { setFilterCategory('All'); setFilterPriority('All'); }}
+              className="text-xs font-semibold text-rose-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors"
+            >
+              রিসেট
+            </button>
+          )}
         </div>
       </div>
 
@@ -272,7 +296,7 @@ export default function Tasks({ tasks, setTasks }) {
                 <select
                   value={task.status}
                   onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                  className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none"
+                  className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   {statuses.map(s => (
                     <option key={s.value} value={s.value}>{s.label}</option>
@@ -280,7 +304,7 @@ export default function Tasks({ tasks, setTasks }) {
                 </select>
 
                 <button
-                  onClick={() => handleDeleteTask(task.id)}
+                  onClick={() => setDeleteConfirmId(task.id)}
                   className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                   title="মুছে ফেলুন"
                 >
@@ -290,11 +314,30 @@ export default function Tasks({ tasks, setTasks }) {
             </div>
           ))
         ) : (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-500">
-            কোনো কাজ পাওয়া যায়নি! নতুন একটি কাজ তৈরি করতে "নতুন কাজ যোগ করুন" বাটনে ক্লিক করুন।
-          </div>
+          <EmptyState
+            icon={CheckSquare}
+            title={filterCategory !== 'All' || filterPriority !== 'All' ? 'কোনো মেলানো কাজ পাওয়া যায়নি' : 'আজকের কোনো কাজ যোগ করা হয়নি'}
+            description={filterCategory !== 'All' || filterPriority !== 'All' ? 'আপনার নির্বাচিত ফিল্টারের সাথে মিলিয়ে কোনো কাজ খুঁজে পাওয়া যায়নি।' : 'আপনার ৯০ দিনের লক্ষ্য অর্জনে আজকের প্রধান কাজগুলো তালিকাভুক্ত করুন।'}
+            actionLabel={filterCategory !== 'All' || filterPriority !== 'All' ? 'ফিল্টার রিসেট করুন' : 'নতুন কাজ যোগ করুন'}
+            actionIcon={filterCategory !== 'All' || filterPriority !== 'All' ? undefined : Plus}
+            onAction={filterCategory !== 'All' || filterPriority !== 'All' ? () => { setFilterCategory('All'); setFilterPriority('All'); } : () => setShowAddForm(true)}
+          />
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteConfirmId)}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            handleDeleteTask(deleteConfirmId);
+            setDeleteConfirmId(null);
+          }
+        }}
+        title="কাজটি মুছে ফেলতে চান?"
+        description="এই কাজটি আপনার তালিকা থেকে স্থায়ীভাবে মুছে যাবে।"
+      />
     </div>
   );
 }

@@ -17,10 +17,13 @@ import Button from './ui/Button';
 import Badge from './ui/Badge';
 import Input from './ui/Input';
 import Modal from './ui/Modal';
+import EmptyState from './ui/EmptyState';
+import ConfirmModal from './ui/ConfirmModal';
 
 export default function IncomeTracker({ incomes, setIncomes, targetIncome, currentSalary }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingIncome, setEditingIncome] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSource, setFilterSource] = useState('All');
 
@@ -257,11 +260,19 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
           <select
             value={filterSource}
             onChange={(e) => setFilterSource(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:outline-none"
+            className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             <option value="All">সব আয়ের উৎস</option>
             {sources.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+          {(searchQuery || filterSource !== 'All') && (
+            <button
+              onClick={() => { setSearchQuery(''); setFilterSource('All'); }}
+              className="text-xs font-semibold text-rose-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors"
+            >
+              রিসেট
+            </button>
+          )}
         </div>
       </div>
 
@@ -307,7 +318,7 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDeleteIncome(inc.id)}
+                    onClick={() => setDeleteConfirmId(inc.id)}
                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                     title="মুছে ফেলুন"
                   >
@@ -318,9 +329,14 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
             </div>
           ))
         ) : (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-500">
-            কোনো ইনকাম এন্ট্রি পাওয়া যায়নি!
-          </div>
+          <EmptyState
+            icon={DollarSign}
+            title={searchQuery || filterSource !== 'All' ? 'কোনো মেলানো এন্ট্রি পাওয়া যায়নি' : 'কোনো ইনকাম এন্ট্রি নেই'}
+            description={searchQuery || filterSource !== 'All' ? 'আপনার সার্চ বা ফিল্টার ফিল্টারের সাথে মিলিয়ে কোনো ফলাফল পাওয়া যায়নি।' : 'নতুন আয়ের হিসাব রাখতে এন্ট্রি যুক্ত করুন।'}
+            actionLabel={searchQuery || filterSource !== 'All' ? 'ফিল্টার রিসেট করুন' : 'নতুন ইনকাম এন্ট্রি করুন'}
+            actionIcon={searchQuery || filterSource !== 'All' ? undefined : Plus}
+            onAction={searchQuery || filterSource !== 'All' ? () => { setSearchQuery(''); setFilterSource('All'); } : () => setShowAddForm(true)}
+          />
         )}
       </div>
 
@@ -433,6 +449,20 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
           </form>
         )}
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteConfirmId)}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            handleDeleteIncome(deleteConfirmId);
+            setDeleteConfirmId(null);
+          }
+        }}
+        title="ইনকাম এন্ট্রি মুছে ফেলতে চান?"
+        description="এই আয়ের রেকর্ডটি তালিকা থেকে স্থায়ীভাবে মুছে যাবে।"
+      />
     </div>
   );
 }

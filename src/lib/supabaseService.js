@@ -949,4 +949,50 @@ export const recordTuitionPayment = async (paymentData) => {
   return data;
 };
 
+// ====================================================================
+// CRM PAYMENTS SERVICES
+// ====================================================================
+export const getCrmPayments = async (userId) => {
+  if (!isSupabaseConfigured || !userId) return [];
+  const { data, error } = await supabase
+    .from('crm_payments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    if (error.code !== '42P01') {
+      console.error('Error fetching CRM payments:', error);
+    }
+    return [];
+  }
+  return data ? data.map(toCamel) : [];
+};
+
+export const rpcRecordCrmPayment = async (paymentData) => {
+  if (!isSupabaseConfigured) {
+    return { success: false, message: 'Supabase is not configured' };
+  }
+
+  const { data, error } = await supabase.rpc('record_crm_payment', {
+    p_payment_id: paymentData.paymentId,
+    p_crm_client_id: Number(paymentData.crmClientId),
+    p_payment_date: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+    p_amount: Number(paymentData.amount),
+    p_payment_method: paymentData.paymentMethod || 'bKash',
+    p_notes: paymentData.notes || ''
+  });
+
+  if (error) {
+    console.error('RPC record_crm_payment Error:', error);
+    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
+      return { success: false, message: 'Supabase-এ record_crm_payment ফাংশনটি পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ নতুন SQL কোডটি Run করুন।' };
+    }
+    return { success: false, message: error.message };
+  }
+
+  return data;
+};
+
+
 

@@ -598,26 +598,220 @@ END;
 $$;
 
 -- ====================================================================
--- FIX / RESET PRIMARY KEY SEQUENCES (RUN IF DUPLICATE KEY ERROR OCCURS)
+-- CRM PAYMENT MODULE SCHEMA, UNIQUE CONSTRAINT & ATOMIC RPC
 -- ====================================================================
-SELECT setval(pg_get_serial_sequence('public.income', 'id'), COALESCE((SELECT MAX(id) FROM public.income), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('public.tuition_payments', 'id'), COALESCE((SELECT MAX(id) FROM public.tuition_payments), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('public.tuition_students', 'id'), COALESCE((SELECT MAX(id) FROM public.tuition_students), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('public.tasks', 'id'), COALESCE((SELECT MAX(id) FROM public.tasks), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('public.crm_clients', 'id'), COALESCE((SELECT MAX(id) FROM public.crm_clients), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('public.expenses', 'id'), COALESCE((SELECT MAX(id) FROM public.expenses), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('public.weekly_reviews', 'id'), COALESCE((SELECT MAX(id) FROM public.weekly_reviews), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('public.services', 'id'), COALESCE((SELECT MAX(id) FROM public.services), 0) + 1, false);
 
--- ====================================================================
--- PHASE 2: PERFORMANCE INDEXES (ADDITIVE & NON-DESTRUCTIVE)
--- ====================================================================
-CREATE INDEX IF NOT EXISTS idx_crm_clients_user_status ON public.crm_clients(user_id, status);
-CREATE INDEX IF NOT EXISTS idx_crm_clients_user_followup ON public.crm_clients(user_id, next_follow_up);
-CREATE INDEX IF NOT EXISTS idx_income_user_date ON public.income(user_id, date);
-CREATE INDEX IF NOT EXISTS idx_income_user_source ON public.income(user_id, source);
-CREATE INDEX IF NOT EXISTS idx_expenses_user_date ON public.expenses(user_id, date);
-CREATE INDEX IF NOT EXISTS idx_tasks_user_status ON public.tasks(user_id, status);
+-- 14. CRM PAYMENTS TABLE
+CREATE TABLE IF NOT EXISTS public.crm_payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) DEFAULT auth.uid(),
+    crm_client_id BIGINT NOT NULL REFERENCES public.crm_clients(id) ON DELETE CASCADE,
+    payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    amount NUMERIC NOT NULL CHECK (amount > 0),
+    payment_method TEXT NOT NULL DEFAULT 'bKash',
+    notes TEXT DEFAULT '',
+    income_id BIGINT NULL REFERENCES public.income(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ADD UNIQUE crm_payment_id TO INCOME TABLE FOR DATABASE-LEVEL IDEMPOTENCY
+ALTER TABLE public.income ADD COLUMN IF NOT EXISTS crm_payment_id UUID UNIQUE NULL REFERENCES public.crm_payments(id) ON DELETE SET NULL;
+
+-- INDEXES FOR CRM PAYMENTS
+CREATE INDEX IF NOT EXISTS idx_crm_payments_user_id ON public.crm_payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_crm_payments_client_id ON public.crm_payments(crm_client_id);
+CREATE INDEX IF NOT EXISTS idx_income_crm_payment_id ON public.income(crm_payment_id);
+
+-- RLS ENABLMENT & POLICIES FOR CRM PAYMENTS
+ALTER TABLE public.crm_payments ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can select own crm_payments" ON public.crm_payments;
+DROP POLICY IF EXISTS "Users can insert own crm_payments" ON public.crm_payments;
+DROP POLICY IF EXISTS "Users can update own crm_payments" ON public.crm_payments;
+DROP POLICY IF EXISTS "Users can delete own crm_payments" ON public.crm_payments;
+
+CREATE POLICY "Users can select own crm_payments" ON public.crm_payments FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own crm_payments" ON public.crm_payments FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own crm_payments" ON public.crm_payments FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own crm_payments" ON public.crm_payments FOR DELETE USING (auth.uid() = user_id);
+
+-- ATOMIC POSTGRESQL RPC FOR CRM PAYMENT RECORDING (STRICT PAYMENT IDEMPOTENCY)
+CREATE OR REPLACE FUNCTION public.record_crm_payment(
+    p_payment_id UUID,
+    p_crm_client_id BIGINT,
+    p_payment_date DATE,
+    p_amount NUMERIC,
+    p_payment_method TEXT DEFAULT 'bKash',
+    p_notes TEXT DEFAULT ''
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_user_id UUID;
+    v_client_name TEXT;
+    v_business_name TEXT;
+    v_quoted_price NUMERIC;
+    v_current_advance NUMERIC;
+    v_current_status TEXT;
+    v_client_details TEXT;
+    v_income_id BIGINT;
+    v_payment_id UUID;
+    v_existing_payment RECORD;
+    v_existing_income RECORD;
+    v_new_advance NUMERIC;
+    v_new_status TEXT;
+    v_result JSONB;
+BEGIN
+    -- 1. Verify user authentication
+    v_user_id := auth.uid();
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required';
+    END IF;
+
+    -- 2. Validate input values
+    IF p_amount IS NULL OR p_amount <= 0 THEN
+        RAISE EXCEPTION 'Payment amount must be greater than zero';
+    END IF;
+
+    IF p_payment_id IS NULL THEN
+        RAISE EXCEPTION 'Payment ID is required for idempotency tracking';
+    END IF;
+
+    -- 3. Verify client ownership and fetch client details
+    SELECT client_name, business_name, COALESCE(quoted_price, 0), COALESCE(advance, 0), status
+    INTO v_client_name, v_business_name, v_quoted_price, v_current_advance, v_current_status
+    FROM public.crm_clients
+    WHERE id = p_crm_client_id AND user_id = v_user_id;
+
+    IF v_client_name IS NULL THEN
+        RAISE EXCEPTION 'CRM Client not found or access denied';
+    END IF;
+
+    -- 4. Check for existing payment ID (Strict Database Idempotency Check)
+    SELECT * INTO v_existing_payment
+    FROM public.crm_payments
+    WHERE id = p_payment_id AND user_id = v_user_id;
+
+    IF v_existing_payment IS NOT NULL THEN
+        -- Return existing payment and linked income WITHOUT creating duplicates or incrementing advance
+        SELECT * INTO v_existing_income
+        FROM public.income
+        WHERE crm_payment_id = p_payment_id AND user_id = v_user_id;
+
+        RETURN jsonb_build_object(
+            'success', true,
+            'idempotent_retry', true,
+            'payment_id', v_existing_payment.id,
+            'income_id', COALESCE(v_existing_payment.income_id, v_existing_income.id),
+            'client_id', p_crm_client_id,
+            'amount', v_existing_payment.amount,
+            'current_advance', v_current_advance,
+            'status', v_current_status,
+            'message', 'Payment already recorded previously. Duplicate request safely skipped.'
+        );
+    END IF;
+
+    -- 5. Validate overpayment if quoted_price is set (> 0)
+    IF v_quoted_price > 0 AND (v_current_advance + p_amount) > (v_quoted_price + 0.01) THEN
+        RAISE EXCEPTION 'Payment of % would exceed quoted price of % (Current received: %)', 
+            p_amount, v_quoted_price, v_current_advance;
+    END IF;
+
+    -- 6. Format client details for Income record
+    IF v_business_name IS NOT NULL AND length(trim(v_business_name)) > 0 THEN
+        v_client_details := v_client_name || ' (' || trim(v_business_name) || ')';
+    ELSE
+        v_client_details := v_client_name;
+    END IF;
+
+    v_payment_id := p_payment_id;
+
+    -- 7. Create Payment record FIRST (Primary transaction record)
+    INSERT INTO public.crm_payments (
+        id,
+        user_id,
+        crm_client_id,
+        payment_date,
+        amount,
+        payment_method,
+        notes
+    ) VALUES (
+        v_payment_id,
+        v_user_id,
+        p_crm_client_id,
+        p_payment_date,
+        p_amount,
+        p_payment_method,
+        COALESCE(p_notes, '')
+    );
+
+    -- 8. Create corresponding Income record linked via crm_payment_id
+    INSERT INTO public.income (
+        user_id,
+        date,
+        source,
+        client_details,
+        amount,
+        payment_type,
+        month,
+        notes,
+        crm_payment_id
+    ) VALUES (
+        v_user_id,
+        p_payment_date,
+        'CRM / Service',
+        v_client_details,
+        p_amount,
+        p_payment_method,
+        'Month 1',
+        COALESCE(p_notes, ''),
+        v_payment_id
+    )
+    RETURNING id INTO v_income_id;
+
+    -- 9. Update crm_payments with linked income_id
+    UPDATE public.crm_payments
+    SET income_id = v_income_id
+    WHERE id = v_payment_id;
+
+    -- 10. Update crm_clients total received advance and status if fully paid
+    v_new_advance := v_current_advance + p_amount;
+    v_new_status := v_current_status;
+
+    IF v_quoted_price > 0 AND v_new_advance >= v_quoted_price THEN
+        v_new_status := 'Paid';
+    ELSIF v_new_advance > 0 AND (v_current_status = 'New' OR v_current_status = 'Negotiation' OR v_current_status = 'Proposal Sent') THEN
+        v_new_status := 'Advance Paid';
+    END IF;
+
+    UPDATE public.crm_clients
+    SET advance = v_new_advance,
+        status = v_new_status,
+        updated_at = NOW()
+    WHERE id = p_crm_client_id AND user_id = v_user_id;
+
+    -- 11. Build and return result JSON
+    SELECT jsonb_build_object(
+        'success', true,
+        'idempotent_retry', false,
+        'payment_id', v_payment_id,
+        'income_id', v_income_id,
+        'client_id', p_crm_client_id,
+        'amount', p_amount,
+        'payment_date', p_payment_date,
+        'payment_method', p_payment_method,
+        'new_advance', v_new_advance,
+        'status', v_new_status
+    ) INTO v_result;
+
+    RETURN v_result;
+END;
+$$;
+
 
 
 

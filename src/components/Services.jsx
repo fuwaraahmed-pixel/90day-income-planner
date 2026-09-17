@@ -21,8 +21,11 @@ import {
   Star
 } from 'lucide-react';
 
+import ConfirmModal from './ui/ConfirmModal';
+
 export default function Services({ services, setServices }) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -357,7 +360,7 @@ export default function Services({ services, setServices }) {
                   </button>
 
                   <button
-                    onClick={() => handleDeleteService(srv.id)}
+                    onClick={() => setDeleteConfirmId(srv.id)}
                     className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200 transition-colors"
                     title="মুছে ফেলুন"
                   >
@@ -369,6 +372,20 @@ export default function Services({ services, setServices }) {
           );
         })}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteConfirmId)}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            handleDeleteService(deleteConfirmId);
+            setDeleteConfirmId(null);
+          }
+        }}
+        title="সার্ভিস প্যাকেজটি মুছে ফেলতে চান?"
+        description="এই সার্ভিস প্যাকেজটি স্থায়ীভাবে মুছে যাবে।"
+      />
     </div>
   );
 }
