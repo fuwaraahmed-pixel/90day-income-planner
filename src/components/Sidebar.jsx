@@ -17,10 +17,9 @@ import {
   GraduationCap
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
+export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdmin = false }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const isAdmin = user?.email === 'fuwaraahmed@gmail.com';
 
   const menuItems = [
     { id: 'dashboard', label: 'ড্যাশবোর্ড (Dashboard)', icon: LayoutDashboard },

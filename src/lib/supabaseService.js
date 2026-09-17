@@ -130,6 +130,34 @@ export const rpcRejectPaymentRequest = async (requestId, reason = '') => {
   return data;
 };
 
+export const checkIsAdmin = async (userId, userEmail = '') => {
+  if (!isSupabaseConfigured || !userId) return false;
+  try {
+    const { data, error } = await supabase.rpc('is_admin', { p_user_id: userId });
+    if (!error && typeof data === 'boolean') {
+      return data;
+    }
+    const { data: roleData, error: roleErr } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!roleErr && roleData) {
+      return true;
+    }
+  } catch (err) {
+    console.error('Error checking admin role:', err);
+  }
+
+  // Fallback while Supabase user_roles migration SQL is waiting to be run in SQL Editor
+  if (userEmail === 'fuwaraahmed@gmail.com') {
+    return true;
+  }
+  return false;
+};
+
 // ====================================================================
 // SETTINGS SERVICE
 // ====================================================================
@@ -375,6 +403,34 @@ export const createIncome = async (userId, incomeItem) => {
   return toCamel(data);
 };
 
+export const updateIncome = async (userId, incomeId, incomeItem) => {
+  if (!isSupabaseConfigured || !userId || !incomeId) return null;
+  const payload = {
+    date: incomeItem.date || new Date().toISOString().split('T')[0],
+    source: incomeItem.source,
+    client_details: incomeItem.clientDetails,
+    amount: Number(incomeItem.amount) || 0,
+    payment_type: incomeItem.paymentType || 'bKash',
+    month: incomeItem.month || 'Month 1',
+    notes: incomeItem.notes || '',
+    updated_at: new Date().toISOString()
+  };
+
+  const { data, error } = await supabase
+    .from('income')
+    .update(payload)
+    .eq('id', incomeId)
+    .eq('user_id', userId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating income entry:', error);
+    return null;
+  }
+  return toCamel(data);
+};
+
 export const deleteIncome = async (userId, incomeId) => {
   if (!isSupabaseConfigured || !userId) return false;
   const { error } = await supabase
@@ -428,6 +484,33 @@ export const createExpense = async (userId, expenseItem) => {
 
   if (error) {
     console.error('Error creating expense entry:', error);
+    return null;
+  }
+  return toCamel(data);
+};
+
+export const updateExpense = async (userId, expenseId, expenseItem) => {
+  if (!isSupabaseConfigured || !userId || !expenseId) return null;
+  const payload = {
+    date: expenseItem.date || new Date().toISOString().split('T')[0],
+    category: expenseItem.category,
+    description: expenseItem.description,
+    amount: Number(expenseItem.amount) || 0,
+    month: expenseItem.month || 'Month 1',
+    notes: expenseItem.notes || '',
+    updated_at: new Date().toISOString()
+  };
+
+  const { data, error } = await supabase
+    .from('expenses')
+    .update(payload)
+    .eq('id', expenseId)
+    .eq('user_id', userId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating expense entry:', error);
     return null;
   }
   return toCamel(data);

@@ -11,13 +11,26 @@ import {
   Briefcase, 
   TrendingUp, 
   CheckCircle,
-  Clock
+  Clock,
+  LayoutGrid,
+  Table as TableIcon,
+  GripVertical,
+  XCircle,
+  BarChart3
 } from 'lucide-react';
+import Button from './ui/Button';
+import Badge from './ui/Badge';
+import Input from './ui/Input';
+import Modal from './ui/Modal';
 
-export default function Crm({ leads, setLeads }) {
+export default function Crm({ leads, setLeads, onRecordIncome }) {
+  const [viewMode, setViewMode] = useState('table'); // 'table' | 'kanban'
   const [showAddModal, setShowAddModal] = useState(false);
+  const [incomePrompt, setIncomePrompt] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
+  const [dragOverStatus, setDragOverStatus] = useState(null);
+  const [draggedLeadId, setDraggedLeadId] = useState(null);
 
   // New Lead Form State
   const [newLead, setNewLead] = useState({
@@ -34,15 +47,15 @@ export default function Crm({ leads, setLeads }) {
   });
 
   const statuses = [
-    { value: 'New', label: 'New (নতুন লিড)', color: 'bg-slate-100 text-slate-700 border-slate-200' },
-    { value: 'Contacted', label: 'Contacted (যোগাযোগ হয়েছে)', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-    { value: 'Interested', label: 'Interested (আগ্রহী)', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-    { value: 'Negotiation', label: 'Negotiation (দরদাম চলছে)', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-    { value: 'Advance Paid', label: 'Advance Paid (অ্যাডভান্স প্রাপ্ত)', color: 'bg-teal-50 text-teal-700 border-teal-200' },
-    { value: 'Working', label: 'Working (কাজ চলছে)', color: 'bg-purple-50 text-purple-700 border-purple-200' },
-    { value: 'Delivered', label: 'Delivered (ডেলিভারি সম্পন্ন)', color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
-    { value: 'Paid', label: 'Paid (সম্পূর্ণ পেমেন্ট)', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    { value: 'Lost', label: 'Lost (হাতছাড়া হয়েছে)', color: 'bg-rose-50 text-rose-700 border-rose-200' }
+    { value: 'New', label: 'New (নতুন লিড)', badgeColor: 'bg-slate-100 text-slate-700 border-slate-200', colHeaderBg: 'bg-slate-100/80 border-slate-200 text-slate-700' },
+    { value: 'Contacted', label: 'Contacted (যোগাযোগ হয়েছে)', badgeColor: 'bg-blue-50 text-blue-700 border-blue-200', colHeaderBg: 'bg-blue-50/80 border-blue-200 text-blue-800' },
+    { value: 'Interested', label: 'Interested (আগ্রহী)', badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200', colHeaderBg: 'bg-indigo-50/80 border-indigo-200 text-indigo-800' },
+    { value: 'Negotiation', label: 'Negotiation (দরদাম চলছে)', badgeColor: 'bg-amber-50 text-amber-700 border-amber-200', colHeaderBg: 'bg-amber-50/80 border-amber-200 text-amber-800' },
+    { value: 'Advance Paid', label: 'Advance Paid (অ্যাডভান্স প্রাপ্ত)', badgeColor: 'bg-teal-50 text-teal-700 border-teal-200', colHeaderBg: 'bg-teal-50/80 border-teal-200 text-teal-800' },
+    { value: 'Working', label: 'Working (কাজ চলছে)', badgeColor: 'bg-purple-50 text-purple-700 border-purple-200', colHeaderBg: 'bg-purple-50/80 border-purple-200 text-purple-800' },
+    { value: 'Delivered', label: 'Delivered (ডেলিভারি সম্পন্ন)', badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200', colHeaderBg: 'bg-cyan-50/80 border-cyan-200 text-cyan-800' },
+    { value: 'Paid', label: 'Paid (সম্পূর্ণ পেমেন্ট)', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200', colHeaderBg: 'bg-emerald-50/80 border-emerald-200 text-emerald-800' },
+    { value: 'Lost', label: 'Lost (হাতছাড়া হয়েছে)', badgeColor: 'bg-rose-50 text-rose-700 border-rose-200', colHeaderBg: 'bg-rose-50/80 border-rose-200 text-rose-800' }
   ];
 
   const servicesList = [
@@ -82,11 +95,65 @@ export default function Crm({ leads, setLeads }) {
   };
 
   const handleStatusChange = (leadId, newStatus) => {
-    setLeads(leads.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
+    const lead = leads.find(l => String(l.id) === String(leadId));
+    if (!lead) return;
+
+    if (newStatus === 'Advance Paid' || newStatus === 'Paid') {
+      let proposedAmount = 0;
+      if (newStatus === 'Advance Paid') {
+        proposedAmount = Number(lead.advance) > 0 ? Number(lead.advance) : (Number(lead.quotedPrice) || 0);
+      } else if (newStatus === 'Paid') {
+        const remaining = (Number(lead.quotedPrice) || 0) - (Number(lead.advance) || 0);
+        proposedAmount = remaining > 0 ? remaining : (Number(lead.quotedPrice) || 0);
+      }
+
+      if (proposedAmount > 0 && onRecordIncome) {
+        setIncomePrompt({ lead, newStatus, proposedAmount });
+        return;
+      }
+    }
+
+    setLeads(leads.map(l => String(l.id) === String(leadId) ? { ...l, status: newStatus } : l));
   };
 
   const handleDeleteLead = (leadId) => {
-    setLeads(leads.filter(l => l.id !== leadId));
+    setLeads(leads.filter(l => String(l.id) !== String(leadId)));
+  };
+
+  // Drag and Drop Handlers
+  const handleDragStart = (e, leadId) => {
+    e.dataTransfer.setData('text/plain', String(leadId));
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedLeadId(leadId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedLeadId(null);
+    setDragOverStatus(null);
+  };
+
+  const handleDragOver = (e, statusValue) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverStatus !== statusValue) {
+      setDragOverStatus(statusValue);
+    }
+  };
+
+  const handleDragLeave = (e, statusValue) => {
+    if (dragOverStatus === statusValue) {
+      setDragOverStatus(null);
+    }
+  };
+
+  const handleDrop = (e, targetStatus) => {
+    e.preventDefault();
+    setDragOverStatus(null);
+    const leadId = e.dataTransfer.getData('text/plain') || draggedLeadId;
+    setDraggedLeadId(null);
+    if (!leadId) return;
+
+    handleStatusChange(leadId, targetStatus);
   };
 
   // Filter & Search Logic
@@ -96,21 +163,23 @@ export default function Crm({ leads, setLeads }) {
       lead.clientName.toLowerCase().includes(query) ||
       lead.businessName.toLowerCase().includes(query) ||
       lead.service.toLowerCase().includes(query) ||
-      lead.contact.toLowerCase().includes(query);
+      (lead.contact && lead.contact.toLowerCase().includes(query));
     
     const matchStatus = filterStatus === 'All' || lead.status === filterStatus;
     return matchSearch && matchStatus;
   });
 
-  // Calculate Pipeline Metrics
+  // Calculate Dynamic Pipeline Metrics
+  const totalLeadsCount = leads.length;
   const activeLeadsCount = leads.filter(l => l.status !== 'Lost' && l.status !== 'Paid').length;
-  const wonClientsCount = leads.filter(l => l.status === 'Paid' || l.status === 'Working' || l.status === 'Advance Paid').length;
+  const wonClientsCount = leads.filter(l => l.status === 'Paid' || l.status === 'Working' || l.status === 'Advance Paid' || l.status === 'Delivered').length;
+  const lostClientsCount = leads.filter(l => l.status === 'Lost').length;
   const totalPipelineValue = leads.filter(l => l.status !== 'Lost').reduce((acc, curr) => acc + (Number(curr.quotedPrice) || 0), 0);
   const totalAdvanceCollected = leads.reduce((acc, curr) => acc + (Number(curr.advance) || 0), 0);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with View Mode Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
@@ -121,46 +190,96 @@ export default function Crm({ leads, setLeads }) {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(!showAddModal)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>নতুন ক্লায়েন্ট / লিড যোগ করুন</span>
-        </button>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          {/* Table / Kanban View Toggle */}
+          <div className="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                viewMode === 'table'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <TableIcon className="w-3.5 h-3.5" />
+              <span>টেবিল ভিউ</span>
+            </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                viewMode === 'kanban'
+                  ? 'bg-white text-emerald-700 shadow-sm font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>কানবান বোর্ড</span>
+            </button>
+          </div>
+
+          <button
+            onClick={() => setShowAddModal(!showAddModal)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">নতুন ক্লায়েন্ট / লিড</span>
+            <span className="sm:hidden">নতুন</span>
+          </button>
+        </div>
       </div>
 
-      {/* CRM Summary Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* CRM Pipeline Summary Header */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">সক্রিয় ক্লায়েন্ট / ডিল</div>
-          <div className="text-2xl font-bold text-blue-600 mt-0.5">{activeLeadsCount} জন</div>
-          <div className="text-[11px] text-slate-400 mt-1">কথা ও কাজ চলছে</div>
+          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-slate-400" />
+            <span>মোট লিড</span>
+          </div>
+          <div className="text-2xl font-bold text-slate-900 mt-1">{totalLeadsCount} জন</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">সব ক্যাটাগরি</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">সম্পন্ন / অর্জিত ক্লায়েন্ট</div>
-          <div className="text-2xl font-bold text-emerald-600 mt-0.5">{wonClientsCount} জন</div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1">কনফার্মড ক্লায়েন্ট</div>
+          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
+            <span>সক্রিয় ডিল</span>
+          </div>
+          <div className="text-2xl font-bold text-blue-600 mt-1">{activeLeadsCount} জন</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">কথা ও কাজ চলছে</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">পাইপলাইনের মোট ভ্যালু</div>
-          <div className="text-2xl font-bold text-slate-800 mt-0.5">৳{totalPipelineValue.toLocaleString()}</div>
-          <div className="text-[11px] text-slate-400 mt-1">সম্ভাব্য মোট প্রজেক্ট মূল্য</div>
+          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+            <span>অর্জিত / Won</span>
+          </div>
+          <div className="text-2xl font-bold text-emerald-600 mt-1">{wonClientsCount} জন</div>
+          <div className="text-[11px] text-emerald-600 font-medium mt-0.5">কনফার্মড ক্লায়েন্ট</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">সংগৃহীত অগ্রিম (Advance)</div>
-          <div className="text-2xl font-bold text-teal-600 mt-0.5">৳{totalAdvanceCollected.toLocaleString()}</div>
-          <div className="text-[11px] text-teal-600 font-medium mt-1">ক্যাশ প্রাপ্তি</div>
+          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+            <XCircle className="w-3.5 h-3.5 text-rose-400" />
+            <span>হাতছাড়া / Lost</span>
+          </div>
+          <div className="text-2xl font-bold text-rose-500 mt-1">{lostClientsCount} জন</div>
+          <div className="text-[11px] text-rose-500 font-medium mt-0.5">বাতিলকৃত প্রজেক্ট</div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm col-span-2 sm:col-span-1">
+          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+            <BarChart3 className="w-3.5 h-3.5 text-amber-500" />
+            <span>পাইপলাইন ভ্যালু</span>
+          </div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">৳{totalPipelineValue.toLocaleString()}</div>
+          <div className="text-[11px] text-teal-600 font-medium mt-0.5">অগ্রিম: ৳{totalAdvanceCollected.toLocaleString()}</div>
         </div>
       </div>
 
       {/* Add Lead Modal Form */}
       {showAddModal && (
         <form onSubmit={handleAddLead} className="bg-white border border-emerald-200 rounded-2xl p-5 md:p-6 shadow-md space-y-4">
-          <h3 className="text-base font-bold text-slate-800 border-b pb-3">নতুন লিড / ক্লায়েন্ট এন্টি করুন</h3>
+          <h3 className="text-base font-bold text-slate-800 border-b pb-3">নতুন লিড / ক্লায়েন্ট এন্ট্রি করুন</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -320,97 +439,286 @@ export default function Crm({ leads, setLeads }) {
         </div>
       </div>
 
-      {/* CRM Pipeline Cards / Grid */}
-      <div className="space-y-3">
-        {filteredLeads.length > 0 ? (
-          filteredLeads.map((lead) => {
-            const statusObj = statuses.find(s => s.value === lead.status) || statuses[0];
-            return (
-              <div 
-                key={lead.id} 
-                className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:border-slate-300 transition-all space-y-3"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-bold text-slate-900">{lead.businessName}</h3>
-                      <span className="text-xs text-slate-500 font-medium">({lead.clientName})</span>
-                    </div>
-                    <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-3">
-                      <span className="flex items-center gap-1 font-semibold text-emerald-700">
-                        <Briefcase className="w-3.5 h-3.5" /> {lead.service}
-                      </span>
-                      {lead.contact && (
-                        <span className="flex items-center gap-1">
-                          <Phone className="w-3.5 h-3.5 text-slate-400" /> {lead.contact}
+      {/* CRM Main Content Area: Table View OR Kanban View */}
+      {viewMode === 'table' ? (
+        /* TABLE VIEW (Unchanged original functionality) */
+        <div className="space-y-3">
+          {filteredLeads.length > 0 ? (
+            filteredLeads.map((lead) => {
+              const statusObj = statuses.find(s => s.value === lead.status) || statuses[0];
+              return (
+                <div 
+                  key={lead.id} 
+                  className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:border-slate-300 transition-all space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-bold text-slate-900">{lead.businessName}</h3>
+                        <span className="text-xs text-slate-500 font-medium">({lead.clientName})</span>
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-3">
+                        <span className="flex items-center gap-1 font-semibold text-emerald-700">
+                          <Briefcase className="w-3.5 h-3.5" /> {lead.service}
                         </span>
-                      )}
-                      <span className="flex items-center gap-1 text-slate-400">
-                        <Calendar className="w-3.5 h-3.5" /> এন্ট্রি: {lead.date}
-                      </span>
+                        {lead.contact && (
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3.5 h-3.5 text-slate-400" /> {lead.contact}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1 text-slate-400">
+                          <Calendar className="w-3.5 h-3.5" /> এন্ট্রি: {lead.date}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <select
+                        value={lead.status}
+                        onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${statusObj.badgeColor} focus:outline-none`}
+                      >
+                        {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      </select>
+
+                      <button
+                        onClick={() => handleDeleteLead(lead.id)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                        title="মুছে ফেলুন"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
-                    <select
-                      value={lead.status}
-                      onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${statusObj.color} focus:outline-none`}
-                    >
-                      {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
+                  {/* Pricing & Follow-up Details */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200/60">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <span className="text-slate-400 font-medium">বাজেট: </span>
+                        <span className="font-bold text-slate-800">৳{(lead.quotedPrice || 0).toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium">অ্যাডভান্স পেমেন্ট: </span>
+                        <span className="font-bold text-emerald-600">৳{(lead.advance || 0).toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium">বাকি টাকা: </span>
+                        <span className="font-bold text-amber-600">
+                          ৳{Math.max(0, (lead.quotedPrice || 0) - (lead.advance || 0)).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
 
-                    <button
-                      onClick={() => handleDeleteLead(lead.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                      title="মুছে ফেলুন"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Pricing & Follow-up Details */}
-                <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200/60">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <span className="text-slate-400 font-medium">বাজেট: </span>
-                      <span className="font-bold text-slate-800">৳{(lead.quotedPrice || 0).toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 font-medium">অ্যাডভান্স পেমেন্ট: </span>
-                      <span className="font-bold text-emerald-600">৳{(lead.advance || 0).toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 font-medium">বাকি টাকা: </span>
-                      <span className="font-bold text-amber-600">
-                        ৳{Math.max(0, (lead.quotedPrice || 0) - (lead.advance || 0)).toLocaleString()}
-                      </span>
-                    </div>
+                    {lead.nextFollowUp && (
+                      <div className="flex items-center gap-1.5 text-slate-600 font-semibold bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                        <Clock className="w-3.5 h-3.5 text-blue-600" />
+                        <span>ফলো-আপ: {lead.nextFollowUp}</span>
+                      </div>
+                    )}
                   </div>
 
-                  {lead.nextFollowUp && (
-                    <div className="flex items-center gap-1.5 text-slate-600 font-semibold bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                      <Clock className="w-3.5 h-3.5 text-blue-600" />
-                      <span>ফলো-আপ: {lead.nextFollowUp}</span>
+                  {lead.notes && (
+                    <div className="text-xs text-slate-500 italic pl-1">
+                      নোটস: {lead.notes}
                     </div>
                   )}
                 </div>
+              );
+            })
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-500">
+              কোনো ক্লায়েন্ট বা লিড পাওয়া যায়নি! নতুন লিড যোগ করতে "নতুন ক্লায়েন্ট / লিড" বাটনে ক্লিক করুন।
+            </div>
+          )}
+        </div>
+      ) : (
+        /* KANBAN BOARD VIEW */
+        <div className="overflow-x-auto pb-4 custom-scrollbar">
+          <div className="flex gap-4 min-w-[1200px]">
+            {statuses.map(col => {
+              const colLeads = filteredLeads.filter(l => l.status === col.value);
+              const colTotalValue = colLeads.reduce((sum, l) => sum + (Number(l.quotedPrice) || 0), 0);
+              const isTargetDrag = dragOverStatus === col.value;
 
-                {lead.notes && (
-                  <div className="text-xs text-slate-500 italic pl-1">
-                    নোটস: {lead.notes}
+              return (
+                <div
+                  key={col.value}
+                  onDragOver={(e) => handleDragOver(e, col.value)}
+                  onDragLeave={(e) => handleDragLeave(e, col.value)}
+                  onDrop={(e) => handleDrop(e, col.value)}
+                  className={`flex-1 min-w-[280px] max-w-[320px] rounded-2xl border transition-all duration-200 flex flex-col ${
+                    isTargetDrag 
+                      ? 'bg-emerald-50/60 border-emerald-400 ring-2 ring-emerald-300 ring-opacity-50' 
+                      : 'bg-slate-50/80 border-slate-200'
+                  }`}
+                >
+                  {/* Column Header */}
+                  <div className={`p-3 rounded-t-2xl border-b ${col.colHeaderBg} flex items-center justify-between`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold">{col.value}</span>
+                      <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-white/80 border border-slate-200">
+                        {colLeads.length}
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-semibold opacity-80">
+                      ৳{colTotalValue.toLocaleString()}
+                    </div>
                   </div>
-                )}
-              </div>
-            );
-          })
-        ) : (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-500">
-            কোনো ক্লায়েন্ট বা লিড পাওয়া যায়নি! নতুন লিড যোগ করতে "নতুন ক্লায়েন্ট / লিড যোগ করুন" বাটনে ক্লিক করুন।
+
+                  {/* Cards Container */}
+                  <div className="p-2.5 flex-1 space-y-2.5 min-h-[300px] overflow-y-auto max-h-[70vh]">
+                    {colLeads.length > 0 ? (
+                      colLeads.map(lead => {
+                        const isBeingDragged = String(draggedLeadId) === String(lead.id);
+
+                        return (
+                          <div
+                            key={lead.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, lead.id)}
+                            onDragEnd={handleDragEnd}
+                            className={`bg-white border border-slate-200 rounded-xl p-3 shadow-xs hover:shadow-md transition-all cursor-grab active:cursor-grabbing hover:border-emerald-300 group space-y-2 ${
+                              isBeingDragged ? 'opacity-40 border-dashed border-emerald-400' : ''
+                            }`}
+                          >
+                            {/* Card Top Header */}
+                            <div className="flex items-start justify-between gap-1.5">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-bold text-slate-900 text-xs truncate" title={lead.businessName}>
+                                  {lead.businessName}
+                                </div>
+                                <div className="text-[11px] text-slate-500 truncate" title={lead.clientName}>
+                                  {lead.clientName}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <GripVertical className="w-3.5 h-3.5 text-slate-300" />
+                                <button
+                                  onClick={() => handleDeleteLead(lead.id)}
+                                  className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                                  title="মুছে ফেলুন"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Service Badge */}
+                            <div className="text-[11px] text-emerald-800 font-semibold bg-emerald-50/80 px-2 py-0.5 rounded-md border border-emerald-100 truncate">
+                              {lead.service}
+                            </div>
+
+                            {/* Pricing Details */}
+                            <div className="grid grid-cols-2 gap-1 text-[11px] bg-slate-50 p-2 rounded-lg border border-slate-100">
+                              <div>
+                                <span className="text-slate-400">বাজেট: </span>
+                                <span className="font-bold text-slate-800">৳{(lead.quotedPrice || 0).toLocaleString()}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">অগ্রিম: </span>
+                                <span className="font-bold text-emerald-600">৳{(lead.advance || 0).toLocaleString()}</span>
+                              </div>
+                            </div>
+
+                            {/* Followup & Date */}
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100">
+                              {lead.nextFollowUp ? (
+                                <span className="flex items-center gap-1 font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                                  <Clock className="w-3 h-3" /> {lead.nextFollowUp}
+                                </span>
+                              ) : (
+                                <span>এন্ট্রি: {lead.date}</span>
+                              )}
+
+                              {/* Quick status dropdown on card */}
+                              <select
+                                value={lead.status}
+                                onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                                className="text-[10px] font-semibold bg-transparent border-0 text-slate-500 focus:outline-none cursor-pointer hover:text-slate-900"
+                              >
+                                {statuses.map(s => <option key={s.value} value={s.value}>{s.value}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="h-full min-h-[140px] flex items-center justify-center border-2 border-dashed border-slate-200/80 rounded-xl p-4 text-center">
+                        <p className="text-[11px] text-slate-400 font-medium">
+                          {isTargetDrag ? 'এখানে ড্রপ করুন' : 'কোনো কার্ড নেই'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* CRM -> Income Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(incomePrompt)}
+        onClose={() => setIncomePrompt(null)}
+        title="ইনকাম ট্র্যাকার-এ যোগ করবেন?"
+        description="CRM পেমেন্ট স্ট্যাটাস আপডেট"
+        maxWidth="md"
+      >
+        {incomePrompt && (
+          <div className="space-y-4 text-left">
+            <p className="text-xs text-slate-600 leading-relaxed">
+              আপনি <strong>{incomePrompt.lead.clientName}</strong> ({incomePrompt.lead.businessName})-এর স্ট্যাটাস <span className="font-bold text-slate-800">"{incomePrompt.newStatus}"</span>-এ পরিবর্তন করছেন।
+            </p>
+
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-1">
+              <div className="text-xs text-slate-500">প্রস্তাবিত ইনকাম পরিমাণ:</div>
+              <div className="text-2xl font-black text-emerald-700">৳{incomePrompt.proposedAmount.toLocaleString()}</div>
+              <div className="text-[11px] text-emerald-600 font-medium">{incomePrompt.lead.service || 'Website Project'}</div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                className="flex-1"
+                onClick={() => {
+                  if (onRecordIncome) {
+                    onRecordIncome({
+                      id: Date.now(),
+                      date: new Date().toISOString().split('T')[0],
+                      source: incomePrompt.lead.service || 'Website (ওয়েবসাইট প্রজেক্ট)',
+                      clientDetails: `${incomePrompt.lead.clientName} - ${incomePrompt.lead.businessName}`,
+                      amount: incomePrompt.proposedAmount,
+                      paymentType: 'bKash',
+                      month: 'Month 1',
+                      notes: `CRM পেমেন্ট লিঙ্কড (${incomePrompt.newStatus})`
+                    });
+                  }
+                  setLeads(leads.map(l => String(l.id) === String(incomePrompt.lead.id) ? { ...l, status: incomePrompt.newStatus } : l));
+                  setIncomePrompt(null);
+                }}
+              >
+                হ্যাঁ, ৳{incomePrompt.proposedAmount.toLocaleString()} ইনকাম রেকর্ড করুন
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={() => {
+                  setLeads(leads.map(l => String(l.id) === String(incomePrompt.lead.id) ? { ...l, status: incomePrompt.newStatus } : l));
+                  setIncomePrompt(null);
+                }}
+              >
+                শুধু স্ট্যাটাস আপডেট করুন
+              </Button>
+            </div>
           </div>
         )}
-      </div>
+      </Modal>
     </div>
   );
 }

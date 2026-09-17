@@ -31,9 +31,7 @@ export default function App() {
   const [subscription, setSubscription] = useState(null);
   const [paymentRequests, setPaymentRequests] = useState([]);
   const [loadingSub, setLoadingSub] = useState(true);
-
-  // Admin Check
-  const isAdmin = session?.user?.email === 'fuwaraahmed@gmail.com';
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Subscription Validity Check (Enforces status = 'active' AND expiresAt > NOW)
   const isSubscribed = (sub) => {
@@ -191,11 +189,11 @@ export default function App() {
 
   // Persistent React States
   const [appData, setAppDataState] = useState(defaultAppData);
-  const [tasks, setTasksState] = useState(defaultTasks);
-  const [leads, setLeadsState] = useState(defaultLeads);
-  const [incomes, setIncomesState] = useState(defaultIncomes);
-  const [expenses, setExpensesState] = useState(defaultExpenses);
-  const [reviews, setReviewsState] = useState(defaultReviews);
+  const [tasks, setTasksState] = useState([]);
+  const [leads, setLeadsState] = useState([]);
+  const [incomes, setIncomesState] = useState([]);
+  const [expenses, setExpensesState] = useState([]);
+  const [reviews, setReviewsState] = useState([]);
   const [services, setServicesState] = useState(defaultServices);
   const [planData, setPlanDataState] = useState(null);
   const [tuitionStudents, setTuitionStudents] = useState([]);
@@ -219,9 +217,12 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 2. Fetch Subscription & User Data from Supabase when Session Changes
+  // 2. Fetch Subscription, Admin Role & User Data from Supabase when Session Changes
   useEffect(() => {
-    if (!session?.user?.id || !isSupabaseConfigured) return;
+    if (!session?.user?.id) {
+      setIsAdmin(false);
+      return;
+    }
 
     let isMounted = true;
     setLoadingData(true);
@@ -232,6 +233,7 @@ export default function App() {
 
       try {
         const [
+          adminRes,
           subRes,
           payReqRes,
           settingsRes,
@@ -245,6 +247,7 @@ export default function App() {
           tuitionStsRes,
           tuitionPaysRes
         ] = await Promise.all([
+          api.checkIsAdmin(userId, session.user.email),
           api.getSubscription(userId),
           api.getPaymentRequests(userId),
           api.getSettings(userId),
@@ -261,21 +264,23 @@ export default function App() {
 
         if (!isMounted) return;
 
+        setIsAdmin(Boolean(adminRes));
         setSubscription(subRes);
         setPaymentRequests(payReqRes || []);
         setLoadingSub(false);
 
-        if (settingsRes) setAppDataState(settingsRes);
-        if (tasksRes && tasksRes.length > 0) setTasksState(tasksRes);
-        if (leadsRes && leadsRes.length > 0) setLeadsState(leadsRes);
-        if (incomesRes && incomesRes.length > 0) setIncomesState(incomesRes);
-        if (expensesRes && expensesRes.length > 0) setExpensesState(expensesRes);
-        if (reviewsRes && reviewsRes.length > 0) setReviewsState(reviewsRes);
-        if (servicesRes && servicesRes.length > 0) setServicesState(servicesRes);
-        if (planRes && planRes.length > 0) setPlanDataState(planRes);
-        if (tuitionStsRes) setTuitionStudents(tuitionStsRes);
-        if (tuitionPaysRes) setTuitionPayments(tuitionPaysRes);
+        setAppDataState(settingsRes || defaultAppData);
+        setTasksState(tasksRes || []);
+        setLeadsState(leadsRes || []);
+        setIncomesState(incomesRes || []);
+        setExpensesState(expensesRes || []);
+        setReviewsState(reviewsRes || []);
+        setServicesState(servicesRes && servicesRes.length > 0 ? servicesRes : defaultServices);
+        setPlanDataState(planRes || null);
+        setTuitionStudents(tuitionStsRes || []);
+        setTuitionPayments(tuitionPaysRes || []);
 
+        setLoadingData(false);
       } catch (err) {
         if (isMounted) {
           setLoadingData(false);
@@ -294,6 +299,19 @@ export default function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
+    setIsAdmin(false);
+    setSubscription(null);
+    setPaymentRequests([]);
+    setTasksState([]);
+    setLeadsState([]);
+    setIncomesState([]);
+    setExpensesState([]);
+    setReviewsState([]);
+    setServicesState([]);
+    setAppDataState(defaultAppData);
+    setPlanDataState(null);
+    setTuitionStudents([]);
+    setTuitionPayments([]);
   };
 
   // Submit Payment Request Handler
@@ -376,6 +394,13 @@ export default function App() {
         } else if (nextIncomes.length < prev.length) {
           const deleted = prev.find(p => !nextIncomes.some(i => i.id === p.id));
           if (deleted) api.deleteIncome(session.user.id, deleted.id);
+        } else {
+          nextIncomes.forEach(i => {
+            const old = prev.find(p => p.id === i.id);
+            if (old && (old.amount !== i.amount || old.source !== i.source || old.clientDetails !== i.clientDetails || old.date !== i.date || old.paymentType !== i.paymentType || old.notes !== i.notes || old.month !== i.month)) {
+              api.updateIncome(session.user.id, i.id, i);
+            }
+          });
         }
       }
       return nextIncomes;
@@ -392,6 +417,13 @@ export default function App() {
         } else if (nextExpenses.length < prev.length) {
           const deleted = prev.find(p => !nextExpenses.some(e => e.id === p.id));
           if (deleted) api.deleteExpense(session.user.id, deleted.id);
+        } else {
+          nextExpenses.forEach(e => {
+            const old = prev.find(p => p.id === e.id);
+            if (old && (old.amount !== e.amount || old.category !== e.category || old.description !== e.description || old.date !== e.date || old.notes !== e.notes || old.month !== e.month)) {
+              api.updateExpense(session.user.id, e.id, e);
+            }
+          });
         }
       }
       return nextExpenses;
@@ -521,7 +553,7 @@ export default function App() {
 
   const updatedAppData = {
     ...appData,
-    currentIncome: salarySum || 40000,
+    currentIncome: salarySum,
     newIncome: newIncomeSum,
     incomes: incomes,
     expenses: expenses,
@@ -568,7 +600,8 @@ export default function App() {
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         user={session.user} 
-        onLogout={handleLogout} 
+        onLogout={handleLogout}
+        isAdmin={isAdmin}
       />
       
       {/* Top Subtle Animated Sync Progress Line */}
@@ -611,7 +644,13 @@ export default function App() {
         )}
 
         {activeTab === 'crm' && (
-          <Crm leads={leads} setLeads={handleSetLeads} />
+          <Crm 
+            leads={leads} 
+            setLeads={handleSetLeads} 
+            onRecordIncome={(incomeItem) => {
+              handleSetIncomes(prev => [incomeItem, ...prev]);
+            }}
+          />
         )}
 
         {activeTab === 'income' && (

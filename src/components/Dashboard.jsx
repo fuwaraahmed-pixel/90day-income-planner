@@ -19,13 +19,15 @@ import {
   Clock,
   Briefcase
 } from 'lucide-react';
+import IncomeProgressChart from './charts/IncomeProgressChart';
+import IncomeSourceChart from './charts/IncomeSourceChart';
 
 export default function Dashboard({ data, setActiveTab }) {
   const [activeSubView, setActiveSubView] = useState('overview'); // 'overview' | 'tuition'
 
-  // Standardized Data Processing (Preserves all existing logic & fallbacks)
-  const currentIncome = data?.currentIncome || 40000;
-  const newIncome = data?.newIncome || 0;
+  // Standardized Data Processing
+  const currentIncome = data?.currentIncome ?? 0;
+  const newIncome = data?.newIncome ?? 0;
   const totalIncome = currentIncome + newIncome;
   const targetIncome = data?.targetIncome || 100000;
   const remainingTarget = Math.max(0, targetIncome - totalIncome);
@@ -38,15 +40,11 @@ export default function Dashboard({ data, setActiveTab }) {
 
   // Leads & Pipeline
   const leadsList = data?.leads || [];
-  const activeLeads = leadsList.filter(l => l.status !== 'Lost' && l.status !== 'Paid').length || (data?.leads ? 0 : 4);
-  const clientsWon = leadsList.filter(l => l.status === 'Paid' || l.status === 'Working' || l.status === 'Advance Paid').length || (data?.leads ? 0 : 2);
+  const activeLeads = leadsList.filter(l => l.status !== 'Lost' && l.status !== 'Paid').length;
+  const clientsWon = leadsList.filter(l => l.status === 'Paid' || l.status === 'Working' || l.status === 'Advance Paid').length;
   
   // Tasks
-  const todayTasks = data?.tasks || [
-    { id: 1, name: '৫টি স্কুলে ইমেইল ও কোল্ড কল করা', category: 'Sales', priority: 'High', status: 'InProgress' },
-    { id: 2, name: 'পোর্টফোলিও সাইটের হোমপেজ ডিজাইন সম্পন্ন করা', category: 'Portfolio', priority: 'High', status: 'NotStarted' },
-    { id: 3, name: 'সার্ভিস প্যাকেজের পিডিএফ তৈরি করা', category: 'Admin', priority: 'Medium', status: 'Done' }
-  ];
+  const todayTasks = data?.tasks || [];
   const incompleteTasks = todayTasks.filter(t => t.status !== 'Done');
 
   // Tuition Data
@@ -280,6 +278,20 @@ export default function Dashboard({ data, setActiveTab }) {
 
           </div>
 
+        </section>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 2.5 VISUAL ANALYTICS: 90-DAY PROGRESS & INCOME SOURCE BREAKDOWN */}
+      {/* ========================================================================= */}
+      {activeSubView === 'overview' && (
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <IncomeProgressChart incomes={data?.incomes || []} targetIncome={targetIncome} />
+          </div>
+          <div className="lg:col-span-1">
+            <IncomeSourceChart incomes={data?.incomes || []} />
+          </div>
         </section>
       )}
 

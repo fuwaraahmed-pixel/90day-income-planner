@@ -249,13 +249,60 @@ CREATE POLICY "Users can insert own ninety_day_plan" ON public.ninety_day_plan F
 CREATE POLICY "Users can update own ninety_day_plan" ON public.ninety_day_plan FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own ninety_day_plan" ON public.ninety_day_plan FOR DELETE USING (auth.uid() = user_id);
 
+-- ====================================================================
+-- USER ROLES & ADMINISTRATIVE AUTHORIZATION
+-- ====================================================================
+
+CREATE TABLE IF NOT EXISTS public.user_roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'user',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT unique_user_role UNIQUE (user_id, role)
+);
+
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+-- SECURITY DEFINER function to verify if a user has an admin role
+CREATE OR REPLACE FUNCTION public.is_admin(p_user_id UUID DEFAULT auth.uid())
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    IF p_user_id IS NULL THEN
+        RETURN FALSE;
+    END IF;
+    RETURN EXISTS (
+        SELECT 1 
+        FROM public.user_roles 
+        WHERE user_id = p_user_id 
+          AND role = 'admin'
+    );
+END;
+$$;
+
+-- RLS Policy for user_roles table
+DROP POLICY IF EXISTS "Users can view own role or admin can view all" ON public.user_roles;
+CREATE POLICY "Users can view own role or admin can view all" 
+    ON public.user_roles FOR SELECT 
+    USING (auth.uid() = user_id OR public.is_admin(auth.uid()));
+
+-- Insert initial admin role for existing admin user if present in auth.users
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, 'admin'
+FROM auth.users
+WHERE email = 'fuwaraahmed@gmail.com'
+ON CONFLICT (user_id, role) DO NOTHING;
+
 -- SUBSCRIPTIONS POLICIES
 DROP POLICY IF EXISTS "Users can view own subscription" ON public.subscriptions;
 DROP POLICY IF EXISTS "Users can insert own initial subscription" ON public.subscriptions;
 DROP POLICY IF EXISTS "Users can update own subscription to pending" ON public.subscriptions;
 CREATE POLICY "Users can view own subscription" 
     ON public.subscriptions FOR SELECT 
-    USING (auth.uid() = user_id OR (auth.jwt() ->> 'email') = 'fuwaraahmed@gmail.com');
+    USING (auth.uid() = user_id OR public.is_admin(auth.uid()));
 
 CREATE POLICY "Users can insert own initial subscription" 
     ON public.subscriptions FOR INSERT 
@@ -271,7 +318,7 @@ DROP POLICY IF EXISTS "Users can view own payment requests" ON public.payment_re
 DROP POLICY IF EXISTS "Users can submit own payment requests" ON public.payment_requests;
 CREATE POLICY "Users can view own payment requests" 
     ON public.payment_requests FOR SELECT 
-    USING (auth.uid() = user_id OR (auth.jwt() ->> 'email') = 'fuwaraahmed@gmail.com');
+    USING (auth.uid() = user_id OR public.is_admin(auth.uid()));
 
 CREATE POLICY "Users can submit own payment requests" 
     ON public.payment_requests FOR INSERT 
@@ -286,15 +333,13 @@ CREATE OR REPLACE FUNCTION public.approve_payment_request(request_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     req RECORD;
-    caller_email TEXT;
 BEGIN
-    caller_email := auth.jwt() ->> 'email';
-    
-    IF caller_email IS NULL OR caller_email != 'fuwaraahmed@gmail.com' THEN
-        RAISE EXCEPTION 'Unauthorized: Only the system administrator can approve payment requests.';
+    IF NOT public.is_admin(auth.uid()) THEN
+        RAISE EXCEPTION 'Unauthorized: Only system administrators can approve payment requests.';
     END IF;
 
     SELECT * INTO req FROM public.payment_requests WHERE id = request_id AND status = 'pending';
@@ -326,15 +371,13 @@ CREATE OR REPLACE FUNCTION public.reject_payment_request(request_id UUID, reject
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     req RECORD;
-    caller_email TEXT;
 BEGIN
-    caller_email := auth.jwt() ->> 'email';
-    
-    IF caller_email IS NULL OR caller_email != 'fuwaraahmed@gmail.com' THEN
-        RAISE EXCEPTION 'Unauthorized: Only the system administrator can reject payment requests.';
+    IF NOT public.is_admin(auth.uid()) THEN
+        RAISE EXCEPTION 'Unauthorized: Only system administrators can reject payment requests.';
     END IF;
 
     SELECT * INTO req FROM public.payment_requests WHERE id = request_id AND status = 'pending';
@@ -565,6 +608,17 @@ SELECT setval(pg_get_serial_sequence('public.crm_clients', 'id'), COALESCE((SELE
 SELECT setval(pg_get_serial_sequence('public.expenses', 'id'), COALESCE((SELECT MAX(id) FROM public.expenses), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('public.weekly_reviews', 'id'), COALESCE((SELECT MAX(id) FROM public.weekly_reviews), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('public.services', 'id'), COALESCE((SELECT MAX(id) FROM public.services), 0) + 1, false);
+
+-- ====================================================================
+-- PHASE 2: PERFORMANCE INDEXES (ADDITIVE & NON-DESTRUCTIVE)
+-- ====================================================================
+CREATE INDEX IF NOT EXISTS idx_crm_clients_user_status ON public.crm_clients(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_crm_clients_user_followup ON public.crm_clients(user_id, next_follow_up);
+CREATE INDEX IF NOT EXISTS idx_income_user_date ON public.income(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_income_user_source ON public.income(user_id, source);
+CREATE INDEX IF NOT EXISTS idx_expenses_user_date ON public.expenses(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_tasks_user_status ON public.tasks(user_id, status);
+
 
 
 

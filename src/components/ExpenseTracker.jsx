@@ -9,11 +9,17 @@ import {
   DollarSign, 
   AlertCircle,
   CreditCard,
-  PieChart
+  PieChart,
+  Edit2
 } from 'lucide-react';
+import Button from './ui/Button';
+import Badge from './ui/Badge';
+import Input from './ui/Input';
+import Modal from './ui/Modal';
 
 export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
 
@@ -276,13 +282,22 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
                   <div className="text-base font-extrabold text-rose-600">-৳{exp.amount.toLocaleString()}</div>
                   <div className="text-[11px] text-slate-400">ব্যয়িত টাকা</div>
                 </div>
-                <button
-                  onClick={() => handleDeleteExpense(exp.id)}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                  title="মুছে ফেলুন"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setEditingExpense({ ...exp })}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                    title="সম্পাদনা করুন (Edit)"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteExpense(exp.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                    title="মুছে ফেলুন"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -292,6 +307,106 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
           </div>
         )}
       </div>
+
+      {/* Edit Expense Modal */}
+      <Modal
+        isOpen={Boolean(editingExpense)}
+        onClose={() => setEditingExpense(null)}
+        title="খরচ এন্ট্রি সংশোধন (Edit Expense)"
+        icon={Edit2}
+        maxWidth="lg"
+      >
+        {editingExpense && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!editingExpense.description.trim() || !editingExpense.amount || Number(editingExpense.amount) <= 0) return;
+
+              const updated = {
+                ...editingExpense,
+                amount: Number(editingExpense.amount)
+              };
+
+              setExpenses(expenses.map(exp => exp.id === editingExpense.id ? updated : exp));
+              setEditingExpense(null);
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="তারিখ (Date)"
+                type="date"
+                value={editingExpense.date}
+                onChange={(e) => setEditingExpense({ ...editingExpense, date: e.target.value })}
+                required
+              />
+
+              <Input
+                label="ক্যাটাগরি (Category)"
+                as="select"
+                value={editingExpense.category}
+                onChange={(e) => setEditingExpense({ ...editingExpense, category: e.target.value })}
+                options={categories}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="খরচের বিবরণ (Description)"
+                type="text"
+                value={editingExpense.description}
+                onChange={(e) => setEditingExpense({ ...editingExpense, description: e.target.value })}
+                placeholder="যেমন: ঘর ভাড়া / ডোমেন বিল"
+                required
+              />
+
+              <Input
+                label="টাকার পরিমাণ (Amount ৳)"
+                type="number"
+                value={editingExpense.amount}
+                onChange={(e) => setEditingExpense({ ...editingExpense, amount: e.target.value })}
+                placeholder="২৫০০০"
+                min="1"
+                required
+              />
+            </div>
+
+            <Input
+              label="মাস (Month tag)"
+              type="text"
+              value={editingExpense.month}
+              onChange={(e) => setEditingExpense({ ...editingExpense, month: e.target.value })}
+              placeholder="Month 1"
+            />
+
+            <Input
+              label="নোট / মন্তব্য (Optional Notes)"
+              type="text"
+              value={editingExpense.notes || ''}
+              onChange={(e) => setEditingExpense({ ...editingExpense, notes: e.target.value })}
+              placeholder="অতিরিক্ত তথ্য..."
+            />
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setEditingExpense(null)}
+              >
+                বাতিল (Cancel)
+              </Button>
+              <Button
+                type="submit"
+                variant="danger"
+                size="sm"
+              >
+                আপডেট করুন (Save Changes)
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }

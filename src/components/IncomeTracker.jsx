@@ -10,11 +10,17 @@ import {
   Trash2, 
   Target, 
   CheckCircle,
-  Tag
+  Tag,
+  Edit2
 } from 'lucide-react';
+import Button from './ui/Button';
+import Badge from './ui/Badge';
+import Input from './ui/Input';
+import Modal from './ui/Modal';
 
 export default function IncomeTracker({ incomes, setIncomes, targetIncome, currentSalary }) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingIncome, setEditingIncome] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSource, setFilterSource] = useState('All');
 
@@ -292,13 +298,22 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
                   <div className="text-base font-extrabold text-emerald-600">+৳{inc.amount.toLocaleString()}</div>
                   <div className="text-[11px] text-slate-400">প্রাপ্তি জমা</div>
                 </div>
-                <button
-                  onClick={() => handleDeleteIncome(inc.id)}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                  title="মুছে ফেলুন"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setEditingIncome({ ...inc })}
+                    className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                    title="সম্পাদনা করুন (Edit)"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteIncome(inc.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                    title="মুছে ফেলুন"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -308,6 +323,116 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
           </div>
         )}
       </div>
+
+      {/* Edit Income Modal */}
+      <Modal
+        isOpen={Boolean(editingIncome)}
+        onClose={() => setEditingIncome(null)}
+        title="ইনকাম এন্ট্রি সংশোধন (Edit Income)"
+        icon={Edit2}
+        maxWidth="lg"
+      >
+        {editingIncome && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!editingIncome.clientDetails.trim() || !editingIncome.amount || Number(editingIncome.amount) <= 0) return;
+
+              const updated = {
+                ...editingIncome,
+                amount: Number(editingIncome.amount)
+              };
+
+              setIncomes(incomes.map(i => i.id === editingIncome.id ? updated : i));
+              setEditingIncome(null);
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="তারিখ (Date)"
+                type="date"
+                value={editingIncome.date}
+                onChange={(e) => setEditingIncome({ ...editingIncome, date: e.target.value })}
+                required
+              />
+
+              <Input
+                label="আয়ের উৎস (Source)"
+                as="select"
+                value={editingIncome.source}
+                onChange={(e) => setEditingIncome({ ...editingIncome, source: e.target.value })}
+                options={sources}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="ক্লায়েন্ট / আয়ের বিবরণ"
+                type="text"
+                value={editingIncome.clientDetails}
+                onChange={(e) => setEditingIncome({ ...editingIncome, clientDetails: e.target.value })}
+                placeholder="যেমন: আইডিয়াল স্কুল অ্যাডভান্স"
+                required
+              />
+
+              <Input
+                label="টাকার পরিমাণ (Amount ৳)"
+                type="number"
+                value={editingIncome.amount}
+                onChange={(e) => setEditingIncome({ ...editingIncome, amount: e.target.value })}
+                placeholder="৫০০০"
+                min="1"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="পেমেন্ট মাধ্যম (Payment Method)"
+                as="select"
+                value={editingIncome.paymentType}
+                onChange={(e) => setEditingIncome({ ...editingIncome, paymentType: e.target.value })}
+                options={paymentTypes}
+              />
+
+              <Input
+                label="মাস (Month tag)"
+                type="text"
+                value={editingIncome.month}
+                onChange={(e) => setEditingIncome({ ...editingIncome, month: e.target.value })}
+                placeholder="Month 1"
+              />
+            </div>
+
+            <Input
+              label="নোট / মন্তব্য (Optional Notes)"
+              type="text"
+              value={editingIncome.notes || ''}
+              onChange={(e) => setEditingIncome({ ...editingIncome, notes: e.target.value })}
+              placeholder="অতিরিক্ত তথ্য..."
+            />
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setEditingIncome(null)}
+              >
+                বাতিল (Cancel)
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+              >
+                আপডেট করুন (Save Changes)
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }
