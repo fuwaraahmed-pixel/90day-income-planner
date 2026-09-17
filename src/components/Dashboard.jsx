@@ -299,30 +299,30 @@ export default function Dashboard({ data, setActiveTab }) {
       {/* 3. LIST & DIVIDER LAYOUT: TODAY'S FOCUS & ACTIONS (LEVEL 2 - MEDIUM) */}
       {/* ========================================================================= */}
       {activeSubView === 'overview' && (
-        <section className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/20 border border-indigo-100/80 rounded-[20px] p-5.5 sm:p-6 shadow-float space-y-4.5 relative overflow-hidden">
+        <section className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/20 border border-indigo-100/80 rounded-[20px] p-6 sm:p-7 shadow-float space-y-6 relative overflow-hidden">
           
           {/* Section Header */}
-          <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/60">
+          <div className="bg-gradient-to-r from-indigo-100 via-sky-100/70 to-slate-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 mb-5 rounded-t-[20px] border-b border-indigo-200/90 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-xs">
-                <CheckSquare className="w-4 h-4" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white flex items-center justify-center shadow-xs ring-2 ring-indigo-300/60 shrink-0">
+                <CheckSquare className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                  <h2 className="text-base font-extrabold text-indigo-950 tracking-tight">
                     আজকের ফোকাস ও অগ্রাধিকার
                   </h2>
-                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100/80 text-indigo-900 border border-indigo-200 shadow-2xs">
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-600 text-white border border-indigo-400 shadow-2xs">
                     {incompleteTasks.length}টি বাকি
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 font-medium">আজকে আপনার যে কাজগুলো সম্পন্ন করা প্রয়োজন</p>
+                <p className="text-[11px] text-indigo-900/80 font-semibold">আজকে আপনার যে কাজগুলো সম্পন্ন করা প্রয়োজন</p>
               </div>
             </div>
 
             <button 
               onClick={() => setActiveTab('tasks')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-white/90 hover:bg-white px-3.5 py-1.5 rounded-xl border border-indigo-100 shadow-2xs transition-all hover:-translate-y-[1px]"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-950 bg-white/95 hover:bg-white px-3.5 py-1.5 rounded-xl border border-indigo-300/80 shadow-2xs transition-all hover:-translate-y-[1px]"
             >
               <span>সব কাজ দেখুন</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -395,16 +395,16 @@ export default function Dashboard({ data, setActiveTab }) {
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* CRM & Sales Opportunities Compact Panel */}
-          <div className="bg-gradient-to-br from-white via-slate-50/60 to-emerald-50/30 border border-emerald-100/90 rounded-[20px] p-5.5 sm:p-6 shadow-float-subtle space-y-4 flex flex-col justify-between">
+          <div className="bg-gradient-to-br from-white via-slate-50/60 to-emerald-50/30 border border-emerald-100/90 rounded-[20px] p-6 sm:p-7 shadow-float-subtle space-y-5 flex flex-col justify-between overflow-hidden">
             <div>
-              <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/60">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-100/80 text-emerald-700 flex items-center justify-center border border-emerald-200">
-                    <Users className="w-4 h-4" />
+              <div className="bg-gradient-to-r from-teal-100 via-emerald-100/70 to-slate-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 mb-5 rounded-t-[20px] border-b border-teal-200/90 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-700 text-white flex items-center justify-center shadow-xs ring-2 ring-teal-300/60 shrink-0">
+                    <Users className="w-5 h-5" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-900">CRM ও সেলস সুযোগ</h3>
+                  <h3 className="text-base font-extrabold text-teal-950 tracking-tight">CRM ও সেলস সুযোগ</h3>
                 </div>
-                <span className="text-xs font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
+                <span className="text-xs font-bold text-teal-950 bg-white/95 px-3 py-1.5 rounded-full border border-teal-300 shadow-2xs">
                   {activeLeads} সক্রিয় আলোচনা
                 </span>
               </div>
@@ -462,16 +462,16 @@ export default function Dashboard({ data, setActiveTab }) {
           </div>
 
           {/* Business & Tuition Operations Overview Panel */}
-          <div className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/30 border border-indigo-100/90 rounded-[20px] p-5.5 sm:p-6 shadow-float-subtle space-y-4 flex flex-col justify-between">
+          <div className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/30 border border-indigo-100/90 rounded-[20px] p-6 sm:p-7 shadow-float-subtle space-y-5 flex flex-col justify-between overflow-hidden">
             <div>
-              <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/60">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-100/80 text-indigo-700 flex items-center justify-center border border-indigo-200">
-                    <GraduationCap className="w-4 h-4" />
+              <div className="bg-gradient-to-r from-purple-100 via-indigo-100/70 to-slate-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 mb-5 rounded-t-[20px] border-b border-purple-200/90 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center shadow-xs ring-2 ring-purple-300/60 shrink-0">
+                    <GraduationCap className="w-5 h-5" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-900">টিউশন ও অপারেশনস সামারি</h3>
+                  <h3 className="text-base font-extrabold text-purple-950 tracking-tight">টিউশন ও অপারেশনস সামারি</h3>
                 </div>
-                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                <span className="text-[11px] font-extrabold text-purple-950 bg-white/95 px-3 py-1.5 rounded-full border border-purple-300 shadow-2xs">
                   মাসিক হিসাব
                 </span>
               </div>
@@ -510,11 +510,11 @@ export default function Dashboard({ data, setActiveTab }) {
 
       {/* Tuition View if activeSubView === 'tuition' */}
       {activeSubView === 'tuition' && (
-        <section className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/30 border border-indigo-100/90 rounded-[20px] p-6 shadow-float-subtle space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-200/60">
+        <section className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/30 border border-indigo-100/90 rounded-[20px] p-6 sm:p-7 shadow-float-subtle space-y-6 overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-100 via-indigo-100/70 to-slate-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 mb-5 rounded-t-[20px] border-b border-purple-200/90 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">টিউশন ফি ও পেমেন্ট সামারি</h2>
-              <p className="text-xs text-slate-500 mt-0.5">ছাত্র-ছাত্রীদের ভর্তি, প্রতি মাসের প্রত্যাশিত ফি ও আদায়কৃত অর্থ</p>
+              <h2 className="text-lg font-extrabold text-purple-950 tracking-tight">টিউশন ফি ও পেমেন্ট সামারি</h2>
+              <p className="text-xs text-purple-900/80 font-semibold mt-0.5">ছাত্র-ছাত্রীদের ভর্তি, প্রতি মাসের প্রত্যাশিত ফি ও আদায়কৃত অর্থ</p>
             </div>
             <button 
               onClick={() => setActiveTab('tuition')}
@@ -549,40 +549,45 @@ export default function Dashboard({ data, setActiveTab }) {
       {/* 5. LIGHT QUIET SUMMARY SURFACE: EXECUTIVE INSIGHTS (LEVEL 4 - QUIETEST) */}
       {/* ========================================================================= */}
       {activeSubView === 'overview' && (
-        <section className="bg-gradient-to-br from-white via-slate-50/80 to-indigo-50/20 border border-slate-200/90 rounded-[20px] p-5 sm:p-6 shadow-float-subtle">
-          <div className="flex items-center gap-2.5 pb-3 mb-3.5 border-b border-slate-200/70">
-            <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
-              <Sparkles className="w-3.5 h-3.5" />
+        <section className="bg-gradient-to-br from-white via-slate-50/80 to-indigo-50/20 border border-slate-200/90 rounded-[20px] p-6 sm:p-7 shadow-float-subtle space-y-5 overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-100 via-teal-100/70 to-indigo-100/60 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 mb-5 rounded-t-[20px] border-b border-teal-200/90 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9.5 h-9.5 rounded-xl bg-gradient-to-br from-teal-600 to-indigo-700 text-white flex items-center justify-center shadow-xs ring-2 ring-teal-300/60 shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-950 uppercase tracking-wide">
+                  দ্রুত মূল্যায়িনী (Executive Business Summary)
+                </h3>
+                <p className="text-xs text-slate-800/80 font-semibold mt-0.5">রিয়েল-টাইম বিজনেস পারফরম্যান্স ও কী ইন্সাইটস</p>
+              </div>
             </div>
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-              দ্রুত মূল্যায়িনী (Executive Business Summary)
-            </h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-            <div className="p-3.5 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-200/80 space-y-0.5 shadow-2xs">
-              <div className="text-[10px] text-slate-400 font-medium">১. বর্তমান অবস্থান</div>
-              <div className="font-bold text-slate-800">Month 1 (পোর্টফোলিও ও ক্লায়েন্ট)</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 text-xs">
+            <div className="p-4 sm:p-4.5 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-200/80 space-y-1 shadow-2xs">
+              <div className="text-[11px] text-slate-500 font-medium">১. বর্তমান অবস্থান</div>
+              <div className="font-bold text-slate-800 text-sm">Month 1 (পোর্টফোলিও ও ক্লায়েন্ট)</div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-50/60 via-emerald-50/30 to-teal-50/40 border border-emerald-200/70 space-y-0.5 shadow-2xs">
-              <div className="text-[10px] text-emerald-800 font-medium">২. চলতি মাসের মোট আয়</div>
-              <div className="font-extrabold text-emerald-900">৳{totalIncome.toLocaleString()}</div>
+            <div className="p-4 sm:p-4.5 rounded-xl bg-gradient-to-br from-emerald-50/60 via-emerald-50/30 to-teal-50/40 border border-emerald-200/70 space-y-1 shadow-2xs">
+              <div className="text-[11px] text-emerald-800 font-medium">২. চলতি মাসের মোট আয়</div>
+              <div className="font-extrabold text-emerald-900 text-sm">৳{totalIncome.toLocaleString()}</div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-gradient-to-br from-rose-50/60 via-rose-50/30 to-pink-50/40 border border-rose-200/70 space-y-0.5 shadow-2xs">
-              <div className="text-[10px] text-rose-800 font-medium">৩. টার্গেটের বাকি</div>
-              <div className="font-extrabold text-rose-700">৳{remainingTarget.toLocaleString()}</div>
+            <div className="p-4 sm:p-4.5 rounded-xl bg-gradient-to-br from-rose-50/60 via-rose-50/30 to-pink-50/40 border border-rose-200/70 space-y-1 shadow-2xs">
+              <div className="text-[11px] text-rose-800 font-medium">৩. টার্গেটের বাকি</div>
+              <div className="font-extrabold text-rose-700 text-sm">৳{remainingTarget.toLocaleString()}</div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-200/80 space-y-0.5 shadow-2xs">
-              <div className="text-[10px] text-slate-400 font-medium">৪. আজকের করণীয়</div>
-              <div className="font-bold text-slate-800">{incompleteTasks.length}টি কাজ নির্ধারিত</div>
+            <div className="p-4 sm:p-4.5 rounded-xl bg-gradient-to-br from-slate-50 to-white border border-slate-200/80 space-y-1 shadow-2xs">
+              <div className="text-[11px] text-slate-500 font-medium">৪. আজকের করণীয়</div>
+              <div className="font-bold text-slate-800 text-sm">{incompleteTasks.length}টি কাজ নির্ধারিত</div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-gradient-to-br from-sky-50/60 via-sky-50/30 to-indigo-50/40 border border-sky-200/70 space-y-0.5 shadow-2xs">
-              <div className="text-[10px] text-sky-800 font-medium">৫. সক্রিয় সেলস লিড</div>
-              <div className="font-extrabold text-sky-900">{activeLeads} জন ক্লায়েন্ট আলোচনাধীন</div>
+            <div className="p-4 sm:p-4.5 rounded-xl bg-gradient-to-br from-sky-50/60 via-sky-50/30 to-indigo-50/40 border border-sky-200/70 space-y-1 shadow-2xs">
+              <div className="text-[11px] text-sky-800 font-medium">৫. সক্রিয় সেলস লিড</div>
+              <div className="font-extrabold text-sky-900 text-sm">{activeLeads} জন ক্লায়েন্ট আলোচনাধীন</div>
             </div>
           </div>
         </section>

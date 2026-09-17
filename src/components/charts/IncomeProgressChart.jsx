@@ -80,23 +80,25 @@ export default function IncomeProgressChart({ incomes = [], targetIncome = 10000
     : `${pathD} L ${points[points.length - 1].x},${height - padding} L ${points[0].x},${height - padding} Z`;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4 font-sans">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-emerald-600" />
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm space-y-6 font-sans overflow-hidden">
+      <div className="bg-gradient-to-r from-emerald-100 via-teal-100/70 to-emerald-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 border-b border-emerald-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center shadow-xs ring-2 ring-emerald-300/60 shrink-0">
+            <TrendingUp className="w-5 h-5" />
+          </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900 tracking-tight">৯০ দিনের ইনকাম প্রোগ্রেস ট্র্যাজেক্টরি</h3>
-            <p className="text-[11px] text-slate-500 font-medium">আয়ের পুঞ্জীভূত প্রবৃদ্ধি বনাম টার্গেট গন্তব্য</p>
+            <h3 className="text-base sm:text-lg font-extrabold text-emerald-950 tracking-tight">৯০ দিনের ইনকাম প্রোগ্রেস ট্র্যাজেক্টরি</h3>
+            <p className="text-xs text-emerald-900/80 font-semibold mt-0.5">আয়ের পুঞ্জীভূত প্রবৃদ্ধি বনাম টার্গেট গন্তব্য</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3 text-xs font-medium">
-          <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <span className="flex items-center gap-1.5 text-emerald-950 font-bold bg-white/95 px-3.5 py-1.5 rounded-xl border border-emerald-300/80 shadow-2xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200 animate-pulse"></span>
             অর্জন: ৳{cumulative.toLocaleString()}
           </span>
-          <span className="flex items-center gap-1.5 text-indigo-600 font-bold">
-            <span className="w-2.5 h-0.5 border-b-2 border-dashed border-indigo-500 w-3"></span>
+          <span className="flex items-center gap-1.5 text-indigo-950 font-bold bg-white/95 px-3.5 py-1.5 rounded-xl border border-indigo-300/80 shadow-2xs">
+            <span className="w-2.5 h-0.5 border-b-2 border-dashed border-indigo-600 w-3"></span>
             টার্গেট: ৳{targetIncome.toLocaleString()}
           </span>
         </div>

@@ -67,16 +67,18 @@ export default function IncomeSourceChart({ incomes = [] }) {
     .sort((a, b) => b.amount - a.amount);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4 font-sans">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div className="flex items-center gap-2">
-          <PieChart className="w-5 h-5 text-blue-600" />
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm space-y-6 font-sans overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-100 via-sky-100/70 to-indigo-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 border-b border-blue-200/90 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-xs ring-2 ring-blue-300/60 shrink-0">
+            <PieChart className="w-5 h-5" />
+          </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900 tracking-tight">আয়ের উৎস অ্যানালিটিক্স (Income Breakdown)</h3>
-            <p className="text-[11px] text-slate-500 font-medium">উৎস অনুযায়ী মোট আয়ের শতাংশ ও পরিমাণ</p>
+            <h3 className="text-base font-extrabold text-blue-950 tracking-tight">আয়ের উৎস অ্যানালিটিক্স</h3>
+            <p className="text-[11px] text-blue-900/80 font-semibold">উৎস অনুযায়ী মোট আয়ের শতাংশ ও পরিমাণ</p>
           </div>
         </div>
-        <span className="text-xs font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">
+        <span className="text-xs font-black text-blue-950 bg-white/95 border border-blue-300 px-3 py-1.5 rounded-xl shadow-2xs">
           মোট ৳{grandTotal.toLocaleString()}
         </span>
       </div>
