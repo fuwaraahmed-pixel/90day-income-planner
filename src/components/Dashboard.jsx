@@ -67,7 +67,7 @@ export default function Dashboard({ data, setActiveTab }) {
   const greeting = currentHour < 12 ? 'শুভ সকাল' : currentHour < 17 ? 'শুভ দুপুর' : 'শুভ সন্ধ্যা';
 
   return (
-    <div className="space-y-7 pb-10 max-w-7xl mx-auto font-sans antialiased text-slate-800">
+    <div className="space-y-7 pb-10 w-full max-w-[1600px] mx-auto font-sans antialiased text-slate-800">
       
       {/* ========================================================================= */}
       {/* 1. COMMAND HEADER: Executive Dark Premium Hero Banner */}
