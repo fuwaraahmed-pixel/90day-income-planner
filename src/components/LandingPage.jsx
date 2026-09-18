@@ -22,12 +22,16 @@ import {
   PieChart,
   Receipt,
   Activity,
-  Check
+  Check,
+  GraduationCap,
+  Calendar,
+  Clock
 } from 'lucide-react';
 
 export default function LandingPage({ onNavigateToAuth }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const [legalModal, setLegalModal] = useState(null); // 'privacy' | 'terms' | null
 
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -407,7 +411,7 @@ export default function LandingPage({ onNavigateToAuth }) {
 
             <div className="pt-3 border-t border-slate-200/60">
               <p className="text-sm sm:text-base text-slate-800 font-bold max-w-2xl mx-auto leading-relaxed">
-                Dremoy তৈরিই করা হয়েছে আপনার মাথার ওপর থেকে এই প্রেনার কুকার নামক চিন্তার কাছ থেকে মাথাটাকে বাচাতে, আপনাকে "শান্তিতে ব্যবসা করার সুযোগ" করে দিতে।
+                Dremoy তৈরিই করা হয়েছে আপনার মাথার ওপর থেকে এই প্রেসার কুকার নামক চিন্তা থেকে মাথা মুক্ত রাখতে, আপনাকে "শান্তিতে ব্যবসা করার সুযোগ" করে দিতে।
               </p>
             </div>
           </div>
@@ -859,10 +863,504 @@ export default function LandingPage({ onNavigateToAuth }) {
             📚 Tutor / Coaching Operator
           </div>
         </div>
-      </section >
+      </section>
+
+      {/* 08-B. DEDICATED TUITION & STUDENT FEE MANAGEMENT SHOWCASE */}
+      <section id="tuition-showcase" className="py-20 bg-white border-y border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          
+          {/* Header */}
+          <div className="text-center space-y-4 max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold tracking-wide">
+              <GraduationCap className="w-4 h-4 text-indigo-600" />
+              <span>টিউশন ও স্টুডেন্ট ফি ট্র্যাকার</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+              টিউশনের হিসাবও থাকুক <span className="text-indigo-600 underline decoration-indigo-300 decoration-wavy underline-offset-8">এক জায়গায়।</span>
+            </h2>
+            <p className="text-base sm:text-xl text-slate-600 font-medium leading-relaxed">
+              আপনার সব ছাত্র-ছাত্রী, মাসিক ফি, আদায়কৃত পেমেন্ট ও বকেয়ার হিসাব রাখুন একদম সহজ ও নির্ভুলভাবে।
+            </p>
+          </div>
+
+          {/* Section Main Content Grid (Features List + Interactive SaaS Mockup) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-4">
+            
+            {/* Left Column: Core Value Highlights (5 cols) */}
+            <div className="lg:col-span-5 space-y-5">
+              
+              <div className="bg-[#F8FAFC] border border-slate-200/90 rounded-2xl p-5 space-y-2 hover:border-indigo-300 transition-colors">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center font-bold flex-shrink-0 mt-0.5 shadow-2xs">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">ছাত্রদের সুনির্দিষ্ট তালিকা</h3>
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
+                      প্রতিটি শিক্ষার্থীর নাম, বিষয়, শ্রেণী, যোগাযোগের নম্বর এবং চুক্তিভিত্তিক মাসিক ফি এক জায়গায় সাজানো থাকে।
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-[#F8FAFC] border border-slate-200/90 rounded-2xl p-5 space-y-2 hover:border-emerald-300 transition-colors">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center font-bold flex-shrink-0 mt-0.5 shadow-2xs">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">আদায় ও বকেয়ার রিয়েল-টাইম ট্র্যাকিং</h3>
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
+                      কে ফি দিয়েছে আর কার ফি বাকি আছে, তা খুঁজতে হবে না। এক নজরে বকেয়া তালিকা দেখে অনুস্মারকমূলক ফলো-আপ করুন।
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-[#F8FAFC] border border-slate-200/90 rounded-2xl p-5 space-y-2 hover:border-purple-300 transition-colors">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 bg-purple-100 text-purple-700 rounded-xl flex items-center justify-center font-bold flex-shrink-0 mt-0.5 shadow-2xs">
+                    <Receipt className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">পেমেন্ট হিস্ট্রি ও অটো ইনকাম সিঙ্ক</h3>
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
+                      বিকাশ, নগদ বা ক্যাশ পেমেন্ট রেকর্ড করার সাথে সাথে তা আপনার মাসিক মোট ইনকাম রিপোর্টে স্বয়ংক্রিয়ভাবে যুক্ত হয়ে যায়।
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Call to Action Button */}
+              <div className="pt-2">
+                <button
+                  onClick={() => onNavigateToAuth('signup')}
+                  className="w-full sm:w-auto px-7 py-3.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-2xl text-sm transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 group"
+                >
+                  <span>টিউশন ট্র্যাকার ব্যবহার শুরু করুন</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+
+            </div>
+
+            {/* Right Column: Realistic SaaS Product Mockup Preview (7 cols) */}
+            <div className="lg:col-span-7 bg-[#F8FAFC] border border-slate-200/90 rounded-3xl p-4 sm:p-6 shadow-xl space-y-5">
+              
+              {/* Top Control Bar of Mockup */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-bold shadow-xs">
+                    <GraduationCap className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900">টিউশন ও স্টুডেন্ট ড্যাশবোর্ড</h4>
+                    <p className="text-[11px] font-semibold text-slate-500">চলতি মাস: মার্চ ২০২৬</p>
+                  </div>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100/80 text-indigo-800 text-xs font-bold self-start sm:self-auto">
+                  <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
+                  <span>লাইভ ডাটা প্রিভিউ</span>
+                </div>
+              </div>
+
+              {/* Summary KPI Cards Grid (3 Columns) */}
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-2 sm:p-3.5 space-y-0.5 shadow-2xs min-w-0">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 block truncate">মোট শিক্ষার্থী</span>
+                  <div className="text-xs xs:text-sm sm:text-2xl font-black text-slate-900 whitespace-nowrap truncate">১২ জন</div>
+                  <span className="text-[9px] sm:text-[10px] font-semibold text-indigo-600 block truncate">৩টি ব্যাচ</span>
+                </div>
+
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-2 sm:p-3.5 space-y-0.5 shadow-2xs min-w-0">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 block truncate">এই মাসে আদায়</span>
+                  <div className="text-xs xs:text-sm sm:text-2xl font-black text-emerald-600 whitespace-nowrap truncate">৳ ৪৫,০০০</div>
+                  <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-600 block truncate">৭৯% সংগৃহীত</span>
+                </div>
+
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-2 sm:p-3.5 space-y-0.5 shadow-2xs min-w-0">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 block truncate">মোট বকেয়া</span>
+                  <div className="text-xs xs:text-sm sm:text-2xl font-black text-rose-600 whitespace-nowrap truncate">৳ ১২,০০০</div>
+                  <span className="text-[9px] sm:text-[10px] font-semibold text-rose-600 block truncate">২ জনের বাকি</span>
+                </div>
+              </div>
+
+              {/* Student Fee Status Table Mockup */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
+                <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-100/70 border-b border-slate-200/80 flex items-center justify-between text-xs font-bold text-slate-700">
+                  <span>ছাত্র-ছাত্রীর পেমেন্ট তালিকা</span>
+                  <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500">৪ জন দেখাচ্ছে</span>
+                </div>
+
+                <div className="divide-y divide-slate-100 overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 text-[10px] sm:text-[11px]">
+                      <tr>
+                        <th className="py-2 px-2 sm:px-3.5">শিক্ষার্থী ও বিষয়</th>
+                        <th className="py-2 px-1 sm:px-3 text-center">মাসিক ফি</th>
+                        <th className="py-2 px-1 sm:px-3 text-center">আদায়</th>
+                        <th className="py-2 px-1 sm:px-3 text-center">বকেয়া</th>
+                        <th className="py-2 px-1.5 sm:px-3.5 text-right">স্ট্যাটাস</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium text-slate-800 text-[10px] sm:text-xs">
+                      
+                      {/* Row 1 */}
+                      <tr className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-2.5 px-2 sm:px-3.5">
+                          <div className="font-bold text-slate-900 leading-tight">রাফিদ আহমেদ</div>
+                          <div className="text-[9px] sm:text-[10px] text-slate-500 leading-tight">ক্লাস ১০ (পদার্থ ও গণিত)</div>
+                        </td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-slate-800 whitespace-nowrap">৳ ৫,০০০</td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-emerald-600 whitespace-nowrap">৳ ৫,০০০</td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-slate-400 whitespace-nowrap">৳ ০</td>
+                        <td className="py-2.5 px-1.5 sm:px-3.5 text-right">
+                          <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[8.5px] sm:text-[10px] font-bold whitespace-nowrap">
+                            ✓ পরিশোধিত
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Row 2 */}
+                      <tr className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-2.5 px-2 sm:px-3.5">
+                          <div className="font-bold text-slate-900 leading-tight">তাসনিম সুলতানা</div>
+                          <div className="text-[9px] sm:text-[10px] text-slate-500 leading-tight">HSC ২য় বর্ষ (আইসিটি)</div>
+                        </td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-slate-800 whitespace-nowrap">৳ ৬,০০০</td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-emerald-600 whitespace-nowrap">৳ ৩,০০০</td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-rose-600 whitespace-nowrap">৳ ৩,০০০</td>
+                        <td className="py-2.5 px-1.5 sm:px-3.5 text-right">
+                          <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[8.5px] sm:text-[10px] font-bold whitespace-nowrap">
+                            ● আংশিক
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Row 3 */}
+                      <tr className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-2.5 px-2 sm:px-3.5">
+                          <div className="font-bold text-slate-900 leading-tight">তানভীর হাসান</div>
+                          <div className="text-[9px] sm:text-[10px] text-slate-500 leading-tight">ও-লেভেল (রসায়ন)</div>
+                        </td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-slate-800 whitespace-nowrap">৳ ৯,০০০</td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-slate-400 whitespace-nowrap">৳ ০</td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-rose-600 whitespace-nowrap">৳ ৯,০০০</td>
+                        <td className="py-2.5 px-1.5 sm:px-3.5 text-right">
+                          <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[8.5px] sm:text-[10px] font-bold whitespace-nowrap">
+                            ✕ বকেয়া
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Row 4 */}
+                      <tr className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-2.5 px-2 sm:px-3.5">
+                          <div className="font-bold text-slate-900 leading-tight">সায়মা চৌধুরী</div>
+                          <div className="text-[9px] sm:text-[10px] text-slate-500 leading-tight">ক্লাস ৯ (সাধারণ বিজ্ঞান)</div>
+                        </td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-slate-800 whitespace-nowrap">৳ ৪,০০০</td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-emerald-600 whitespace-nowrap">৳ ৪,০০০</td>
+                        <td className="py-2.5 px-1 sm:px-3 text-center font-bold text-slate-400 whitespace-nowrap">৳ ০</td>
+                        <td className="py-2.5 px-1.5 sm:px-3.5 text-right">
+                          <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[8.5px] sm:text-[10px] font-bold whitespace-nowrap">
+                            ✓ পরিশোধিত
+                          </span>
+                        </td>
+                      </tr>
+
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Bottom Quick Payment Entry Bar */}
+              <div className="p-3 bg-indigo-50/90 border border-indigo-200/80 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-semibold text-indigo-900">
+                <div className="flex items-center gap-2">
+                  <Receipt className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                  <span>সর্বশেষ পেমেন্ট গ্রহণ: <strong>তাসনিম সুলতানা (৳৩,০০০ - বিকাশ)</strong></span>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-200/60 text-indigo-900">
+                  স্বয়ংক্রিয় আয়ে যুক্ত
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 08-C. 90-DAY INCOME GOAL & PROGRESS METHODOLOGY SHOWCASE */}
+      <section id="ninety-day-planner" className="py-24 bg-gradient-to-b from-[#F8FAFC] to-slate-100/60 border-y border-slate-200/80 relative overflow-hidden">
+        {/* Background Subtle Accent Gradients */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-100/40 rounded-full blur-3xl pointer-events-none -z-10"></div>
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-teal-100/40 rounded-full blur-3xl pointer-events-none -z-10"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+          
+          {/* Header */}
+          <div className="text-center space-y-4 max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100/80 border border-emerald-300/80 text-emerald-800 text-xs sm:text-sm font-extrabold tracking-wide shadow-xs">
+              <Target className="w-4 h-4 text-emerald-600" />
+              <span>৯০ দিনের ইনকাম গোল ও প্রোগ্রেস মেথডোলজি</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+              ৯০ দিনের লক্ষ্যকে <span className="text-emerald-600 underline decoration-emerald-300 decoration-wavy underline-offset-8">প্রতিদিনের কাজে</span> নামিয়ে আনুন
+            </h2>
+            <p className="text-base sm:text-xl text-slate-600 font-medium leading-relaxed">
+              Dremoy শুধু আপনার আয়ের হিসাব রাখে না—একটি সুনির্দিষ্ট income goal-এর দিকে আপনার ব্যবসার ধারাবাহিক অগ্রগতি track করতে সাহায্য করে।
+            </p>
+          </div>
+
+          {/* 5-Step Methodology Flow */}
+          <div className="space-y-6">
+            <div className="text-center">
+              <span className="text-xs font-extrabold uppercase tracking-widest text-slate-400">
+                পদ্ধতিগত অগ্রগতি ফ্লো (Goal to Progress Flow)
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 relative">
+              {/* Step 1 */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs hover:border-emerald-400 hover:shadow-md transition-all relative flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 font-black text-xs flex items-center justify-center">01</span>
+                  <Target className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">1. Income Goal</h3>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
+                    কত আয় করতে চান তা সুনির্দিষ্টভাবে নির্ধারণ করুন।
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs hover:border-emerald-400 hover:shadow-md transition-all relative flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 font-black text-xs flex items-center justify-center">02</span>
+                  <Calendar className="w-5 h-5 text-teal-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">2. 90-Day Plan</h3>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
+                    ৯০ দিনের বাস্তবসম্মত লক্ষ্য ও রোডম্যাপ সাজান।
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs hover:border-emerald-400 hover:shadow-md transition-all relative flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 font-black text-xs flex items-center justify-center">03</span>
+                  <CheckSquare className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">3. Daily Actions</h3>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
+                    প্রতিদিনের সবচেয়ে গুরুত্বপূর্ণ কাজ সম্পন্ন করুন।
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 4 */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs hover:border-emerald-400 hover:shadow-md transition-all relative flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 font-black text-xs flex items-center justify-center">04</span>
+                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">4. Income Tracking</h3>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
+                    কোথা থেকে কত আয় হচ্ছে সাথে সাথে এনট্রি দিন।
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 5 */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs hover:border-emerald-400 hover:shadow-md transition-all relative flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 font-black text-xs flex items-center justify-center">05</span>
+                  <Activity className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">5. Weekly Review</h3>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1">
+                    অগ্রগতি দেখে পরবর্তী পদক্ষেপ ও কৌশল ঠিক করুন।
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Connecting Flow Summary Pill */}
+            <div className="bg-white/80 backdrop-blur-xs border border-slate-200/80 rounded-2xl p-3 text-center text-xs font-extrabold text-slate-700 shadow-2xs max-w-3xl mx-auto flex flex-wrap items-center justify-center gap-2">
+              <span className="text-emerald-700">Income Goal</span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="text-teal-700">90-Day Plan</span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="text-indigo-700">Daily Actions</span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="text-blue-700">Income Tracking</span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="text-purple-700">Weekly Review</span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-md font-black">অগ্রগতি</span>
+            </div>
+          </div>
+
+          {/* Product Dashboard Mockup Container */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-8 shadow-xl space-y-6 sm:space-y-8">
+            
+            {/* Mockup Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-100 pb-4 sm:pb-5">
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 bg-emerald-600 text-white rounded-2xl flex items-center justify-center font-bold shadow-md shadow-emerald-600/20 shrink-0 mt-0.5 sm:mt-0">
+                  <Target className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm sm:text-lg font-black text-slate-900 leading-tight">90-Day Income Goal Dashboard</h3>
+                    <span className="text-[9.5px] sm:text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0 whitespace-nowrap">
+                      Q1 Goal Sprint
+                    </span>
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-slate-500 font-semibold leading-tight">ডিজিটাল বিজনেস ইনকাম ট্রাক অ্যান্ড প্রোগ্রেস মেথডোলজি</p>
+                </div>
+              </div>
+
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-[11px] sm:text-xs font-extrabold self-start sm:self-auto shrink-0 whitespace-nowrap">
+                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>ট্র্যাকিং সেশন: Day 62 / Day 90</span>
+              </div>
+            </div>
+
+            {/* KPI Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Goal Card */}
+              <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center justify-between text-xs font-extrabold text-slate-500">
+                  <span>90-Day Income Goal</span>
+                  <Target className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">৳১,০০,০০০+</div>
+                <div className="text-[11px] font-bold text-slate-500">নির্ধারিত লক্ষ্যমাত্রার বাজেট</div>
+              </div>
+
+              {/* Progress Card */}
+              <div className="bg-emerald-50/60 border border-emerald-200/90 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center justify-between text-xs font-extrabold text-emerald-800">
+                  <span>Current Progress</span>
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-emerald-700 tracking-tight">৳৬৮,৫০০</div>
+                <div className="text-[11px] font-bold text-emerald-700">অর্জিত আয়ের রিয়েল-টাইম যোগফল</div>
+              </div>
+
+              {/* Progress Rate Card */}
+              <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center justify-between text-xs font-extrabold text-slate-500">
+                  <span>Progress</span>
+                  <Activity className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">68.5%</div>
+                  <span className="text-xs font-black text-emerald-600">অন-ট্র্যাক</span>
+                </div>
+                {/* Mini Progress Bar */}
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: '68.5%' }}></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Visual Timeline Bar Section */}
+            <div className="bg-[#F8FAFC] border border-slate-200/80 rounded-2xl p-5 space-y-6">
+              <div className="flex items-center justify-between text-xs font-extrabold text-slate-700 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-emerald-600" />
+                  <span>৯০ দিনের রোডম্যাপ টাইমলাইন (Day 1 → Day 30 → Day 60 → Day 90)</span>
+                </div>
+                <span className="text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-md text-[11px] font-black">
+                  ৬৮.৫% সম্পন্ন
+                </span>
+              </div>
+
+              {/* Multi-stage Progress Bar */}
+              <div className="relative pt-1 pb-2">
+                <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                  <div className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-500" style={{ width: '68.5%' }}></div>
+                </div>
+
+                {/* Milestones Grid */}
+                <div className="grid grid-cols-4 gap-2 pt-4 text-center">
+                  {/* Day 1 */}
+                  <div className="space-y-1">
+                    <div className="w-6 h-6 rounded-full bg-emerald-600 text-white mx-auto flex items-center justify-center font-bold text-xs shadow-xs">
+                      ✓
+                    </div>
+                    <div className="text-xs font-black text-slate-900">Day 1</div>
+                    <div className="text-[11px] font-bold text-slate-500">৳০ (শুরু)</div>
+                  </div>
+
+                  {/* Day 30 */}
+                  <div className="space-y-1">
+                    <div className="w-6 h-6 rounded-full bg-emerald-600 text-white mx-auto flex items-center justify-center font-bold text-xs shadow-xs">
+                      ✓
+                    </div>
+                    <div className="text-xs font-black text-slate-900">Day 30</div>
+                    <div className="text-[11px] font-bold text-slate-600">৳৩০,০০০</div>
+                  </div>
+
+                  {/* Day 60 */}
+                  <div className="space-y-1">
+                    <div className="w-6 h-6 rounded-full bg-emerald-600 text-white mx-auto flex items-center justify-center font-bold text-xs shadow-xs">
+                      ✓
+                    </div>
+                    <div className="text-xs font-black text-slate-900">Day 60</div>
+                    <div className="text-[11px] font-bold text-slate-600">৳৬৫,০০০</div>
+                  </div>
+
+                  {/* Day 90 */}
+                  <div className="space-y-1">
+                    <div className="w-6 h-6 rounded-full bg-slate-200 border-2 border-slate-400 text-slate-600 mx-auto flex items-center justify-center font-bold text-xs">
+                      🎯
+                    </div>
+                    <div className="text-xs font-black text-slate-900">Day 90</div>
+                    <div className="text-[11px] font-bold text-emerald-700">৳১,০০,০০০</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Insight Card */}
+            <div className="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-bold flex-shrink-0 shadow-sm">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-emerald-800 uppercase tracking-wider">সাপ্তাহিক প্রোগ্রেস ইনসাইট</div>
+                  <div className="text-sm sm:text-base font-black text-slate-900 mt-0.5">
+                    “এই সপ্তাহে আপনার অগ্রগতি গত সপ্তাহের তুলনায় +১২%”
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-4 py-2 rounded-xl bg-white border border-emerald-200 text-emerald-800 text-xs font-extrabold flex items-center gap-1.5 shrink-0 shadow-2xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>লক্ষ্যের পথে সঠিকভাবে এগোচ্ছেন</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
 
       {/* 09. WHY DREMOY? (WORKFLOW VISUALIZATION) */}
-      < section id="why-dremoy" className="py-20 bg-white border-y border-slate-200/80" >
+      <section id="why-dremoy" className="py-20 bg-white border-y border-slate-200/80">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
 
           <div className="text-center space-y-4 max-w-3xl mx-auto">
@@ -1144,32 +1642,32 @@ export default function LandingPage({ onNavigateToAuth }) {
         <div className="space-y-3">
           {[
             {
-              q: 'Dremoy কী?',
-              a: 'Dremoy হলো আপনার ব্যবসার আয়, খরচ, কাস্টমার, সিআরএম, টাস্ক ও ডেইলি প্রোগ্রেস এক জায়গায় পরিচালনা করার একটি প্র্যাকটিক্যাল বিজনেস ওয়ার্কস্পেস।'
+              q: 'Dremoy কী এবং Dremoy IT কী কী সেবা প্রদান করে?',
+              a: 'Dremoy হলো আপনার ব্যবসার আয়, খরচ, সিআরএম, টাস্ক ও ৯০ দিনের প্রোগ্রেস অল-ইন-ওয়ান ড্যাশবোর্ডে পরিচালনা করার প্ল্যাটফর্ম। পাশাপাশি Dremoy IT কাস্টম ওয়েব ডেভেলপমেন্ট, ই-কমার্স সলিউশন, আইটি ট্রেনিং, স্মার্ট স্কুল সফটওয়্যার ও ড্রপশিপিং মেন্টরশিপ সেবা দিয়ে থাকে।'
             },
             {
-              q: 'Dremoy কার জন্য?',
-              a: 'ছোট ব্যবসার মালিক, ফ্রিল্যান্সার, এজেন্সি, সার্ভিস প্রোভাইডার, অনলাইন সেলার ও কোচিং অপারেটরদের জন্য উপযুক্ত।'
+              q: 'Dremoy কার জন্য সবচেয়ে বেশি উপযোগী?',
+              a: 'ছোট ও মাঝারি ব্যবসার মালিক, অনলাইন সেলার, ফ্রিল্যান্সার, এজেন্সি, টিউটর/কোচিং অপারেটর এবং টেকনোলজি সার্ভিস নিতে ইচ্ছুক উদ্যোক্তাদের জন্য।'
             },
             {
-              q: 'Dremoy-তে কী কী manage করা যায়?',
-              a: 'আয় ও ব্যয় ট্র্যাকিং, সেলস সিআরএম পাইপলাইন, দৈনিক কাজ, ক্লায়েন্ট ফলো-আপ ও বিজনেস ওভারভিউ।'
+              q: 'Dremoy-তে কী কী বিজনেস অ্যাক্টিভিটি manage করা যায়?',
+              a: 'দৈনিক আয় ও ব্যয় ট্র্যাকিং, সেলস সিআরএম পাইপলাইন, কাজ ও ফলো-আপ টাস্ক (Daily Tasks), টিউশন ও স্টুডент ফি ড্যাশবোর্ড এবং ৯০ দিনের ইনকাম গোল প্রোগ্রেস।'
             },
             {
-              q: 'আমি কীভাবে শুরু করব?',
-              a: "'শুরু করুন' বাটনে ক্লিক করে ইমেইল দিয়ে ১ মিনিটে ফ্রি একাউন্ট তৈরি করে আজই শুরু করতে পারেন।"
+              q: 'Dremoy IT-এর ট্রেনিং ও মেন্টরশিপের সুযোগ কী কী?',
+              a: 'আমাদের আইটি ট্রেনিংয়ের মধ্যে রয়েছে বেসিক কম্পিউটার, প্রফেশনাল অফিস স্কিলস, গ্রাফিক্স ডিজাইন, স্পোকেন ইংলিশ এবং সরাসরি ওয়ান-টু-ওয়ান ই-কমার্স ও ড্রপশিপিং মেন্টরশিপ।'
             },
             {
-              q: 'আমার business information কীভাবে যোগ করব?',
-              a: 'একাউন্টে লগইন করে ড্যাশবোর্ডের সেটিংসে আপনার সার্ভিস, লক্ষ্য ও ক্লায়েন্ট ইনফরমেশন সহজেই যোগ করতে পারবেন।'
+              q: 'আমি কীভাবে শুরু করব বা সেবা নিতে পারি?',
+              a: "'শুরু করুন' বাটনে ক্লিক করে ফ্রি একাউন্ট তৈরি করে আজই বিজনেস ওয়ার্কস্পেস ব্যবহার শুরু করতে পারেন। এছাড়া ওয়েবসাইট ও কন্টাক্ট অপশন থেকে কাস্টম সেবার ডেমো নিতে পারেন।"
             },
             {
-              q: 'Pricing কীভাবে কাজ করবে?',
-              a: 'বর্তমানে প্রাথমিক ব্যবহারকারীদের জন্য প্রারম্ভিক অ্যাক্সেস দেওয়া হচ্ছে। খুব শিগগিরই সহজ ও সাশ্রয়ী প্ল্যান প্রকাশ করা হবে।'
+              q: 'আমার একাউন্ট ও ব্যবসায়িক ডাটা কতটা নিরাপদ?',
+              a: 'আপনার একাউন্টের সকল তথ্য ক্লাউড ডাটাবেজে এনক্রিপ্টেড অবস্থায় সংরক্ষিত থাকে এবং শুধুমাত্র আপনি আপনার একাউন্ট দিয়ে তা এক্সেস করতে পারবেন।'
             },
             {
-              q: 'আমার account ও data কীভাবে পরিচালিত হবে?',
-              a: 'আপনার একাউন্টের সকল তথ্য নিরাপদ ক্লাউড ডাটাবেজে সংরক্ষিত থাকে এবং শুধুমাত্র আপনি আপনার একাউন্ট দিয়ে তা দেখতে ও পরিচালনা করতে পারবেন।'
+              q: 'Pricing ও সার্ভিস চার্জ কীভাবে কাজ করবে?',
+              a: 'Dremoy বিজনেস ম্যানেজমেন্ট ড্যাশবোর্ডে বর্তমানে প্রারম্ভিক ফ্রি অ্যাক্সেস দেওয়া হচ্ছে। কাস্টম আইটি সলিউশন বা কাস্টম প্রজেক্টের জন্য প্রয়োজন অনুযায়ী সাশ্রয়ী প্ল্যান রয়েছে।'
             }
           ].map((faq, index) => (
             <div key={index} className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden transition-all">
@@ -1227,33 +1725,128 @@ export default function LandingPage({ onNavigateToAuth }) {
       </section >
 
       {/* 14. FOOTER */}
-      < footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800" >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6 text-sm">
-
-          <div className="space-y-1 text-center md:text-left">
-            <div className="text-white font-bold text-lg flex items-center justify-center md:justify-start gap-2">
-              <div className="w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-                D
+      <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-slate-800/80">
+            {/* 1. Brand & Info */}
+            <div className="space-y-3 col-span-1 md:col-span-1">
+              <div className="text-white font-bold text-xl flex items-center gap-2">
+                <div className="w-7 h-7 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-extrabold text-sm shadow-sm shadow-emerald-500/30">
+                  D
+                </div>
+                Dremoy
               </div>
-              Dremoy
+              <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                উদ্যোক্তাদের জন্য স্মার্ট বিজনেস ম্যানেজমেন্ট প্ল্যাটফর্ম।
+              </p>
             </div>
-            <p className="text-xs text-slate-400 font-medium">Business Management SaaS</p>
+
+            {/* 2. Navigation Links */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">ন্যাভিগেশন</h4>
+              <ul className="space-y-2 text-xs font-semibold text-slate-400">
+                <li><button onClick={() => scrollToSection('features')} className="hover:text-emerald-400 transition-colors">Features</button></li>
+                <li><button onClick={() => scrollToSection('why-dremoy')} className="hover:text-emerald-400 transition-colors">Why Dremoy</button></li>
+                <li><button onClick={() => scrollToSection('pricing')} className="hover:text-emerald-400 transition-colors">Pricing</button></li>
+                <li><button onClick={() => scrollToSection('faq')} className="hover:text-emerald-400 transition-colors">FAQ</button></li>
+              </ul>
+            </div>
+
+            {/* 3. Account Actions */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">একাউন্ট</h4>
+              <ul className="space-y-2 text-xs font-semibold text-slate-400">
+                <li><button onClick={() => onNavigateToAuth('login')} className="hover:text-emerald-400 transition-colors">লগইন করুন</button></li>
+                <li><button onClick={() => onNavigateToAuth('signup')} className="hover:text-emerald-400 transition-colors">শুরু করুন (ফ্রি একাউন্ট)</button></li>
+              </ul>
+            </div>
+
+            {/* 4. Support & Legal Links */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">সাপোর্ট ও লিগ্যাল</h4>
+              <ul className="space-y-2 text-xs font-semibold text-slate-400">
+                <li>
+                  <button 
+                    onClick={() => scrollToSection('faq')} 
+                    className="hover:text-emerald-400 transition-colors text-left"
+                  >
+                    Contact / Support (FAQ)
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => setLegalModal('privacy')} 
+                    className="hover:text-emerald-400 transition-colors text-left"
+                  >
+                    Privacy Policy
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => setLegalModal('terms')} 
+                    className="hover:text-emerald-400 transition-colors text-left"
+                  >
+                    Terms of Service
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-6 font-semibold text-slate-300 text-xs">
-            <button onClick={() => scrollToSection('features')} className="hover:text-emerald-400">Features</button>
-            <button onClick={() => scrollToSection('why-dremoy')} className="hover:text-emerald-400">Why Dremoy</button>
-            <button onClick={() => scrollToSection('pricing')} className="hover:text-emerald-400">Pricing</button>
-            <button onClick={() => scrollToSection('faq')} className="hover:text-emerald-400">FAQ</button>
-            <button onClick={() => onNavigateToAuth('login')} className="hover:text-emerald-400">Login</button>
-          </div>
-
-          <div className="text-xs text-slate-400 font-medium text-center">
-            © 2026 Dremoy. All rights reserved.
+          {/* Bottom Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium">
+            <p>© 2026 Dremoy. All rights reserved.</p>
+            <p className="text-[11px] text-slate-400">Business Management SaaS</p>
           </div>
 
         </div>
-      </footer >
+      </footer>
+
+      {/* LEGAL MODAL */}
+      {legalModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl relative border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setLegalModal(null)}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="space-y-2">
+              <h3 className="text-xl font-extrabold text-slate-900">
+                {legalModal === 'privacy' ? 'Privacy Policy (গোপনীয়তা নীতি)' : 'Terms of Service (ব্যবহারের শর্তাবলী)'}
+              </h3>
+              <p className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md inline-block">
+                Dremoy Official Notice
+              </p>
+            </div>
+            <div className="text-sm text-slate-600 font-medium space-y-3 leading-relaxed">
+              {legalModal === 'privacy' ? (
+                <>
+                  <p>Dremoy আপনার তথ্যের নিরাপত্তা ও গোপনীয়তা রক্ষায় সর্বোচ্চ গুরুত্ব দেয়।</p>
+                  <p>প্ল্যাটফর্মে সংরক্ষিত সকল ব্যবসায়িক ডাটা সুরক্ষিত ও এনক্রিপ্টেড অবস্থায় রাখা হয় এবং ব্যবহারকারীর অনুমতি ছাড়া অন্য কোনো উদ্দেশ্যে ব্যবহার করা হয় না।</p>
+                  <p className="text-xs text-slate-400 italic">সর্বশেষ আপডেট: সেপ্টেম্বর ২০২৬</p>
+                </>
+              ) : (
+                <>
+                  <p>Dremoy বিজনেস ম্যানেজমেন্ট প্ল্যাটফর্মের ব্যবহারের শর্তাবলী।</p>
+                  <p>প্ল্যাটফর্মটি সফলভাবে পরিচালনার জন্য সকল ব্যবহারকারীকে সুনির্দিষ্ট নির্দেশনা মেনে চলতে হয়। ব্যবহারের নীতি ও নিয়মাবলী নিয়মিত পরিমার্জনযোগ্য।</p>
+                  <p className="text-xs text-slate-400 italic">সর্বশেষ আপডেট: সেপ্টেম্বর ২০২৬</p>
+                </>
+              )}
+            </div>
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setLegalModal(null)}
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition-colors"
+              >
+                বন্ধ করুন
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div >
   );
