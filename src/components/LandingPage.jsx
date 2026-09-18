@@ -32,14 +32,17 @@ export default function LandingPage({ onNavigateToAuth }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [legalModal, setLegalModal] = useState(null); // 'privacy' | 'terms' | null
+  const [activeSection, setActiveSection] = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
+    // 1. Scroll Reveal Intersection Observer
+    const revealObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('reveal-active');
-            observer.unobserve(entry.target);
+            revealObserver.unobserve(entry.target);
           }
         });
       },
@@ -47,9 +50,40 @@ export default function LandingPage({ onNavigateToAuth }) {
     );
 
     const elements = document.querySelectorAll('.reveal-init');
-    elements.forEach((el) => observer.observe(el));
+    elements.forEach((el) => revealObserver.observe(el));
 
-    return () => observer.disconnect();
+    // 2. Scrollspy Observer for Header Navigation
+    const sectionIds = ['problem', 'transformation', 'features', 'tuition-showcase', 'ninety-day-planner', 'why-dremoy', 'pricing', 'faq'];
+    const sectionElements = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+
+    const spyObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { threshold: 0.25, rootMargin: '-80px 0px -40% 0px' }
+    );
+
+    sectionElements.forEach((el) => spyObserver.observe(el));
+
+    // 3. Scroll Header Transformation Listener
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      revealObserver.disconnect();
+      spyObserver.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const toggleFaq = (index) => {
@@ -60,54 +94,81 @@ export default function LandingPage({ onNavigateToAuth }) {
     setMobileMenuOpen(false);
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      const headerOffset = 80;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
   };
+
+  const navItems = [
+    { id: 'features', label: 'ফিচারসমূহ' },
+    { id: 'tuition-showcase', label: 'টিউশন ট্র্যাকার' },
+    { id: 'ninety-day-planner', label: '৯০ দিনের গোল' },
+    { id: 'why-dremoy', label: 'কেন Dremoy?' },
+    { id: 'pricing', label: 'প্রাইসিং' },
+    { id: 'faq', label: 'FAQ' },
+  ];
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans selection:bg-emerald-100 selection:text-emerald-900">
 
       {/* 01. HEADER / NAVIGATION */}
-      <header className="sticky top-0 z-50 bg-[#F8FAFC]/90 backdrop-blur-md border-b border-slate-200/80 transition-all">
+      <header
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? 'bg-white/95 backdrop-blur-md shadow-md shadow-slate-900/5 border-b border-slate-200/90 py-0.5'
+            : 'bg-[#F8FAFC]/90 backdrop-blur-md border-b border-slate-200/80 py-0'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
 
           {/* Logo */}
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm shadow-emerald-500/20">
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="flex items-center gap-2.5 group focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none rounded-xl p-1 -ml-1 text-left"
+            aria-label="Dremoy হোম পেজে যান"
+          >
+            <div className="w-10 h-10 bg-emerald-500 group-hover:bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm shadow-emerald-500/20 transition-colors">
               D
             </div>
-            <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
+            <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
               Dremoy
             </span>
-          </div>
+          </button>
 
           {/* Nav Links (Desktop) */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
-            <button onClick={() => scrollToSection('features')} className="hover:text-emerald-600 transition-colors">
-              ফিচারসমূহ
-            </button>
-            <button onClick={() => scrollToSection('why-dremoy')} className="hover:text-emerald-600 transition-colors">
-              কেন Dremoy?
-            </button>
-            <button onClick={() => scrollToSection('pricing')} className="hover:text-emerald-600 transition-colors">
-              প্রাইসিং
-            </button>
-            <button onClick={() => scrollToSection('faq')} className="hover:text-emerald-600 transition-colors">
-              FAQ
-            </button>
+          <nav className="hidden md:flex items-center gap-1.5 text-sm font-semibold text-slate-600" aria-label="প্রধান মেনু">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className={`px-3 py-1.5 rounded-xl font-bold text-sm transition-all focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none ${
+                  activeSection === item.id
+                    ? 'text-emerald-700 bg-emerald-50 border border-emerald-200/60 shadow-2xs'
+                    : 'text-slate-600 hover:text-emerald-600 hover:bg-slate-100/60'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
           </nav>
 
           {/* Action CTAs (Desktop) */}
           <div className="hidden md:flex items-center gap-3">
             <button
               onClick={() => onNavigateToAuth('login')}
-              className="px-4 py-2 text-sm font-bold text-slate-700 hover:text-emerald-600 transition-colors"
+              className="px-4 py-2 text-sm font-bold text-slate-700 hover:text-emerald-600 transition-colors rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
             >
               লগইন করুন
             </button>
             <button
               onClick={() => onNavigateToAuth('signup')}
-              className="px-5 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-xl transition-all shadow-md shadow-emerald-600/20"
+              className="px-5 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-xl transition-all shadow-md shadow-emerald-600/20 hover:shadow-lg hover:shadow-emerald-600/30 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
             >
               শুরু করুন
             </button>
@@ -117,7 +178,10 @@ export default function LandingPage({ onNavigateToAuth }) {
           <div className="md:hidden flex items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors"
+              className="p-2 text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-navigation"
+              aria-label={mobileMenuOpen ? "মেনু বন্ধ করুন" : "মেনু খুলুন"}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -126,31 +190,35 @@ export default function LandingPage({ onNavigateToAuth }) {
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-4 animate-in slide-in-from-top duration-200">
-            <nav className="flex flex-col gap-3 font-semibold text-slate-700 text-base">
-              <button onClick={() => scrollToSection('features')} className="text-left py-1 hover:text-emerald-600">
-                ফিচারসমূহ
-              </button>
-              <button onClick={() => scrollToSection('why-dremoy')} className="text-left py-1 hover:text-emerald-600">
-                কেন Dremoy?
-              </button>
-              <button onClick={() => scrollToSection('pricing')} className="text-left py-1 hover:text-emerald-600">
-                প্রাইসিং
-              </button>
-              <button onClick={() => scrollToSection('faq')} className="text-left py-1 hover:text-emerald-600">
-                FAQ
-              </button>
+          <div
+            id="mobile-navigation"
+            className="md:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-4 shadow-xl animate-in slide-in-from-top duration-200"
+          >
+            <nav className="flex flex-col gap-1.5 font-semibold text-slate-700 text-base" aria-label="মোবাইল মেনু">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
+                  className={`text-left py-2.5 px-3.5 rounded-xl font-bold transition-all focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none ${
+                    activeSection === item.id
+                      ? 'text-emerald-700 bg-emerald-50 border border-emerald-200/60'
+                      : 'text-slate-700 hover:bg-slate-50 hover:text-emerald-600'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
             </nav>
             <div className="pt-3 border-t border-slate-100 flex flex-col gap-2.5">
               <button
                 onClick={() => { setMobileMenuOpen(false); onNavigateToAuth('login'); }}
-                className="w-full py-2.5 text-center text-sm font-bold text-slate-700 bg-slate-100 rounded-xl"
+                className="w-full py-2.5 text-center text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
               >
                 লগইন করুন
               </button>
               <button
                 onClick={() => { setMobileMenuOpen(false); onNavigateToAuth('signup'); }}
-                className="w-full py-2.5 text-center text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20"
+                className="w-full py-2.5 text-center text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
               >
                 শুরু করুন
               </button>
@@ -436,10 +504,298 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
         </div>
-      </section >
+      </section>
+
+      {/* 03.5 OUTCOME & TRANSFORMATION SECTION (Programming Hero Node Graph Style) */}
+      <section id="transformation" className="py-20 sm:py-28 bg-[#F8FAFC] relative overflow-hidden border-b border-slate-200/80">
+        
+        {/* Background decorative subtle gradient */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] bg-gradient-to-r from-purple-100/20 via-emerald-100/30 to-teal-100/20 blur-3xl pointer-events-none rounded-full" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
+
+          {/* Section Header */}
+          <div className="text-center space-y-3 max-w-3xl mx-auto reveal-init">
+            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-xs sm:text-sm font-bold shadow-2xs">
+              <Sparkles className="w-4 h-4 text-emerald-600" />
+              <span>ব্যবসার রূপান্তর চিত্র</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
+              প্রতিদিনের বিশৃঙ্খলা থেকে <br className="hidden sm:inline" />
+              <span className="text-emerald-600">ব্যবসার সম্পূর্ণ নিয়ন্ত্রণে</span>
+            </h2>
+            <p className="text-base sm:text-lg text-slate-600 font-medium leading-relaxed max-w-2xl mx-auto">
+              Dremoy ব্যবহারের ফলে কীভাবে আপনার দৈনন্দিন মানসিক চাপ কমে এবং কাজগুলো একটি সুশৃঙ্খল সিস্টেমে রূপ নেয়।
+            </p>
+          </div>
+
+
+          {/* ======================================================== */}
+          {/* DESKTOP VIEW: Node Graph Flow Layout                      */}
+          {/* ======================================================== */}
+          <div className="hidden lg:block relative reveal-init py-4">
+            
+            {/* Main Graph Grid */}
+            <div className="grid grid-cols-12 gap-0 items-center relative h-[490px]">
+
+              {/* 1. LEFT CONTAINER: CHAOS (Lilac Solid Card) */}
+              <div className="col-span-4 pr-0 relative z-10 h-full">
+                <div className="bg-[#F3E8FF] rounded-[36px] p-7 space-y-4 border border-purple-200/60 shadow-xs h-full flex flex-col justify-between">
+                  
+                  {/* Card Main Title */}
+                  <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    প্রতিদিনের <span className="text-purple-600">ঝামেলাগুলো</span>
+                  </h3>
+
+                  {/* Clean White Rounded Pills Stack */}
+                  <div className="space-y-2 flex-grow flex flex-col justify-between pt-1">
+                    {[
+                      "হিসাবটা কোথায় রেখেছিলাম?",
+                      "এই Customer-কে কখন Follow-up করব?",
+                      "কে টাকা দিয়েছে, কে এখনো দেয়নি?",
+                      "Income আর Expense মিলিয়ে বুঝতে ঝামেলা হয়",
+                      "আজ কোন কাজটা আগে করব?",
+                      "এত কিছু মনে রাখতে গিয়ে মাথায় চাপ পড়ে"
+                    ].map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-white rounded-full px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs border border-purple-100/80 hover:shadow-xs transition-all w-fit max-w-full"
+                      >
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+
+                </div>
+              </div>
+
+              {/* 2. CENTER SECTION: LEFT CONNECTOR + DREMOY FOLDER NODE + RIGHT BRANCHING SVG */}
+              <div className="col-span-3 relative flex items-center justify-center h-full">
+                
+                {/* Left Connector Line (Left Card to Folder) */}
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-16 h-0.5 pointer-events-none z-0">
+                  <svg className="w-full h-full overflow-visible" viewBox="0 0 64 2" fill="none">
+                    <line x1="0" y1="1" x2="64" y2="1" stroke="#cbd5e1" strokeWidth="2" />
+                    <line x1="0" y1="1" x2="64" y2="1" stroke="#8B5CF6" strokeWidth="2.5" className="animate-flow-line" />
+                  </svg>
+                </div>
+
+                {/* 3D Purple Folder Card Hub Node */}
+                <div className="z-10 relative group hover-lift">
+                  {/* Folder Top Tab */}
+                  <div className="w-24 h-4 bg-[#8B5CF6] rounded-t-xl mx-auto -mb-1 shadow-xs border-t border-x border-purple-300/40" />
+
+                  {/* Main Folder Body */}
+                  <div className="w-44 h-44 bg-gradient-to-b from-[#8B5CF6] via-[#7C3AED] to-[#6D28D9] text-white rounded-3xl p-6 shadow-2xl flex flex-col justify-between border border-purple-400/40 relative overflow-hidden">
+                    
+                    {/* Subtle inner highlight */}
+                    <div className="absolute -top-10 -right-10 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none" />
+
+                    <div className="w-8 h-1 bg-white/40 rounded-full" />
+
+                    <div className="space-y-0.5 text-left">
+                      <div className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                        Dremoy
+                      </div>
+                      <div className="text-4xl sm:text-5xl font-black tracking-tight text-white/90">
+                        01
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Branching SVG Bezier Lines (Folder to 6 Right Items) */}
+                <div className="absolute right-0 top-0 bottom-0 w-32 pointer-events-none z-0">
+                  <svg className="w-full h-full overflow-visible" viewBox="0 0 128 490" fill="none">
+                    <defs>
+                      <linearGradient id="purple-stream" x1="0%" y1="50%" x2="100%" y2="50%">
+                        <stop offset="0%" stopColor="#8B5CF6" />
+                        <stop offset="100%" stopColor="#10B981" />
+                      </linearGradient>
+                    </defs>
+
+                    {[
+                      { yEnd: 75 },
+                      { yEnd: 150 },
+                      { yEnd: 225 },
+                      { yEnd: 300 },
+                      { yEnd: 375 },
+                      { yEnd: 450 }
+                    ].map((branch, index) => (
+                      <g key={index}>
+                        {/* Base subtle silver curve */}
+                        <path
+                          d={`M 0 245 C 65 245, 75 ${branch.yEnd}, 128 ${branch.yEnd}`}
+                          stroke="#cbd5e1"
+                          strokeWidth="2"
+                        />
+                        {/* Animated flowing line */}
+                        <path
+                          d={`M 0 245 C 65 245, 75 ${branch.yEnd}, 128 ${branch.yEnd}`}
+                          stroke={index === 4 ? "#10B981" : "url(#purple-stream)"}
+                          strokeWidth={index === 4 ? "3" : "2.5"}
+                          className="animate-flow-line"
+                          style={{ animationDelay: `${index * 0.18}s` }}
+                        />
+                      </g>
+                    ))}
+                  </svg>
+                </div>
+
+              </div>
+
+              {/* 3. RIGHT CONTAINER: CONTROL OUTCOME PILLS */}
+              <div className="col-span-5 pl-4 z-10 h-full flex flex-col justify-between py-0.5 space-y-4">
+                
+                {/* Right Container Main Title */}
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  Dremoy-তে যেভাবে <span className="text-emerald-600">গুছিয়ে যাবে</span>
+                </h3>
+
+                <div className="space-y-2 flex-grow flex flex-col justify-between">
+                  {[
+                    "প্রয়োজনীয় তথ্য এক জায়গায়",
+                    "Customer ও Follow-up গুছানো",
+                    "Income/Expense পরিষ্কারভাবে দেখা",
+                    "Tuition payment ও বকেয়া সহজে track করা",
+                    "90 দিনের লক্ষ্য ও progress দেখা",
+                    "আজকের গুরুত্বপূর্ণ কাজ সহজে বুঝে নেওয়া"
+                  ].map((outcome, idx) => (
+                    <div
+                      key={idx}
+                      className={`rounded-full px-5 py-2 text-xs sm:text-sm font-bold flex items-center gap-3 transition-all ${
+                        idx === 4
+                          ? 'bg-emerald-50 border-2 border-emerald-500 text-emerald-950 shadow-md scale-[1.01]'
+                          : 'bg-[#F1F5F9] text-slate-700 hover:bg-slate-200/80 border border-slate-200/80 shadow-2xs'
+                      }`}
+                    >
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          idx === 4
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-300 text-slate-600'
+                        }`}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </div>
+                      <span>{outcome}</span>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          {/* ======================================================== */}
+          {/* MOBILE VIEW: Vertical Flow with Animated Connectors      */}
+          {/* ======================================================== */}
+          <div className="block lg:hidden space-y-8 reveal-init">
+
+            {/* 1. CHAOS CARD (Mobile) */}
+            <div className="bg-[#F3E8FF] border border-purple-200 rounded-[32px] p-6 space-y-4 shadow-sm">
+              <div className="text-center">
+                <h3 className="text-xl font-black text-slate-900">
+                  প্রতিদিনের <span className="text-purple-600">ঝামেলাগুলো</span>
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {[
+                  "হিসাবটা কোথায় রেখেছিলাম?",
+                  "এই Customer-কে কখন Follow-up করব?",
+                  "কে টাকা দিয়েছে, কে এখনো দেয়নি?",
+                  "Income আর Expense মিলিয়ে বুঝতে ঝামেলা হয়",
+                  "আজ কোন কাজটা আগে করব?",
+                  "এত কিছু মনে রাখতে গিয়ে মাথায় চাপ পড়ে"
+                ].map((item, idx) => (
+                  <div key={idx} className="bg-white rounded-full px-4 py-2 text-xs font-semibold text-slate-700 border border-purple-100 shadow-2xs">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Vertical Flow Stream Connector (Top to Middle) */}
+            <div className="flex flex-col items-center justify-center my-2">
+              <div className="w-0.5 h-8 bg-gradient-to-b from-purple-400 to-purple-600 rounded-full animate-pulse" />
+              <div className="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center -mt-1 shadow-md">
+                <ArrowRight className="w-3.5 h-3.5 rotate-90" />
+              </div>
+            </div>
+
+            {/* 2. DREMOY TRANSFORMATION HUB (Mobile) */}
+            <div className="w-44 mx-auto">
+              <div className="w-20 h-3 bg-[#8B5CF6] rounded-t-xl mx-auto -mb-1 shadow-xs" />
+              <div className="bg-gradient-to-b from-[#8B5CF6] via-[#7C3AED] to-[#6D28D9] text-white rounded-3xl p-6 shadow-xl text-left space-y-1">
+                <div className="w-6 h-1 bg-white/40 rounded-full mb-4" />
+                <div className="text-lg font-black text-white">Dremoy</div>
+                <div className="text-3xl font-black text-white/90">01</div>
+              </div>
+            </div>
+
+            {/* Vertical Flow Stream Connector (Middle to Bottom) */}
+            <div className="flex flex-col items-center justify-center my-2">
+              <div className="w-0.5 h-8 bg-gradient-to-b from-purple-600 to-emerald-500 rounded-full animate-pulse" />
+              <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center -mt-1 shadow-md">
+                <ArrowRight className="w-3.5 h-3.5 rotate-90" />
+              </div>
+            </div>
+
+            {/* 3. CONTROL OUTCOME ITEMS (Mobile) */}
+            <div className="space-y-3">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                  Dremoy-তে যেভাবে <span className="text-emerald-600">গুছিয়ে যাবে</span>
+                </h3>
+              </div>
+              {[
+                "প্রয়োজনীয় তথ্য এক জায়গায়",
+                "Customer ও Follow-up গুছানো",
+                "Income/Expense পরিষ্কারভাবে দেখা",
+                "Tuition payment ও বকেয়া সহজে track করা",
+                "90 দিনের লক্ষ্য ও progress দেখা",
+                "আজকের গুরুত্বপূর্ণ কাজ সহজে বুঝে নেওয়া"
+              ].map((outcome, idx) => (
+                <div
+                  key={idx}
+                  className={`rounded-full px-5 py-3 text-xs font-bold flex items-center gap-3 ${
+                    idx === 4
+                      ? 'bg-emerald-50 border-2 border-emerald-500 text-emerald-950 shadow-sm'
+                      : 'bg-[#F1F5F9] text-slate-700 border border-slate-200/70'
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      idx === 4 ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-slate-600'
+                    }`}
+                  >
+                    <Check className="w-3 h-3" />
+                  </div>
+                  <span>{outcome}</span>
+                </div>
+              ))}
+            </div>
+
+          </div>
+
+
+          {/* 4. FINAL OUTCOME STATEMENT BANNER */}
+          <div className="bg-gradient-to-r from-emerald-900 via-slate-900 to-emerald-950 text-white rounded-3xl p-6 sm:p-8 text-center max-w-4xl mx-auto shadow-xl border border-emerald-800/40 space-y-2 reveal-init relative overflow-hidden">
+            <div className="absolute -top-12 -right-12 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+            <p className="text-xs uppercase tracking-widest text-emerald-400 font-extrabold">চূড়ান্ত লক্ষ্য</p>
+            <h3 className="text-xl sm:text-3xl font-black tracking-tight text-white">
+              “কম ঝামেলা। কম মনে রাখার চাপ। ব্যবসার ওপর বেশি নিয়ন্ত্রণ।”
+            </h3>
+          </div>
+
+        </div>
+      </section>
 
       {/* 04. WITHOUT DREMOY VS WITH DREMOY */}
-      < section className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12" >
+      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12">
         <div className="text-center space-y-3 max-w-3xl mx-auto">
           <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             কাজের পার্থক্যের চিত্র
