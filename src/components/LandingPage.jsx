@@ -172,7 +172,7 @@ export default function LandingPage({ onNavigateToAuth }) {
         <div className="space-y-4 max-w-4xl mx-auto">
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.2]">
             আপনার ব্যবসার পুরো কাজ, <br className="hidden sm:inline" />
-            <span className="text-emerald-600 underline decoration-emerald-300 decoration-wavy underline-offset-8">এক জায়গায়।</span>
+            <span className="text-emerald-600">এক জায়গায়।</span>
           </h1>
           <p className="text-base sm:text-xl text-slate-600 font-medium max-w-2xl mx-auto leading-relaxed">
             আয়, খরচ, customer, follow-up, কাজ আর business progress—সবকিছু এক workspace থেকে সহজভাবে পরিচালনা করুন।
@@ -895,7 +895,7 @@ export default function LandingPage({ onNavigateToAuth }) {
               <span>টিউশন ও স্টুডেন্ট ফি ট্র্যাকার</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-              টিউশনের হিসাবও থাকুক <span className="text-indigo-600 underline decoration-indigo-300 decoration-wavy underline-offset-8">এক জায়গায়।</span>
+              টিউশনের হিসাবও থাকুক <span className="text-indigo-600">এক জায়গায়।</span>
             </h2>
             <p className="text-base sm:text-xl text-slate-600 font-medium leading-relaxed">
               আপনার সব ছাত্র-ছাত্রী, মাসিক ফি, আদায়কৃত পেমেন্ট ও বকেয়ার হিসাব রাখুন একদম সহজ ও নির্ভুলভাবে।
@@ -1126,7 +1126,7 @@ export default function LandingPage({ onNavigateToAuth }) {
               <span>৯০ দিনের ইনকাম গোল ও প্রোগ্রেস মেথডোলজি</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-              ৯০ দিনের লক্ষ্যকে <span className="text-emerald-600 underline decoration-emerald-300 decoration-wavy underline-offset-8">প্রতিদিনের কাজে</span> নামিয়ে আনুন
+              ৯০ দিনের লক্ষ্যকে <span className="text-emerald-600">প্রতিদিনের কাজে</span> নামিয়ে আনুন
             </h2>
             <p className="text-base sm:text-xl text-slate-600 font-medium leading-relaxed">
               Dremoy শুধু আপনার আয়ের হিসাব রাখে না—একটি সুনির্দিষ্ট income goal-এর দিকে আপনার ব্যবসার ধারাবাহিক অগ্রগতি track করতে সাহায্য করে।
