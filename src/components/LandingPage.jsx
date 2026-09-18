@@ -311,10 +311,10 @@ export default function LandingPage({ onNavigateToAuth }) {
           
           <div className="text-center space-y-3 max-w-3xl mx-auto">
             <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              ব্যবসার কাজ কোথায় কোথায় ছড়িয়ে আছে?
+              কাজ বাড়ছে, কিন্তু হিসাব আর কাস্টমার ফলো-আপ কি হারিয়ে যাচ্ছে?
             </h2>
             <p className="text-base sm:text-lg text-slate-600 font-medium">
-              আপনার ব্যবসার প্রতিদিনের হিসাব ও কাজগুলো সাধারণত আলাদা আলাদা জায়গায় পেঁচিয়ে থাকে।
+              হিসাব খাতায়, কাস্টমার মেসেঞ্জারে, আর গুরুত্বপূর্ণ কাজের ট্র্যাকিং মনে রাখার ওপর—এভাবে ব্যবসা পরিচালনা করতে গিয়ে প্রতিদিন মূল্যবান সময় নষ্ট হয়।
             </p>
           </div>
 
@@ -369,12 +369,12 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
           {/* Empathetic Conclusion Box */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 text-center max-w-3xl mx-auto space-y-2">
+          <div className="bg-[#F8FAFC] border border-emerald-200/80 rounded-3xl p-6 sm:p-8 text-center max-w-3xl mx-auto space-y-3 shadow-2xs">
             <h3 className="text-lg sm:text-xl font-bold text-slate-900">
-              সমস্যা software-এর অভাব নয়।
+              আপনি ভুল করছেন না। আপনার ব্যবসা বাড়ার সাথে সাথে পুরোনো ছড়িয়ে থাকা পদ্ধতিগুলো আর যথেষ্ট থাকে না।
             </h3>
-            <p className="text-base text-slate-600 font-semibold">
-              সমস্যা হলো—গুরুত্বপূর্ণ কাজগুলো এক জায়গায় নেই।
+            <p className="text-sm sm:text-base text-slate-600 font-medium max-w-2xl mx-auto">
+              Dremoy-এর লক্ষ্য একটিই: আপনার ছড়ানো কাজগুলোকে এক জায়গায় এনে সময় ও মানসিক চাপ কমানো—যাতে দিন শেষে ব্যবসার আসল অবস্থা এক নজরে দেখতে পান।
             </p>
           </div>
 
