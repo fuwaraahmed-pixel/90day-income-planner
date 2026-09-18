@@ -16,7 +16,13 @@ import {
   FileSpreadsheet,
   Bookmark,
   Brain,
-  Target
+  Target,
+  BarChart3,
+  GitPullRequest,
+  PieChart,
+  Receipt,
+  Activity,
+  Check
 } from 'lucide-react';
 
 export default function LandingPage({ onNavigateToAuth }) {
@@ -148,10 +154,16 @@ export default function LandingPage({ onNavigateToAuth }) {
           <p className="text-base sm:text-xl text-slate-600 font-medium max-w-2xl mx-auto leading-relaxed">
             আয়, খরচ, customer, follow-up, কাজ আর business progress—সবকিছু এক workspace থেকে সহজভাবে পরিচালনা করুন।
           </p>
-        </div>
+
+          {/* Key Value Proposition Highlight */}
+          <div className="pt-2">
+            <p className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight inline-block py-2.5 px-5 rounded-2xl shadow-2xs">
+              <span className="text-rose-600 font-black" style={{ textDecorationColor: 'black' }} >"তথ্য খুজতে নয়"{' '}</span>-  ব্যবসা বাড়াতে সময় দিন।”</p>
+          </div>
+        </div >
 
         {/* Hero Action CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+        < div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2" >
           <button
             onClick={() => onNavigateToAuth('signup')}
             className="w-full sm:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-2xl text-base sm:text-lg transition-all shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 group"
@@ -165,10 +177,10 @@ export default function LandingPage({ onNavigateToAuth }) {
           >
             লগইন করুন
           </button>
-        </div>
+        </div >
 
         {/* Hero Visual — Large Dominant Dremoy Dashboard Preview */}
-        <div className="pt-8 max-w-6xl mx-auto">
+        < div className="pt-8 max-w-6xl mx-auto" >
           <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden p-3 sm:p-6 space-y-6 text-left relative">
 
             {/* Mock Dashboard Top Control Bar */}
@@ -301,12 +313,12 @@ export default function LandingPage({ onNavigateToAuth }) {
 
             </div>
           </div>
-        </div>
+        </div >
 
-      </section>
+      </section >
 
       {/* 03. PROBLEM SECTION */}
-      <section id="problem" className="py-20 bg-white border-y border-slate-200/80">
+      < section id="problem" className="py-20 bg-white border-y border-slate-200/80" >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
 
           <div className="text-center space-y-4 max-w-3xl mx-auto">
@@ -401,10 +413,10 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
         </div>
-      </section>
+      </section >
 
       {/* 04. WITHOUT DREMOY VS WITH DREMOY */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12">
+      < section className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12" >
         <div className="text-center space-y-3 max-w-3xl mx-auto">
           <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             কাজের পার্থক্যের চিত্র
@@ -467,10 +479,10 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
         </div>
-      </section>
+      </section >
 
       {/* 05. PRODUCT SHOWCASE */}
-      <section id="features" className="py-20 bg-white border-y border-slate-200/80">
+      < section id="features" className="py-20 bg-white border-y border-slate-200/80" >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
 
           <div className="text-center space-y-3 max-w-3xl mx-auto">
@@ -518,80 +530,253 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
         </div>
-      </section>
+      </section >
 
-      {/* 06. CORE FEATURES (6 BLOCK GRID) */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12">
-        <div className="text-center space-y-3 max-w-3xl mx-auto">
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+      {/* 06. CORE FEATURES (6 BLOCK GRID WITH MINI UI WIDGETS) */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-16">
+        
+        {/* Header */}
+        <div className="text-center space-y-4 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold tracking-wide">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>স্মার্ট বিজনেস ওয়ার্কস্পেস</span>
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
             Dremoy-এর ৬টি মূল ফিচার
           </h2>
-          <p className="text-base sm:text-lg text-slate-600 font-medium">
-            ব্যবসার প্রতিটি গুরুত্বপূর্ণ অংশ পরিচালনা করার জন্য নিখুঁত টুলস।
+          <p className="text-base sm:text-xl text-slate-600 font-medium leading-relaxed">
+            ব্যবসার প্রতিটি গুরুত্বপূর্ণ অংশ পরিচালনা করার জন্য নিখুঁত ও সহজ সমাধান।
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* 6 Grid Cards with Mini UI Mockups */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 
           {/* 01 — Income */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-3 shadow-2xs hover:shadow-md transition-all">
-            <div className="text-xs font-bold text-emerald-600">01</div>
-            <h3 className="text-lg font-bold text-slate-900">Income</h3>
-            <p className="text-sm text-slate-600 font-medium">
-              কোথা থেকে কত আয় হচ্ছে, সহজে দেখুন।
-            </p>
+          <div className="group bg-white border border-slate-200/90 hover:border-emerald-500/50 rounded-3xl p-6 sm:p-7 space-y-5 shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/80">01</span>
+                <div className="w-11 h-11 bg-emerald-100/70 text-emerald-600 rounded-2xl flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                  আয় ট্র্যাকিং (Income)
+                </h3>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  কোথা থেকে কত আয় হচ্ছে, রিয়েল-টাইম ডাটা সহ সহজে ট্র্যাক করুন।
+                </p>
+              </div>
+            </div>
+
+            {/* Mini Visual Widget */}
+            <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 space-y-2 mt-2">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-600">
+                <span>আজকের আয়</span>
+                <span className="text-emerald-600 font-bold bg-emerald-100/60 px-2 py-0.5 rounded-md text-[11px]">+১৫% বৃদ্ধি</span>
+              </div>
+              <div className="text-lg font-black text-slate-900">৳ ১,৪৫,০০০</div>
+              <div className="flex items-end gap-1.5 h-7 pt-1">
+                <div className="w-1/4 bg-emerald-200 rounded-xs h-3"></div>
+                <div className="w-1/4 bg-emerald-300 rounded-xs h-5"></div>
+                <div className="w-1/4 bg-emerald-400 rounded-xs h-4"></div>
+                <div className="w-1/4 bg-emerald-600 rounded-xs h-7"></div>
+              </div>
+            </div>
           </div>
 
           {/* 02 — CRM */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-3 shadow-2xs hover:shadow-md transition-all">
-            <div className="text-xs font-bold text-emerald-600">02</div>
-            <h3 className="text-lg font-bold text-slate-900">CRM</h3>
-            <p className="text-sm text-slate-600 font-medium">
-              Customer ও lead-এর তথ্য গুছিয়ে রাখুন।
-            </p>
+          <div className="group bg-white border border-slate-200/90 hover:border-blue-500/50 rounded-3xl p-6 sm:p-7 space-y-5 shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200/80">02</span>
+                <div className="w-11 h-11 bg-blue-100/70 text-blue-600 rounded-2xl flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                  <Users className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors">
+                  গ্রাহক ও লিড (CRM)
+                </h3>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  Customer ও lead-এর সব হিস্ট্রি এবং কন্টাক্ট তথ্য এক জায়গায় গুছিয়ে রাখুন।
+                </p>
+              </div>
+            </div>
+
+            {/* Mini Visual Widget */}
+            <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 space-y-2.5 mt-2">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-600">
+                <span>এক্টিভ কন্টাক্টস</span>
+                <span className="text-blue-600 font-bold text-[11px]">১২ জন লিড</span>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-xl text-xs shadow-2xs">
+                  <span className="font-bold text-slate-800">আইডিয়াল একাডেমি</span>
+                  <span className="bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-md text-[10px]">হট লিড</span>
+                </div>
+                <div className="flex items-center justify-between bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-xl text-xs shadow-2xs">
+                  <span className="font-bold text-slate-800">মডেল স্কুল অ্যান্ড কলেজ</span>
+                  <span className="bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-md text-[10px]">ফলো-আপ</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 03 — Tasks */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-3 shadow-2xs hover:shadow-md transition-all">
-            <div className="text-xs font-bold text-emerald-600">03</div>
-            <h3 className="text-lg font-bold text-slate-900">Tasks</h3>
-            <p className="text-sm text-slate-600 font-medium">
-              আজকের গুরুত্বপূর্ণ কাজগুলো এক জায়গায় রাখুন।
-            </p>
+          <div className="group bg-white border border-slate-200/90 hover:border-indigo-500/50 rounded-3xl p-6 sm:p-7 space-y-5 shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200/80">03</span>
+                <div className="w-11 h-11 bg-indigo-100/70 text-indigo-600 rounded-2xl flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                  <CheckSquare className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                  ডেইলি টাস্ক (Tasks)
+                </h3>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  আজকের জরুরি কাজগুলো অগ্রাধিকার অনুযায়ী সাজিয়ে রাখুন এবং সম্পন্ন করুন।
+                </p>
+              </div>
+            </div>
+
+            {/* Mini Visual Widget */}
+            <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 space-y-2 mt-2">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-600">
+                <span>আজকের অগ্রগতি</span>
+                <span className="text-indigo-600 font-bold text-[11px]">৫/৮ সম্পন্ন</span>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center gap-2 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-xl font-medium text-slate-700 shadow-2xs">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
+                  <span className="line-through text-slate-400">ইনভয়েস কনফার্মেশন</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-xl font-bold text-slate-900 shadow-2xs">
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-indigo-500"></div>
+                  <span>বিকেল ৪টায় ক্লায়েন্ট কল</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 04 — Pipeline */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-3 shadow-2xs hover:shadow-md transition-all">
-            <div className="text-xs font-bold text-emerald-600">04</div>
-            <h3 className="text-lg font-bold text-slate-900">Pipeline</h3>
-            <p className="text-sm text-slate-600 font-medium">
-              কোন opportunity কোথায় আছে, বুঝতে সহজ হবে।
-            </p>
+          <div className="group bg-white border border-slate-200/90 hover:border-amber-500/50 rounded-3xl p-6 sm:p-7 space-y-5 shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200/80">04</span>
+                <div className="w-11 h-11 bg-amber-100/70 text-amber-600 rounded-2xl flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all">
+                  <GitPullRequest className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-amber-600 transition-colors">
+                  সেলস পাইপলাইন (Pipeline)
+                </h3>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  কোন ডিল বা Opportunity বর্তমানে কোন পর্যায়ে আছে, পরিষ্কারভাবে দেখুন।
+                </p>
+              </div>
+            </div>
+
+            {/* Mini Visual Widget */}
+            <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 space-y-2.5 mt-2">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-600">
+                <span>ডিল ফ্লো</span>
+                <span className="text-amber-600 font-bold text-[11px]">৩টি ক্লোজিং পর্যায়ে</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1 text-center text-[10px] font-bold">
+                <div className="bg-amber-100/80 text-amber-800 py-1.5 rounded-lg border border-amber-200/60">
+                  লিড (৫)
+                </div>
+                <div className="bg-amber-200/80 text-amber-900 py-1.5 rounded-lg border border-amber-300/60">
+                  মিটিং (৩)
+                </div>
+                <div className="bg-emerald-600 text-white py-1.5 rounded-lg font-black shadow-xs">
+                  ডিল (২)
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 05 — Expenses */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-3 shadow-2xs hover:shadow-md transition-all">
-            <div className="text-xs font-bold text-emerald-600">05</div>
-            <h3 className="text-lg font-bold text-slate-900">Expenses</h3>
-            <p className="text-sm text-slate-600 font-medium">
-              Business-এর খরচগুলো আলাদা করে track করুন।
-            </p>
+          <div className="group bg-white border border-slate-200/90 hover:border-rose-500/50 rounded-3xl p-6 sm:p-7 space-y-5 shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200/80">05</span>
+                <div className="w-11 h-11 bg-rose-100/70 text-rose-600 rounded-2xl flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white transition-all">
+                  <Receipt className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-rose-600 transition-colors">
+                  খরচ হিসাব (Expenses)
+                </h3>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  বিজনেস সংক্রান্ত সকল খরচ আলাদা ক্যাটাগরিতে নিখুঁতভাবে ট্র্যাক করুন।
+                </p>
+              </div>
+            </div>
+
+            {/* Mini Visual Widget */}
+            <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 space-y-2 mt-2">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-600">
+                <span>চলতি মাসের খরচ</span>
+                <span className="text-rose-600 font-bold">৳ ২৫,০০০</span>
+              </div>
+              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex">
+                <div className="bg-rose-500 h-full w-[60%]"></div>
+                <div className="bg-amber-400 h-full w-[25%]"></div>
+                <div className="bg-blue-400 h-full w-[15%]"></div>
+              </div>
+              <div className="flex justify-between text-[10px] font-semibold text-slate-500 pt-0.5">
+                <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>অফিস</span>
+                <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>এডস</span>
+                <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>অন্যান্য</span>
+              </div>
+            </div>
           </div>
 
           {/* 06 — Business Overview */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-3 shadow-2xs hover:shadow-md transition-all">
-            <div className="text-xs font-bold text-emerald-600">06</div>
-            <h3 className="text-lg font-bold text-slate-900">Business Overview</h3>
-            <p className="text-sm text-slate-600 font-medium">
-              ব্যবসার বর্তমান অবস্থাটা এক নজরে দেখুন।
-            </p>
+          <div className="group bg-white border border-slate-200/90 hover:border-purple-500/50 rounded-3xl p-6 sm:p-7 space-y-5 shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200/80">06</span>
+                <div className="w-11 h-11 bg-purple-100/70 text-purple-600 rounded-2xl flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:bg-purple-600 group-hover:text-white transition-all">
+                  <BarChart3 className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-purple-600 transition-colors">
+                  বিজনেস ওভারভিউ (Overview)
+                </h3>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  একটি সেন্ট্রাল কমান্ড সেন্টার থেকে পুরো ব্যবসার সার্বিক অবস্থা এক নজরে দেখুন।
+                </p>
+              </div>
+            </div>
+
+            {/* Mini Visual Widget */}
+            <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 space-y-2 mt-2">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-600">
+                <span>ব্যবসার স্বাস্থ্য (Health)</span>
+                <span className="text-purple-700 font-black bg-purple-100 px-2 py-0.5 rounded-md text-[11px]">৯৮% চমৎকার</span>
+              </div>
+              <div className="flex items-center justify-between bg-white border border-slate-200/80 p-2.5 rounded-xl shadow-2xs">
+                <div className="text-xs font-bold text-slate-800">মোট নিট প্রফিট</div>
+                <div className="text-sm font-black text-emerald-600">+৳ ১,২০,০০০</div>
+              </div>
+            </div>
           </div>
 
         </div>
       </section>
 
       {/* 07. HOW IT WORKS */}
-      <section className="py-20 bg-white border-y border-slate-200/80">
+      < section className="py-20 bg-white border-y border-slate-200/80" >
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
 
           <div className="text-center space-y-3 max-w-3xl mx-auto">
@@ -638,10 +823,10 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
         </div>
-      </section>
+      </section >
 
       {/* 08. DREMOY কার জন্য? */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12">
+      < section className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12" >
         <div className="text-center space-y-3 max-w-3xl mx-auto">
           <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             Dremoy কার জন্য?
@@ -674,10 +859,10 @@ export default function LandingPage({ onNavigateToAuth }) {
             📚 Tutor / Coaching Operator
           </div>
         </div>
-      </section>
+      </section >
 
       {/* 09. WHY DREMOY? (WORKFLOW VISUALIZATION) */}
-      <section id="why-dremoy" className="py-20 bg-white border-y border-slate-200/80">
+      < section id="why-dremoy" className="py-20 bg-white border-y border-slate-200/80" >
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
 
           <div className="text-center space-y-4 max-w-3xl mx-auto">
@@ -730,10 +915,10 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
         </div>
-      </section>
+      </section >
 
       {/* 10. VALUE PROPOSITION */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+      < section className="py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto" >
         <div className="bg-slate-900 text-white rounded-3xl p-8 sm:p-12 space-y-6 shadow-xl relative overflow-hidden">
 
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold text-xs border border-emerald-500/30">
@@ -764,10 +949,10 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
         </div>
-      </section>
+      </section >
 
       {/* 11. PRICING / OFFER SECTION */}
-      <section id="pricing" className="py-20 bg-white border-y border-slate-200/80">
+      < section id="pricing" className="py-20 bg-white border-y border-slate-200/80" >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
 
           {/* Header */}
@@ -943,10 +1128,10 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
         </div>
-      </section>
+      </section >
 
       {/* 12. FAQ ACCORDION */}
-      <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-12">
+      < section id="faq" className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-12" >
         <div className="text-center space-y-3 max-w-2xl mx-auto">
           <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             সাধারণ কিছু প্রশ্ন (FAQ)
@@ -1007,10 +1192,10 @@ export default function LandingPage({ onNavigateToAuth }) {
             </div>
           ))}
         </div>
-      </section>
+      </section >
 
       {/* 13. FINAL CTA */}
-      <section className="py-20 bg-emerald-950 text-white text-center">
+      < section className="py-20 bg-emerald-950 text-white text-center" >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
           <div className="space-y-4">
@@ -1039,10 +1224,10 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
         </div>
-      </section>
+      </section >
 
       {/* 14. FOOTER */}
-      <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+      < footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800" >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6 text-sm">
 
           <div className="space-y-1 text-center md:text-left">
@@ -1068,8 +1253,8 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
         </div>
-      </footer>
+      </footer >
 
-    </div>
+    </div >
   );
 }
