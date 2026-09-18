@@ -309,12 +309,18 @@ export default function LandingPage({ onNavigateToAuth }) {
       <section id="problem" className="py-20 bg-white border-y border-slate-200/80">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           
-          <div className="text-center space-y-3 max-w-3xl mx-auto">
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              কাজ বাড়ছে, কিন্তু হিসাব আর কাস্টমার ফলো-আপ কি হারিয়ে যাচ্ছে?
+          <div className="text-center space-y-4 max-w-3xl mx-auto">
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
+              একসাথে এত কাজ সামলাতে গিয়ে কি হিসাব আর{' '}
+              <span className="relative inline-block font-black text-rose-700 bg-rose-50 border border-rose-200/80 px-2.5 py-0.5 rounded-xl text-slate-900">
+                কাস্টমার ফলো-আপ মিস হয়ে যাচ্ছে?
+              </span>
             </h2>
-            <p className="text-base sm:text-lg text-slate-600 font-medium">
-              হিসাব খাতায়, কাস্টমার মেসেঞ্জারে, আর গুরুত্বপূর্ণ কাজের ট্র্যাকিং মনে রাখার ওপর—এভাবে ব্যবসা পরিচালনা করতে গিয়ে প্রতিদিন মূল্যবান সময় নষ্ট হয়।
+            <p className="text-base sm:text-lg text-slate-600 font-medium max-w-3xl mx-auto leading-relaxed">
+              আলাদা আলাদা জায়গায় তথ্য পেঁচিয়ে রাখার দিন শেষ। আয়, কাস্টমার ফলো-আপ আর প্রতিদিনের কাজগুলোকে এক জায়গায় নিয়ে এসে{' '}
+              <span className="font-extrabold text-emerald-800 bg-emerald-100/80 border border-emerald-300/80 px-2.5 py-1 rounded-xl inline-block mt-1 sm:mt-0 shadow-xs">
+                আপনার মাথার চাপ কমানোই Dremoy-এর কাজ।
+              </span>
             </p>
           </div>
 
@@ -369,13 +375,28 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
           {/* Empathetic Conclusion Box */}
-          <div className="bg-[#F8FAFC] border border-emerald-200/80 rounded-3xl p-6 sm:p-8 text-center max-w-3xl mx-auto space-y-3 shadow-2xs">
-            <h3 className="text-lg sm:text-xl font-bold text-slate-900">
-              আপনি ভুল করছেন না। আপনার ব্যবসা বাড়ার সাথে সাথে পুরোনো ছড়িয়ে থাকা পদ্ধতিগুলো আর যথেষ্ট থাকে না।
+          <div className="bg-gradient-to-b from-white via-[#F8FAFC] to-emerald-50/40 border border-emerald-200/90 rounded-3xl p-6 sm:p-10 text-center max-w-3xl mx-auto space-y-5 shadow-lg shadow-emerald-950/5 relative overflow-hidden">
+            
+            {/* Top Accent Line */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600"></div>
+
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
+              কাজের চাপে হিসাব এলোমেলো হয়ে গেলে কি মনে হয়—<span className="text-rose-700 font-black underline decoration-rose-300 decoration-2 underline-offset-4">‘আমি বোধহয় গুছিয়ে কাজ করতে পারছি না’</span>?
             </h3>
-            <p className="text-sm sm:text-base text-slate-600 font-medium max-w-2xl mx-auto">
-              Dremoy-এর লক্ষ্য একটিই: আপনার ছড়ানো কাজগুলোকে এক জায়গায় এনে সময় ও মানসিক চাপ কমানো—যাতে দিন শেষে ব্যবসার আসল অবস্থা এক নজরে দেখতে পান।
+            
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-600 text-white font-bold text-sm sm:text-base shadow-md shadow-emerald-600/20">
+              ✨ বিশ্বাস করুন, সমস্যাটা আপনার দক্ষতায় নয়।
+            </div>
+
+            <p className="text-sm sm:text-base text-slate-600 font-medium max-w-2xl mx-auto leading-relaxed">
+              ব্যবসা যখন ছোট থাকে, তখন খাতা বা মোবাইলের নোট যথেষ্ট। কিন্তু ব্যবসা যখন বড় হতে শুরু করে, তখন সব চাপ একা মাথায় রাখা অসম্ভব হয়ে পড়ে। পুরোনো পদ্ধতি আর কাজ না করা মানে আপনি থেমে নেই—<strong className="text-emerald-800 font-extrabold bg-emerald-100/80 px-2 py-0.5 rounded-md border border-emerald-200">আপনার ব্যবসা এগোচ্ছে।</strong>
             </p>
+
+            <div className="pt-3 border-t border-slate-200/60">
+              <p className="text-sm sm:text-base text-slate-800 font-bold max-w-2xl mx-auto leading-relaxed">
+                Dremoy তৈরিই করা হয়েছে আপনার মাথার ওপর থেকে এই পেঁচানো কাজের চিন্তা সরিয়ে <span className="bg-emerald-500 text-white px-3 py-1 rounded-xl font-extrabold shadow-xs inline-block my-1 sm:my-0">আপনাকে শান্তিতে ব্যবসা করার সুযোগ</span> করে দিতে।
+              </p>
+            </div>
           </div>
 
         </div>
