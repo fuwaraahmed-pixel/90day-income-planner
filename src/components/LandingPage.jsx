@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  ArrowRight, 
-  CheckCircle2, 
-  ChevronDown, 
-  ChevronUp, 
-  TrendingUp, 
-  Users, 
-  CheckSquare, 
-  DollarSign, 
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  TrendingUp,
+  Users,
+  CheckSquare,
+  DollarSign,
   Sparkles,
   Menu,
   X,
@@ -37,11 +37,11 @@ export default function LandingPage({ onNavigateToAuth }) {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans selection:bg-emerald-100 selection:text-emerald-900">
-      
+
       {/* 01. HEADER / NAVIGATION */}
       <header className="sticky top-0 z-50 bg-[#F8FAFC]/90 backdrop-blur-md border-b border-slate-200/80 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
-          
+
           {/* Logo */}
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm shadow-emerald-500/20">
@@ -132,7 +132,7 @@ export default function LandingPage({ onNavigateToAuth }) {
 
       {/* 02. HERO SECTION */}
       <section className="pt-12 pb-20 sm:pt-20 sm:pb-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center space-y-10">
-        
+
         {/* Hero Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-semibold shadow-xs">
           <Sparkles className="w-4 h-4 text-emerald-600" />
@@ -170,7 +170,7 @@ export default function LandingPage({ onNavigateToAuth }) {
         {/* Hero Visual — Large Dominant Dremoy Dashboard Preview */}
         <div className="pt-8 max-w-6xl mx-auto">
           <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden p-3 sm:p-6 space-y-6 text-left relative">
-            
+
             {/* Mock Dashboard Top Control Bar */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
@@ -229,7 +229,7 @@ export default function LandingPage({ onNavigateToAuth }) {
 
             {/* Dashboard Middle Main Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
-              
+
               {/* Sales CRM Pipeline Column */}
               <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-200/60 pb-2.5">
@@ -308,7 +308,7 @@ export default function LandingPage({ onNavigateToAuth }) {
       {/* 03. PROBLEM SECTION */}
       <section id="problem" className="py-20 bg-white border-y border-slate-200/80">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
+
           <div className="text-center space-y-4 max-w-3xl mx-auto">
             <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
               একসাথে এত কাজ সামলাতে গিয়ে কি হিসাব আর{' '}
@@ -316,10 +316,11 @@ export default function LandingPage({ onNavigateToAuth }) {
                 কাস্টমার ফলো-আপ মিস হয়ে যাচ্ছে?
               </span>
             </h2>
+
             <p className="text-base sm:text-lg text-slate-600 font-medium max-w-3xl mx-auto leading-relaxed">
-              আলাদা আলাদা জায়গায় তথ্য পেঁচিয়ে রাখার দিন শেষ। আয়, কাস্টমার ফলো-আপ আর প্রতিদিনের কাজগুলোকে এক জায়গায় নিয়ে এসে{' '}
-              <span className="font-extrabold text-emerald-800 bg-emerald-100/80 border border-emerald-300/80 px-2.5 py-1 rounded-xl inline-block mt-1 sm:mt-0 shadow-xs">
-                আপনার মাথার চাপ কমানোই Dremoy-এর কাজ।
+              কাস্টমারের নাম কোথায়? খাতায়? WhatsApp-এ? নাকি মাথায়? কাস্টমার, লিড, আয়, খরচ, ফলো-আপ ও গুরুত্বপূর্ণ কাজ —সবকিছু এক জায়গায় রাখায় <span className="text-rose-600 font-black" style={{ textDecorationColor: 'black' }} >"মাথাটা কি প্রেসার কুকার মনে হচ্ছে?"{' '}</span>
+              <span className="font-extrabold text-emerald-800 px-2.5 py-1 rounded-xl inline-block mt-1 sm:mt-0 shadow-xs">
+                চিন্তা কমান, গুছিয়ে রাখার দায়িত্বটা দিয়ে দেন Dremoy-কে।
               </span>
             </p>
           </div>
@@ -376,25 +377,25 @@ export default function LandingPage({ onNavigateToAuth }) {
 
           {/* Empathetic Conclusion Box */}
           <div className="bg-gradient-to-b from-white via-[#F8FAFC] to-emerald-50/40 border border-emerald-200/90 rounded-3xl p-6 sm:p-10 text-center max-w-3xl mx-auto space-y-5 shadow-lg shadow-emerald-950/5 relative overflow-hidden">
-            
+
             {/* Top Accent Line */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600"></div>
 
             <h3 className="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
               কাজের চাপে হিসাব এলোমেলো হয়ে গেলে কি মনে হয়—<span className="text-rose-700 font-black underline decoration-rose-300 decoration-2 underline-offset-4">‘আমি বোধহয় গুছিয়ে কাজ করতে পারছি না’</span>?
             </h3>
-            
+
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-600 text-white font-bold text-sm sm:text-base shadow-md shadow-emerald-600/20">
               ✨ বিশ্বাস করুন, সমস্যাটা আপনার দক্ষতায় নয়।
             </div>
 
             <p className="text-sm sm:text-base text-slate-600 font-medium max-w-2xl mx-auto leading-relaxed">
-              ব্যবসা যখন ছোট থাকে, তখন খাতা বা মোবাইলের নোট যথেষ্ট। কিন্তু ব্যবসা যখন বড় হতে শুরু করে, তখন সব চাপ একা মাথায় রাখা অসম্ভব হয়ে পড়ে। পুরোনো পদ্ধতি আর কাজ না করা মানে আপনি থেমে নেই—<strong className="text-emerald-800 font-extrabold bg-emerald-100/80 px-2 py-0.5 rounded-md border border-emerald-200">আপনার ব্যবসা এগোচ্ছে।</strong>
+              ব্যবসা যখন ছোট থাকে, তখন খাতা বা মোবাইলের নোট যথেষ্ট। কিন্তু ব্যবসা যখন বড় হতে শুরু করে, তখন সব চাপ একা মাথায় রাখা অসম্ভব হয়ে পড়ে। পুরোনো পদ্ধতি আর কাজ না করা মানে আপনি থেমে নেই—<strong className="text-emerald-800 font-extrabold">আপনার ব্যবসা এগোচ্ছে।</strong>
             </p>
 
             <div className="pt-3 border-t border-slate-200/60">
               <p className="text-sm sm:text-base text-slate-800 font-bold max-w-2xl mx-auto leading-relaxed">
-                Dremoy তৈরিই করা হয়েছে আপনার মাথার ওপর থেকে এই পেঁচানো কাজের চিন্তা সরিয়ে <span className="bg-emerald-500 text-white px-3 py-1 rounded-xl font-extrabold shadow-xs inline-block my-1 sm:my-0">আপনাকে শান্তিতে ব্যবসা করার সুযোগ</span> করে দিতে।
+                Dremoy তৈরিই করা হয়েছে আপনার মাথার ওপর থেকে এই প্রেনার কুকার নামক চিন্তার কাছ থেকে মাথাটাকে বাচাতে, আপনাকে "শান্তিতে ব্যবসা করার সুযোগ" করে দিতে।
               </p>
             </div>
           </div>
@@ -414,7 +415,7 @@ export default function LandingPage({ onNavigateToAuth }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          
+
           {/* LEFT: Without Dremoy */}
           <div className="bg-white border border-rose-200/90 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs relative">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs">
@@ -471,7 +472,7 @@ export default function LandingPage({ onNavigateToAuth }) {
       {/* 05. PRODUCT SHOWCASE */}
       <section id="features" className="py-20 bg-white border-y border-slate-200/80">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
+
           <div className="text-center space-y-3 max-w-3xl mx-auto">
             <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               আপনার business-এর গুরুত্বপূর্ণ বিষয়গুলো এক নজরে।
@@ -483,7 +484,7 @@ export default function LandingPage({ onNavigateToAuth }) {
 
           {/* Product Showcase Visual Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+
             <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-6 space-y-4">
               <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center font-bold">
                 📈
@@ -531,7 +532,7 @@ export default function LandingPage({ onNavigateToAuth }) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          
+
           {/* 01 — Income */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-3 shadow-2xs hover:shadow-md transition-all">
             <div className="text-xs font-bold text-emerald-600">01</div>
@@ -592,7 +593,7 @@ export default function LandingPage({ onNavigateToAuth }) {
       {/* 07. HOW IT WORKS */}
       <section className="py-20 bg-white border-y border-slate-200/80">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
+
           <div className="text-center space-y-3 max-w-3xl mx-auto">
             <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               শুরু করা সহজ।
@@ -603,7 +604,7 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
-            
+
             <div className="space-y-4">
               <div className="w-14 h-14 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto font-black text-xl shadow-xs">
                 01
@@ -678,7 +679,7 @@ export default function LandingPage({ onNavigateToAuth }) {
       {/* 09. WHY DREMOY? (WORKFLOW VISUALIZATION) */}
       <section id="why-dremoy" className="py-20 bg-white border-y border-slate-200/80">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
+
           <div className="text-center space-y-4 max-w-3xl mx-auto">
             <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               শুধু একটি কাজ নয়—পুরো workflow এক জায়গায়।
@@ -691,7 +692,7 @@ export default function LandingPage({ onNavigateToAuth }) {
           {/* Workflow Diagram */}
           <div className="bg-[#F8FAFC] border border-slate-200 rounded-3xl p-6 sm:p-8">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-center">
-              
+
               <div className="p-4 bg-white border border-slate-200 rounded-2xl w-full md:w-auto font-bold text-xs text-slate-700 shadow-2xs">
                 Scattered Work <br />
                 <span className="text-[11px] font-medium text-slate-500">(ছড়িয়ে থাকা কাজ)</span>
@@ -734,7 +735,7 @@ export default function LandingPage({ onNavigateToAuth }) {
       {/* 10. VALUE PROPOSITION */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
         <div className="bg-slate-900 text-white rounded-3xl p-8 sm:p-12 space-y-6 shadow-xl relative overflow-hidden">
-          
+
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold text-xs border border-emerald-500/30">
             প্রিমিয়াম ভ্যালু
           </div>
@@ -768,7 +769,7 @@ export default function LandingPage({ onNavigateToAuth }) {
       {/* 11. PRICING / OFFER SECTION */}
       <section id="pricing" className="py-20 bg-white border-y border-slate-200/80">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
+
           {/* Header */}
           <div className="text-center space-y-3 max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
@@ -784,7 +785,7 @@ export default function LandingPage({ onNavigateToAuth }) {
 
           {/* 3 Pricing Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch pt-4">
-            
+
             {/* Plan 1: Starter */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between relative">
               <div className="space-y-4">
@@ -835,7 +836,7 @@ export default function LandingPage({ onNavigateToAuth }) {
 
             {/* Plan 2: Pro (Featured) */}
             <div className="bg-white border-2 border-emerald-500 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl flex flex-col justify-between relative transform md:-translate-y-2">
-              
+
               {/* Featured Badge */}
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-emerald-600 text-white font-bold text-[11px] shadow-sm tracking-wide">
                 ★ সবচেয়ে জনপ্রিয়
@@ -1011,7 +1012,7 @@ export default function LandingPage({ onNavigateToAuth }) {
       {/* 13. FINAL CTA */}
       <section className="py-20 bg-emerald-950 text-white text-center">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          
+
           <div className="space-y-4">
             <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
               আপনার ব্যবসা আরও গুছিয়ে নেওয়ার সময় এখন।
@@ -1043,7 +1044,7 @@ export default function LandingPage({ onNavigateToAuth }) {
       {/* 14. FOOTER */}
       <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6 text-sm">
-          
+
           <div className="space-y-1 text-center md:text-left">
             <div className="text-white font-bold text-lg flex items-center justify-center md:justify-start gap-2">
               <div className="w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
