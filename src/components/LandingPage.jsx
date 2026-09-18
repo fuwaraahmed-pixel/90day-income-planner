@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowRight,
   CheckCircle2,
@@ -32,6 +32,25 @@ export default function LandingPage({ onNavigateToAuth }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [legalModal, setLegalModal] = useState(null); // 'privacy' | 'terms' | null
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('reveal-active');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    const elements = document.querySelectorAll('.reveal-init');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
 
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -325,7 +344,7 @@ export default function LandingPage({ onNavigateToAuth }) {
       < section id="problem" className="py-20 bg-white border-y border-slate-200/80" >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
 
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
+          <div className="text-center space-y-4 max-w-3xl mx-auto reveal-init">
             <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
               একসাথে এত কাজ সামলাতে গিয়ে কি হিসাব আর{' '}
               <span className="text-rose-600 font-black">
@@ -342,7 +361,7 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all">
+            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all reveal-init hover-lift delay-1">
               <div className="w-12 h-12 bg-amber-50 text-amber-700 rounded-xl flex items-center justify-center mx-auto">
                 <FileText className="w-6 h-6" />
               </div>
@@ -350,7 +369,7 @@ export default function LandingPage({ onNavigateToAuth }) {
               <p className="text-xs text-slate-500 font-medium">কাগজের খাতায় হিসাব রাখা</p>
             </div>
 
-            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all">
+            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all reveal-init hover-lift delay-2">
               <div className="w-12 h-12 bg-blue-50 text-blue-700 rounded-xl flex items-center justify-center mx-auto">
                 <MessageSquare className="w-6 h-6" />
               </div>
@@ -358,7 +377,7 @@ export default function LandingPage({ onNavigateToAuth }) {
               <p className="text-xs text-slate-500 font-medium">কাস্টমার চ্যাট ছড়ানো</p>
             </div>
 
-            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all">
+            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all reveal-init hover-lift delay-3">
               <div className="w-12 h-12 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center mx-auto">
                 <FileSpreadsheet className="w-6 h-6" />
               </div>
@@ -366,7 +385,7 @@ export default function LandingPage({ onNavigateToAuth }) {
               <p className="text-xs text-slate-500 font-medium">স্প্রেডশিটের জটিলতা</p>
             </div>
 
-            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all">
+            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all reveal-init hover-lift delay-4">
               <div className="w-12 h-12 bg-purple-50 text-purple-700 rounded-xl flex items-center justify-center mx-auto">
                 <Bookmark className="w-6 h-6" />
               </div>
@@ -374,7 +393,7 @@ export default function LandingPage({ onNavigateToAuth }) {
               <p className="text-xs text-slate-500 font-medium">মোবাইল অ্যাপে নোটিং</p>
             </div>
 
-            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all">
+            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all reveal-init hover-lift delay-5">
               <div className="w-12 h-12 bg-indigo-50 text-indigo-700 rounded-xl flex items-center justify-center mx-auto">
                 <Brain className="w-6 h-6" />
               </div>
@@ -382,7 +401,7 @@ export default function LandingPage({ onNavigateToAuth }) {
               <p className="text-xs text-slate-500 font-medium">ফলো-আপ মনে রাখা</p>
             </div>
 
-            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all">
+            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-5 text-center space-y-3 hover:border-slate-300 transition-all reveal-init hover-lift delay-6">
               <div className="w-12 h-12 bg-rose-50 text-rose-700 rounded-xl flex items-center justify-center mx-auto">
                 <Target className="w-6 h-6" />
               </div>
@@ -392,7 +411,7 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
           {/* Empathetic Conclusion Box */}
-          <div className="bg-gradient-to-b from-white via-[#F8FAFC] to-emerald-50/40 border border-emerald-200/90 rounded-3xl p-6 sm:p-10 text-center max-w-3xl mx-auto space-y-5 shadow-lg shadow-emerald-950/5 relative overflow-hidden">
+          <div className="bg-gradient-to-b from-white via-[#F8FAFC] to-emerald-50/40 border border-emerald-200/90 rounded-3xl p-6 sm:p-10 text-center max-w-3xl mx-auto space-y-5 shadow-lg shadow-emerald-950/5 relative overflow-hidden reveal-init">
 
             {/* Top Accent Line */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600"></div>
