@@ -312,7 +312,7 @@ export default function LandingPage({ onNavigateToAuth }) {
           <div className="text-center space-y-4 max-w-3xl mx-auto">
             <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
               একসাথে এত কাজ সামলাতে গিয়ে কি হিসাব আর{' '}
-              <span className="relative inline-block font-black text-rose-700 bg-rose-50 border border-rose-200/80 px-2.5 py-0.5 rounded-xl text-slate-900">
+              <span className="text-rose-600 font-black">
                 কাস্টমার ফলো-আপ মিস হয়ে যাচ্ছে?
               </span>
             </h2>
