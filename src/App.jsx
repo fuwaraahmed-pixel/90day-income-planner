@@ -10,6 +10,7 @@ import WeeklyReview from './components/WeeklyReview';
 import Services from './components/Services';
 import Settings from './components/Settings';
 import Auth from './components/Auth';
+import LandingPage from './components/LandingPage';
 import SubscriptionModal from './components/SubscriptionModal';
 import AdminPanel from './components/AdminPanel';
 import Tuition from './components/Tuition';
@@ -25,6 +26,7 @@ import Toast from './components/ui/Toast';
 export default function App() {
   const [session, setSession] = useState(null);
   const [authChecking, setAuthChecking] = useState(true);
+  const [publicView, setPublicView] = useState('landing'); // 'landing' | 'auth_login' | 'auth_signup'
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loadingData, setLoadingData] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
@@ -654,9 +656,21 @@ export default function App() {
     );
   }
 
-  // 1. Auth Guard: Unauthenticated user gets Auth component
+  // 1. Auth Guard: Unauthenticated user gets Public Landing Page or Auth screen
   if (!session) {
-    return <Auth />;
+    if (publicView === 'landing') {
+      return (
+        <LandingPage
+          onNavigateToAuth={(mode) => setPublicView(mode === 'signup' ? 'auth_signup' : 'auth_login')}
+        />
+      );
+    }
+    return (
+      <Auth
+        initialSignUp={publicView === 'auth_signup'}
+        onBackToLanding={() => setPublicView('landing')}
+      />
+    );
   }
 
   // 2. Subscription Guard: Unsubscribed non-admin user gets SubscriptionModal

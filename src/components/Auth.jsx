@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Lock, Mail, LogIn, UserPlus, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 
-export default function Auth() {
-  const [isSignUp, setIsSignUp] = useState(false);
+export default function Auth({ initialSignUp = false, onBackToLanding }) {
+  const [isSignUp, setIsSignUp] = useState(initialSignUp);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,6 +62,18 @@ export default function Auth() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl shadow-xl p-6 sm:p-8 space-y-6">
         
+        {onBackToLanding && (
+          <div className="flex justify-start">
+            <button
+              type="button"
+              onClick={onBackToLanding}
+              className="text-xs font-semibold text-slate-600 hover:text-emerald-600 transition-colors flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-full"
+            >
+              ← হোমপেজে ফিরে যান
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="w-14 h-14 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-center text-emerald-600 mx-auto font-bold text-2xl shadow-sm">
