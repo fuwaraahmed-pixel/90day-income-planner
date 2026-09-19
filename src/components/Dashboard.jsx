@@ -57,6 +57,36 @@ export default function Dashboard({ data, setActiveTab }) {
   const collectedTuitionThisMonth = tuitionPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const dueTuitionAmount = Math.max(0, expectedTuitionCollection - collectedTuitionThisMonth);
 
+  // Customer Dues Data
+  const customerDues = data?.customerDues || [];
+  const totalDuesAmount = customerDues.reduce((sum, item) => {
+    const due = Math.max(0, (Number(item.totalAmount) || 0) - (Number(item.paidAmount) || 0));
+    return sum + due;
+  }, 0);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const next7DaysStr = new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0];
+
+  const overdueDuesAmount = customerDues.reduce((sum, item) => {
+    const due = Math.max(0, (Number(item.totalAmount) || 0) - (Number(item.paidAmount) || 0));
+    if (item.dueDate && item.dueDate < todayStr && due > 0) return sum + due;
+    return sum;
+  }, 0);
+
+  const dueSoonDuesAmount = customerDues.reduce((sum, item) => {
+    const due = Math.max(0, (Number(item.totalAmount) || 0) - (Number(item.paidAmount) || 0));
+    if (item.dueDate && item.dueDate >= todayStr && item.dueDate <= next7DaysStr && due > 0) return sum + due;
+    return sum;
+  }, 0);
+
+  const upcomingDuesAmount = Math.max(0, totalDuesAmount - (overdueDuesAmount + dueSoonDuesAmount));
+
+  const dueCustomersCount = new Set(
+    customerDues
+      .filter(item => Math.max(0, (Number(item.totalAmount) || 0) - (Number(item.paidAmount) || 0)) > 0)
+      .map(item => item.customerName?.trim().toLowerCase())
+  ).size;
+
   const monthlyProgressPercent = Math.min(100, Math.round((totalIncome / targetIncome) * 100));
 
   // User details
@@ -276,6 +306,53 @@ export default function Dashboard({ data, setActiveTab }) {
               <p className="text-[10px] text-amber-700/80">স্থায়ী মাসিক পরিশোধ</p>
             </div>
 
+          </div>
+
+          {/* Customer Dues Compact Summary Banner */}
+          <div className="mt-4 bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-700/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                <Wallet className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400">আমার পাওনা (Customer Dues)</h3>
+                  {overdueDuesAmount > 0 && (
+                    <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      ⚠ Overdue ৳{overdueDuesAmount.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-baseline gap-2 pt-0.5">
+                  <span className="text-2xl font-black text-white">৳{totalDuesAmount.toLocaleString()}</span>
+                  <span className="text-xs text-slate-300 font-medium">({dueCustomersCount} জন কাস্টমারের কাছ থেকে পাওনা)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Breakdown Chips & Action */}
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
+                <span className="text-amber-300">Overdue:</span>
+                <span>৳{overdueDuesAmount.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
+                <span className="text-blue-300">Due Soon:</span>
+                <span>৳{dueSoonDuesAmount.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
+                <span className="text-emerald-300">Upcoming:</span>
+                <span>৳{upcomingDuesAmount.toLocaleString()}</span>
+              </div>
+
+              <button
+                onClick={() => setActiveTab('dues')}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-xs ml-auto sm:ml-0"
+              >
+                <span>পাওনা তালিকা</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
         </section>

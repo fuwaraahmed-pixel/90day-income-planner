@@ -14,6 +14,7 @@ import LandingPage from './components/LandingPage';
 import SubscriptionModal from './components/SubscriptionModal';
 import AdminPanel from './components/AdminPanel';
 import Tuition from './components/Tuition';
+import CustomerDues from './components/CustomerDues';
 
 
 import { supabase, isSupabaseConfigured } from './lib/supabase';
@@ -192,6 +193,54 @@ export default function App() {
     }
   ];
 
+  const defaultCustomerDues = [
+    { 
+      id: 1, 
+      customerId: 1, 
+      customerName: 'মোঃ শফিকুল ইসলাম (আইডিয়াল মডেল স্কুল)', 
+      description: 'Business Website Project', 
+      totalAmount: 20000, 
+      paidAmount: 12000, 
+      dueAmount: 8000, 
+      dueDate: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0],
+      status: 'Partially Paid',
+      note: 'ওয়েবসাইট প্রস্তুত, বাকি টাকা ৩০ সেপ্টেম্বরের মধ্যে দেবেন'
+    },
+    { 
+      id: 2, 
+      customerId: 2, 
+      customerName: 'ইঞ্জিনিয়ার তানভীর (প্রোগ্রেস কোচিং সেন্টার)', 
+      description: 'Starter Landing Page', 
+      totalAmount: 8000, 
+      paidAmount: 4000, 
+      dueAmount: 4000, 
+      dueDate: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0],
+      status: 'Overdue',
+      note: 'ল্যান্ডিং পেজ প্রস্তুত'
+    }
+  ];
+
+  const defaultDuePayments = [
+    {
+      id: 'pay_due_init_1',
+      dueId: 1,
+      customerId: 1,
+      amount: 12000,
+      paymentDate: new Date().toISOString().split('T')[0],
+      paymentMethod: 'bKash',
+      note: '১ম কিস্তি পেমেন্ট'
+    },
+    {
+      id: 'pay_due_init_2',
+      dueId: 2,
+      customerId: 2,
+      amount: 4000,
+      paymentDate: new Date().toISOString().split('T')[0],
+      paymentMethod: 'Nagad',
+      note: 'প্রাথমিক পেমেন্ট'
+    }
+  ];
+
   // Persistent React States
   const [appData, setAppDataState] = useState(defaultAppData);
   const [tasks, setTasksState] = useState([]);
@@ -204,6 +253,24 @@ export default function App() {
   const [tuitionStudents, setTuitionStudents] = useState([]);
   const [tuitionPayments, setTuitionPayments] = useState([]);
   const [crmPayments, setCrmPayments] = useState([]);
+  const [customerDues, setCustomerDuesState] = useState(() => loadData(STORAGE_KEYS.CUSTOMER_DUES, defaultCustomerDues));
+  const [duePayments, setDuePaymentsState] = useState(() => loadData(STORAGE_KEYS.DUE_PAYMENTS, defaultDuePayments));
+
+  const handleSetCustomerDues = (valueOrFn) => {
+    setCustomerDuesState(prev => {
+      const next = typeof valueOrFn === 'function' ? valueOrFn(prev) : valueOrFn;
+      saveData(STORAGE_KEYS.CUSTOMER_DUES, next);
+      return next;
+    });
+  };
+
+  const handleSetDuePayments = (valueOrFn) => {
+    setDuePaymentsState(prev => {
+      const next = typeof valueOrFn === 'function' ? valueOrFn(prev) : valueOrFn;
+      saveData(STORAGE_KEYS.DUE_PAYMENTS, next);
+      return next;
+    });
+  };
 
   // 1. Session Setup & Auth Monitoring
   useEffect(() => {
@@ -252,7 +319,9 @@ export default function App() {
           planRes,
           tuitionStsRes,
           tuitionPaysRes,
-          crmPaysRes
+          crmPaysRes,
+          duesRes,
+          duePaysRes
         ] = await Promise.all([
           api.checkIsAdmin(userId, session.user.email),
           api.getSubscription(userId),
@@ -267,7 +336,9 @@ export default function App() {
           api.get90DayPlan(userId),
           api.getTuitionStudents(userId),
           api.getTuitionPayments(userId),
-          api.getCrmPayments(userId)
+          api.getCrmPayments(userId),
+          api.getCustomerDues(userId),
+          api.getCustomerDuePayments(userId)
         ]);
 
         if (!isMounted) return;
@@ -288,6 +359,8 @@ export default function App() {
         setTuitionStudents(tuitionStsRes || []);
         setTuitionPayments(tuitionPaysRes || []);
         setCrmPayments(crmPaysRes || []);
+        setCustomerDuesState(duesRes && duesRes.length > 0 ? duesRes : defaultCustomerDues);
+        setDuePaymentsState(duePaysRes || []);
 
         setLoadingData(false);
       } catch (err) {
@@ -624,6 +697,175 @@ export default function App() {
     }
   };
 
+  // Customer Dues Handlers
+  const handleAddCustomerDue = async (dueData) => {
+    const total = Number(dueData.totalAmount) || 0;
+    const initialPaid = Number(dueData.paidAmount) || 0;
+
+    if (session?.user?.id) {
+      const created = await api.createCustomerDue(session.user.id, dueData);
+      if (created) {
+        setCustomerDuesState(prev => [created, ...prev]);
+
+        if (initialPaid > 0) {
+          const uniquePayId = typeof crypto !== 'undefined' && crypto.randomUUID 
+            ? crypto.randomUUID() 
+            : `pay_due_${Date.now()}`;
+          await api.rpcRecordCustomerDuePayment({
+            paymentId: uniquePayId,
+            dueId: created.id,
+            paymentDate: new Date().toISOString().split('T')[0],
+            amount: initialPaid,
+            paymentMethod: 'bKash',
+            note: 'প্রাথমিক পেমেন্ট প্রাপ্তি'
+          });
+          const [duesRes, paysRes, incsRes] = await Promise.all([
+            api.getCustomerDues(session.user.id),
+            api.getCustomerDuePayments(session.user.id),
+            api.getIncome(session.user.id)
+          ]);
+          if (duesRes) setCustomerDuesState(duesRes);
+          if (paysRes) setDuePaymentsState(paysRes);
+          if (incsRes) setIncomesState(incsRes);
+        }
+      }
+    } else {
+      const newDue = {
+        id: Date.now(),
+        customerId: dueData.customerId ? Number(dueData.customerId) : null,
+        customerName: dueData.customerName,
+        description: dueData.description,
+        totalAmount: total,
+        paidAmount: initialPaid,
+        dueAmount: Math.max(0, total - initialPaid),
+        dueDate: dueData.dueDate || null,
+        status: initialPaid >= total && total > 0 ? 'Paid' : initialPaid > 0 ? 'Partially Paid' : 'Unpaid',
+        note: dueData.note || '',
+        createdAt: new Date().toISOString()
+      };
+
+      handleSetCustomerDues(prev => [newDue, ...prev]);
+
+      if (initialPaid > 0) {
+        const paymentId = `pay_due_${Date.now()}`;
+        const newPayment = {
+          id: paymentId,
+          dueId: newDue.id,
+          customerId: newDue.customerId,
+          amount: initialPaid,
+          paymentDate: new Date().toISOString().split('T')[0],
+          paymentMethod: 'bKash',
+          note: 'প্রাথমিক পেমেন্ট'
+        };
+        handleSetDuePayments(prev => [newPayment, ...prev]);
+
+        const newIncome = {
+          id: Date.now(),
+          date: newPayment.paymentDate,
+          source: 'Customer Payment',
+          clientDetails: `${dueData.customerName} (${dueData.description})`,
+          amount: initialPaid,
+          paymentType: 'bKash',
+          month: 'Month 1',
+          notes: 'প্রাথমিক পেমেন্ট'
+        };
+        setIncomesState(prev => [newIncome, ...prev]);
+      }
+    }
+  };
+
+  const handleUpdateCustomerDue = async (dueId, dueData) => {
+    if (session?.user?.id) {
+      const updated = await api.updateCustomerDue(session.user.id, dueId, dueData);
+      if (updated) {
+        const duesRes = await api.getCustomerDues(session.user.id);
+        if (duesRes) setCustomerDuesState(duesRes);
+      }
+    } else {
+      handleSetCustomerDues(prev => prev.map(d => {
+        if (String(d.id) === String(dueId)) {
+          const total = Number(dueData.totalAmount) || d.totalAmount;
+          const paid = d.paidAmount;
+          const due = Math.max(0, total - paid);
+          const status = due <= 0 ? 'Paid' : paid > 0 ? 'Partially Paid' : 'Unpaid';
+          return { ...d, ...dueData, totalAmount: total, dueAmount: due, status };
+        }
+        return d;
+      }));
+    }
+  };
+
+  const handleDeleteCustomerDue = async (dueId) => {
+    if (session?.user?.id) {
+      const success = await api.deleteCustomerDue(session.user.id, dueId);
+      if (success) {
+        setCustomerDuesState(prev => prev.filter(d => String(d.id) !== String(dueId)));
+      }
+    } else {
+      handleSetCustomerDues(prev => prev.filter(d => String(d.id) !== String(dueId)));
+    }
+  };
+
+  const handleRecordCustomerDuePayment = async (paymentData) => {
+    if (session?.user?.id) {
+      const res = await api.rpcRecordCustomerDuePayment(paymentData);
+      if (res && res.success !== false) {
+        const [duesRes, paysRes, incsRes] = await Promise.all([
+          api.getCustomerDues(session.user.id),
+          api.getCustomerDuePayments(session.user.id),
+          api.getIncome(session.user.id)
+        ]);
+        if (duesRes) setCustomerDuesState(duesRes);
+        if (paysRes) setDuePaymentsState(paysRes);
+        if (incsRes) setIncomesState(incsRes);
+      }
+      return res;
+    } else {
+      const dueItem = customerDues.find(d => String(d.id) === String(paymentData.dueId));
+      if (!dueItem) return { success: false, message: 'Pawn record not found' };
+
+      const amountNum = Number(paymentData.amount);
+      const newPaid = (Number(dueItem.paidAmount) || 0) + amountNum;
+      const newDue = Math.max(0, (Number(dueItem.totalAmount) || 0) - newPaid);
+      const newStatus = newDue <= 0 ? 'Paid' : 'Partially Paid';
+
+      const paymentId = paymentData.paymentId || `pay_due_${Date.now()}`;
+      const newPayment = {
+        id: paymentId,
+        dueId: paymentData.dueId,
+        customerId: dueItem.customerId,
+        amount: amountNum,
+        paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+        paymentMethod: paymentData.paymentMethod || 'bKash',
+        note: paymentData.note || '',
+        createdAt: new Date().toISOString()
+      };
+
+      const newIncome = {
+        id: Date.now(),
+        date: newPayment.paymentDate,
+        source: 'Customer Payment',
+        clientDetails: `${dueItem.customerName} (${dueItem.description})`,
+        amount: amountNum,
+        paymentType: newPayment.paymentMethod,
+        month: 'Month 1',
+        notes: paymentData.note || ''
+      };
+
+      handleSetCustomerDues(prev => prev.map(d => String(d.id) === String(paymentData.dueId) ? {
+        ...d,
+        paidAmount: newPaid,
+        dueAmount: newDue,
+        status: newStatus
+      } : d));
+
+      handleSetDuePayments(prev => [newPayment, ...prev]);
+      setIncomesState(prev => [newIncome, ...prev]);
+
+      return { success: true };
+    }
+  };
+
   // Dynamic Financial Calculations
   const salarySum = incomes.filter(i => i.source.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const newIncomeSum = incomes.filter(i => !i.source.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
@@ -641,6 +883,8 @@ export default function App() {
     crmPayments: crmPayments,
     tuitionPayments: tuitionPayments,
     tuitionStudents: tuitionStudents,
+    customerDues: customerDues,
+    duePayments: duePayments,
     user: session?.user
   };
 
@@ -735,10 +979,27 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'dues' && (
+          <CustomerDues
+            dues={customerDues}
+            duePayments={duePayments}
+            crmClients={leads}
+            onAddDue={handleAddCustomerDue}
+            onUpdateDue={handleUpdateCustomerDue}
+            onDeleteDue={handleDeleteCustomerDue}
+            onRecordPayment={handleRecordCustomerDuePayment}
+          />
+        )}
+
         {activeTab === 'crm' && (
           <Crm 
             leads={leads} 
             setLeads={handleSetLeads} 
+            crmPayments={crmPayments}
+            customerDues={customerDues}
+            duePayments={duePayments}
+            onRecordPayment={handleRecordCrmPayment}
+            onNavigateToDues={() => setActiveTab('dues')}
             onRecordIncome={(incomeItem) => {
               handleSetIncomes(prev => [incomeItem, ...prev]);
             }}

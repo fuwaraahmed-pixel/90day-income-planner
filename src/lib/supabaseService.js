@@ -994,5 +994,148 @@ export const rpcRecordCrmPayment = async (paymentData) => {
   return data;
 };
 
+// ====================================================================
+// CUSTOMER DUES SERVICES
+// ====================================================================
+export const getCustomerDues = async (userId) => {
+  if (!isSupabaseConfigured || !userId) return [];
+  const { data, error } = await supabase
+    .from('customer_dues')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    if (error.code !== '42P01') {
+      console.error('Error fetching customer dues:', error);
+    }
+    return [];
+  }
+  return data ? data.map(toCamel) : [];
+};
+
+export const createCustomerDue = async (userId, dueData) => {
+  if (!isSupabaseConfigured || !userId) return null;
+  const total = Number(dueData.totalAmount) || 0;
+  const initial = Number(dueData.paidAmount) || 0;
+  const due = Math.max(0, total - initial);
+
+  let initialStatus = 'Unpaid';
+  if (initial >= total && total > 0) {
+    initialStatus = 'Paid';
+  } else if (initial > 0) {
+    initialStatus = 'Partially Paid';
+  }
+
+  const payload = {
+    user_id: userId,
+    customer_id: dueData.customerId ? Number(dueData.customerId) : null,
+    customer_name: dueData.customerName,
+    description: dueData.description,
+    total_amount: total,
+    paid_amount: initial,
+    due_amount: due,
+    due_date: dueData.dueDate || null,
+    status: dueData.status || initialStatus,
+    note: dueData.note || ''
+  };
+
+  const { data, error } = await supabase
+    .from('customer_dues')
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating customer due:', error);
+    return null;
+  }
+  return data ? toCamel(data) : null;
+};
+
+export const updateCustomerDue = async (userId, dueId, dueData) => {
+  if (!isSupabaseConfigured || !userId || !dueId) return null;
+  const payload = {
+    customer_name: dueData.customerName,
+    description: dueData.description,
+    total_amount: Number(dueData.totalAmount) || 0,
+    due_date: dueData.dueDate || null,
+    note: dueData.note || '',
+    updated_at: new Date().toISOString()
+  };
+
+  const { data, error } = await supabase
+    .from('customer_dues')
+    .update(payload)
+    .eq('id', dueId)
+    .eq('user_id', userId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating customer due:', error);
+    return null;
+  }
+  return data ? toCamel(data) : null;
+};
+
+export const deleteCustomerDue = async (userId, dueId) => {
+  if (!isSupabaseConfigured || !userId || !dueId) return false;
+  const { error } = await supabase
+    .from('customer_dues')
+    .delete()
+    .eq('id', dueId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error deleting customer due:', error);
+    return false;
+  }
+  return true;
+};
+
+export const getCustomerDuePayments = async (userId) => {
+  if (!isSupabaseConfigured || !userId) return [];
+  const { data, error } = await supabase
+    .from('customer_due_payments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    if (error.code !== '42P01') {
+      console.error('Error fetching customer due payments:', error);
+    }
+    return [];
+  }
+  return data ? data.map(toCamel) : [];
+};
+
+export const rpcRecordCustomerDuePayment = async (paymentData) => {
+  if (!isSupabaseConfigured) {
+    return { success: false, message: 'Supabase is not configured' };
+  }
+
+  const { data, error } = await supabase.rpc('record_customer_due_payment', {
+    p_payment_id: paymentData.paymentId,
+    p_due_id: Number(paymentData.dueId),
+    p_payment_date: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+    p_amount: Number(paymentData.amount),
+    p_payment_method: paymentData.paymentMethod || 'bKash',
+    p_note: paymentData.note || ''
+  });
+
+  if (error) {
+    console.error('RPC record_customer_due_payment Error:', error);
+    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
+      return { success: false, message: 'Supabase-এ record_customer_due_payment ফাংশনটি পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ নতুন SQL কোডটি Run করুন।' };
+    }
+    return { success: false, message: error.message };
+  }
+
+  return data;
+};
+
+
 
 

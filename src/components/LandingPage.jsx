@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowRight,
   CheckCircle2,
@@ -38,6 +38,716 @@ import {
   Lock,
   Sun
 } from 'lucide-react';
+
+function StackedCardsNode() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+
+    // Canvas dimensions
+    const width = 308;
+    const height = 302;
+    
+    // Core isometric configuration matching Vite.dev render engine
+    const centerX = width / 2;
+    const baseCenterY = 220; // Bottom layer target Y center
+    
+    // Isometric diamond radius parameters
+    const rx = 105; // horizontal radius (width/2)
+    const ry = 48;  // vertical radius (height/2)
+    const layerSpacing = 32; // Vertical step distance between stacked layers in pixels
+    
+    // Single top origin point where cards spawn from
+    const spawnY = -60;
+
+    // Card definitions (5 layers bottom to top)
+    const layers = [
+      { id: 0, label: '.GOALS', sub: 'GOALS', color: '#6366f1', targetZ: 0 },
+      { id: 1, label: '.EXPENSES', sub: 'EXPENSES', color: '#ec4899', targetZ: 1 },
+      { id: 2, label: '.TUITION', sub: 'TUITION', color: '#3b82f6', targetZ: 2 },
+      { id: 3, label: '.CRM_LEADS', sub: 'CRM LEADS', color: '#10b981', targetZ: 3 },
+      { id: 4, label: '.DREMOY', sub: 'COMMAND HUB', color: '#a855f7', targetZ: 4, isCap: true }
+    ];
+
+    // Floating satellite node chips (pointing to stack)
+    const satellites = [
+      { label: '.EXPENSES', x: 38, y: 110, color: '#ec4899', targetY: baseCenterY - 1 * layerSpacing },
+      { label: '.TUITION', x: 270, y: 135, color: '#3b82f6', targetY: baseCenterY - 2 * layerSpacing },
+      { label: '.CRM_LEADS', x: 42, y: 195, color: '#10b981', targetY: baseCenterY - 3 * layerSpacing }
+    ];
+
+    const cycleDuration = 7.5; // Full loop duration in seconds
+    let startTime = null;
+
+    // Helper: Draw isometric diamond path
+    const drawDiamond = (cx, cy, scale = 1) => {
+      const xR = rx * scale;
+      const yR = ry * scale;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - yR);
+      ctx.lineTo(cx + xR, cy);
+      ctx.lineTo(cx, cy + yR);
+      ctx.lineTo(cx - xR, cy);
+      ctx.closePath();
+    };
+
+    // Helper: Cubic Ease-Out function for smooth landing
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    const render = (now) => {
+      if (!startTime) startTime = now;
+      const elapsed = (now - startTime) / 1000;
+      const loopProgress = (elapsed % cycleDuration) / cycleDuration;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // --- 1. Draw Satellite Chips & Laser Beam Lines ---
+      satellites.forEach(sat => {
+        // Laser connecting line
+        ctx.beginPath();
+        ctx.moveTo(sat.x, sat.y);
+        ctx.lineTo(centerX, sat.targetY);
+        ctx.strokeStyle = sat.color + '40';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Animated laser pulse dot
+        const pulseT = (elapsed * 0.8) % 1;
+        const pulseX = sat.x + (centerX - sat.x) * pulseT;
+        const pulseY = sat.y + (sat.targetY - sat.y) * pulseT;
+        ctx.beginPath();
+        ctx.arc(pulseX, pulseY, 2, 0, Math.PI * 2);
+        ctx.fillStyle = sat.color;
+        ctx.fill();
+
+        // Satellite Pill Box
+        const pW = 74;
+        const pH = 22;
+        const pX = sat.x - pW / 2;
+        const pY = sat.y - pH / 2;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.strokeStyle = sat.color + '80';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(pX, pY, pW, pH, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        // Node dot inside pill
+        ctx.beginPath();
+        ctx.arc(pX + 10, sat.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = sat.color;
+        ctx.fill();
+
+        // Node Label Text
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(sat.label, pX + 18, sat.y + 0.5);
+      });
+
+      // --- 2. Render Stacked Cards (Top-to-Bottom Origin Drop Animation Loop) ---
+      layers.forEach((layer) => {
+        const delay = layer.id * 0.12; 
+        const animDuration = 0.38;
+        const cardProgress = Math.max(0, Math.min(1, (loopProgress - delay) / animDuration));
+        
+        // Vertical drop calculation from top origin spawn point
+        const targetY = baseCenterY - layer.targetZ * layerSpacing;
+        const currentY = spawnY + (targetY - spawnY) * easeOutCubic(cardProgress);
+        
+        const opacity = Math.min(1, cardProgress * 1.5);
+        if (opacity <= 0) return;
+
+        ctx.save();
+        ctx.globalAlpha = opacity;
+
+        // Draw shadow under card
+        if (cardProgress > 0.5) {
+          drawDiamond(centerX, currentY + 12, 0.95);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+          ctx.fill();
+        }
+
+        if (layer.isCap) {
+          // --- Solid Dark Purple Cap Layer with Glowing Logo ---
+          drawDiamond(centerX, currentY, 1);
+          const gradient = ctx.createLinearGradient(centerX - rx, currentY - ry, centerX + rx, currentY + ry);
+          gradient.addColorStop(0, '#1e1b4b');
+          gradient.addColorStop(0.5, '#311b92');
+          gradient.addColorStop(1, '#4c1d95');
+          ctx.fillStyle = gradient;
+          ctx.fill();
+
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
+
+          // Inner Glass Highlight Border
+          drawDiamond(centerX, currentY, 0.92);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Glowing Dremoy Logo Badge
+          ctx.beginPath();
+          ctx.arc(centerX, currentY - 6, 15, 0, Math.PI * 2);
+          ctx.fillStyle = '#10b981';
+          ctx.shadowColor = '#10b981';
+          ctx.shadowBlur = 12;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '900 14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('D', centerX, currentY - 5);
+
+          // Top Label Text
+          ctx.fillStyle = '#e9d5ff';
+          ctx.font = 'bold 10px monospace';
+          ctx.fillText(layer.label, centerX, currentY + 18);
+
+        } else {
+          // --- Semi-Transparent Wireframe Glass Diamond Layer ---
+          drawDiamond(centerX, currentY, 1);
+          
+          // Glass Surface Fill
+          ctx.fillStyle = 'rgba(30, 41, 59, 0.75)';
+          ctx.fill();
+
+          // Glass Wireframe Stroke
+          ctx.strokeStyle = layer.color + 'ee';
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+
+          // Corner Wireframe Accents
+          drawDiamond(centerX, currentY, 0.94);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Layer Monospace Label Text
+          ctx.fillStyle = '#cbd5e1';
+          ctx.font = 'bold 9px monospace';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(layer.label, centerX - rx + 22, currentY);
+
+          ctx.fillStyle = layer.color;
+          ctx.textAlign = 'right';
+          ctx.fillText('● ACTIVE', centerX + rx - 22, currentY);
+        }
+
+        ctx.restore();
+      });
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    animationFrameId = requestAnimationFrame(render);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <div className="touch-none select-none flex items-center justify-center w-full py-2 z-20 relative">
+      <canvas ref={canvasRef} width={308} height={302} className="w-full max-w-[308px] h-auto" />
+    </div>
+  );
+}
+
+function TransformationVisualization() {
+  const [angle, setAngle] = useState(0);
+  const [isReducedMotion, setIsReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setIsReducedMotion(mediaQuery.matches);
+    const handler = (e) => setIsReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handler);
+
+    if (mediaQuery.matches) return;
+
+    let animId;
+    let lastTime = performance.now();
+    const fullCycleMs = 28000;
+    const speed = (2 * Math.PI) / fullCycleMs;
+
+    const animate = (time) => {
+      const delta = time - lastTime;
+      lastTime = time;
+      setAngle((prev) => (prev + speed * delta) % (2 * Math.PI));
+      animId = requestAnimationFrame(animate);
+    };
+
+    animId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      mediaQuery.removeEventListener('change', handler);
+    };
+  }, []);
+
+  const chaosItems = [
+    {
+      id: 'chat',
+      icon: MessageSquare,
+      title: 'WhatsApp / Messenger',
+      sub: 'বকেয়া কাস্টমার মেসেজ কোথায়?',
+      badge: 'ছড়িয়ে থাকা চ্যাট',
+      tilt: '-rotate-2'
+    },
+    {
+      id: 'customer',
+      icon: Users,
+      title: 'কাস্টমার তথ্য',
+      sub: 'হাসান সাহেব - কোথায় লিখেছিলাম?',
+      badge: 'অসম্পূর্ণ তথ্য',
+      tilt: 'rotate-2'
+    },
+    {
+      id: 'khata',
+      icon: FileText,
+      title: 'খাতা / হিসাব',
+      sub: 'মার্চ মাসের হিসাব খাতায় মিলছে না',
+      badge: 'কাগজের খাতা',
+      tilt: '-rotate-1'
+    },
+    {
+      id: 'dues',
+      icon: Receipt,
+      title: 'টাকা পাওনা',
+      sub: '৳২৫,০০০ বকেয়া (তারিখ মনে নেই)',
+      badge: 'বকেয়া ট্র্যাকিং',
+      tilt: 'rotate-3'
+    },
+    {
+      id: 'followup',
+      icon: Clock,
+      title: 'ভুলে যাওয়া follow-up',
+      sub: 'গতকাল কাস্টমারকে কল দেওয়ার কথা ছিল!',
+      badge: 'ফলো-আপ মিস',
+      tilt: '-rotate-3'
+    }
+  ];
+
+  const orbitingModules = [
+    {
+      id: 'crm',
+      icon: Users,
+      title: 'CRM / Customers',
+      tag: 'একটিভ',
+      tagBg: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      val: 'হাসান সাহেব • ৳১৫,০০০ deal',
+      sub: 'ফলো-আপ শিডিউল করা'
+    },
+    {
+      id: 'income',
+      icon: TrendingUp,
+      title: 'Income & Expenses',
+      tag: '+১৮% বৃদ্ধি',
+      tagBg: 'bg-blue-100 text-blue-800 border-blue-200',
+      val: 'মাসিক আয় ৳ ১,৪৫,০০০',
+      sub: 'ব্যয় ৳ ২৫,০০০ (নিয়ন্ত্রণে)'
+    },
+    {
+      id: 'tasks',
+      icon: CheckSquare,
+      title: 'Tasks / Follow-up',
+      tag: '৩টি সম্পন্ন',
+      tagBg: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      val: 'আজকের কাস্টমার ফলো-আপ',
+      sub: 'অগ্রাধিকার সাজানো'
+    },
+    {
+      id: 'goals',
+      icon: Target,
+      title: 'Goals / Progress',
+      tag: '৮৫% অর্জিত',
+      tagBg: 'bg-purple-100 text-purple-800 border-purple-200',
+      val: '৯০ দিনের টার্গেট ইনকাম',
+      sub: 'লক্ষ্যের দিকে অগ্রসর'
+    },
+    {
+      id: 'tuition',
+      icon: GraduationCap,
+      tag: 'ফি প্রাপ্ত',
+      tagBg: 'bg-teal-100 text-teal-800 border-teal-200',
+      title: 'Tuition / Operations',
+      val: 'তানভীর (১০ম শ্রেণি) • ৳৫,০০০',
+      sub: 'বকেয়া শূন্য • অটো রসিদ'
+    }
+  ];
+
+  // Orbit radius parameters
+  const rx = 210;
+  const ry = 130;
+
+  const positionedModules = orbitingModules.map((mod, index) => {
+    const modAngle = isReducedMotion
+      ? (index * (2 * Math.PI)) / orbitingModules.length
+      : angle + (index * (2 * Math.PI)) / orbitingModules.length;
+
+    const x = Math.cos(modAngle) * rx;
+    const y = Math.sin(modAngle) * ry;
+
+    const sinVal = Math.sin(modAngle);
+    const scale = 0.86 + (sinVal + 1) * 0.095;
+    const opacity = 0.65 + (sinVal + 1) * 0.175;
+    const zIndex = Math.round(15 + sinVal * 15);
+
+    return {
+      ...mod,
+      x,
+      y,
+      scale,
+      opacity,
+      zIndex
+    };
+  });
+
+  return (
+    <div className="w-full space-y-10">
+      
+      {/* ======================================================== */}
+      {/* DESKTOP & TABLET VIEW: Connected 3-Stage Transformation  */}
+      {/* ======================================================== */}
+      <div className="hidden lg:block relative py-6 px-2 min-h-[580px]">
+        
+        {/* Stage Titles Row */}
+        <div className="grid grid-cols-12 gap-6 mb-8 text-center items-center">
+          
+          {/* Left Stage Header */}
+          <div className="col-span-4 flex items-center justify-center gap-2">
+            <span className="px-3.5 py-1 rounded-full bg-rose-100 text-rose-700 font-extrabold text-xs uppercase tracking-wider border border-rose-200 shadow-2xs">
+              আগে
+            </span>
+            <span className="text-xs font-bold text-slate-500 bg-white/80 px-2.5 py-1 rounded-full border border-slate-200">
+              সবকিছু আলাদা জায়গায়
+            </span>
+          </div>
+
+          {/* Center Stage Header */}
+          <div className="col-span-4 flex items-center justify-center gap-2">
+            <span className="px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 text-white font-extrabold text-xs uppercase tracking-widest shadow-md shadow-emerald-500/20 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
+              DREMOY CORE
+            </span>
+          </div>
+
+          {/* Right Stage Header */}
+          <div className="col-span-4 flex items-center justify-center gap-2">
+            <span className="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-xs uppercase tracking-wider border border-emerald-200 shadow-2xs">
+              পরে
+            </span>
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/80">
+              সবকিছু এক সিস্টেমে
+            </span>
+          </div>
+        </div>
+
+        {/* Transformation Canvas Stage Grid */}
+        <div className="grid grid-cols-12 gap-4 items-center relative min-h-[480px]">
+
+          {/* 1. LEFT SIDE — "আগে" (Controlled Visual Chaos) */}
+          <div className="col-span-4 space-y-3.5 relative z-20 pr-4">
+            {chaosItems.map((item) => {
+              const IconComp = item.icon;
+              return (
+                <div
+                  key={item.id}
+                  className={`bg-white/95 backdrop-blur-xs border border-slate-200/90 rounded-2xl p-3.5 shadow-sm hover:shadow-md transition-all duration-300 transform ${item.tilt} hover:rotate-0 hover:scale-102 group relative overflow-hidden`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-slate-100 group-hover:bg-rose-50 text-slate-600 group-hover:text-rose-600 flex items-center justify-center flex-shrink-0 transition-colors">
+                      <IconComp className="w-4 h-4" />
+                    </div>
+                    <div className="flex-grow min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <h4 className="text-xs font-bold text-slate-800 truncate">{item.title}</h4>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200 flex-shrink-0">
+                          {item.badge}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">{item.sub}</p>
+                    </div>
+                  </div>
+                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-rose-400/40 via-amber-400/30 to-purple-400/40" />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 2. CENTER & RIGHT — DREMOY CORE HUB & ORBITING SYSTEM MODULES */}
+          <div className="col-span-8 relative h-[460px] flex items-center justify-center">
+
+            {/* Left-to-Center Convergence Stream SVG Lines */}
+            <div className="absolute left-0 top-0 bottom-0 w-36 pointer-events-none z-10">
+              <svg className="w-full h-full overflow-visible" viewBox="0 0 144 460" fill="none">
+                <defs>
+                  <linearGradient id="chaos-to-dremoy" x1="0%" y1="50%" x2="100%" y2="50%">
+                    <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.4" />
+                    <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.6" />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.9" />
+                  </linearGradient>
+                </defs>
+                {[45, 135, 230, 325, 415].map((yStart, i) => (
+                  <g key={i}>
+                    <path
+                      d={`M 0 ${yStart} C 60 ${yStart}, 80 230, 144 230`}
+                      stroke="url(#chaos-to-dremoy)"
+                      strokeWidth="2"
+                      strokeDasharray="4 4"
+                      className="animate-flow-line"
+                      style={{ animationDelay: `${i * 0.4}s` }}
+                    />
+                  </g>
+                ))}
+              </svg>
+            </div>
+
+            {/* CENTER: DREMOY CORE TRUE 3D ISOMETRIC PLATFORM */}
+            <div className="relative z-30 flex flex-col items-center justify-center text-center iso-3d-perspective-wrapper">
+              
+              {/* Outer Ambient Glow Aura */}
+              <div className="absolute inset-0 -m-16 bg-gradient-to-tr from-emerald-500/25 via-purple-500/25 to-indigo-600/25 rounded-full blur-3xl animate-pulse pointer-events-none" />
+
+              {/* 3D Isometric Slab Outer Wrapper with subtle floating animation */}
+              <div className="relative group cursor-pointer animate-float-3d">
+                
+                {/* Ground Shadow */}
+                <div className="absolute top-[88%] left-1/2 -translate-x-1/2 w-64 h-12 bg-black/40 rounded-full blur-xl pointer-events-none transform rotate-x-60" />
+
+                {/* TRUE ISOMETRIC SLAB CARD */}
+                <div className="iso-3d-slab-card">
+                  
+                  {/* 3D Side Thickness Walls (Image 2 Metallic Purple Extrusion) */}
+                  <div className="iso-3d-slab-side-bottom" />
+                  <div className="iso-3d-slab-side-middle" />
+
+                  {/* Top Surface Face Slab */}
+                  <div className="iso-3d-slab-top-face">
+                    
+                    {/* Gloss Overlay */}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(192,132,252,0.35),transparent_70%)] pointer-events-none" />
+                    
+                    {/* COMMAND HUB Top Badge */}
+                    <div className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-400 to-emerald-400 text-slate-950 font-black text-[8.5px] tracking-widest uppercase shadow-md border border-white/50 flex items-center gap-1 z-10">
+                      <Sparkles className="w-2.5 h-2.5 text-slate-950" />
+                      COMMAND HUB
+                    </div>
+
+                    {/* CENTER 3D EXTRUDED METALLIC STANDING DREMOY TEXT */}
+                    <div className="relative flex flex-col items-center justify-center z-20 my-auto">
+                      
+                      {/* Floor Cast Shadow under 3D Text */}
+                      <div className="dremoy-3d-floor-shadow" />
+
+                      {/* 3D Extruded Metal Standing Block */}
+                      <div className="dremoy-3d-standing flex items-center justify-center">
+                        <span className="text-3d-metallic uppercase">
+                          DREMOY
+                        </span>
+                      </div>
+
+                    </div>
+
+                    {/* "একটি সুশৃঙ্খল ব্যবসায়িক সিস্টেম" Badge */}
+                    <div className="px-2 py-0.5 rounded-full bg-emerald-950/90 border border-emerald-400/80 text-emerald-300 font-extrabold text-[9px] shadow-inner z-10 whitespace-nowrap">
+                      একটি সুশৃঙ্খল ব্যবসায়িক সিস্টেম
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* DYNAMIC ORBIT CONNECTORS & MODULES CONTAINER */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none z-20 flex items-center justify-center">
+              
+              {/* Dynamic Connecting SVG Tethers to Orbiting Modules */}
+              <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none z-10" viewBox="-300 -230 600 460">
+                {positionedModules.map((mod) => (
+                  <g key={`line-${mod.id}`}>
+                    <path
+                      d={`M 0 0 Q ${mod.x * 0.4} ${mod.y * 0.4} ${mod.x} ${mod.y}`}
+                      stroke="#10B981"
+                      strokeWidth="1.5"
+                      strokeOpacity={0.15 + (mod.opacity * 0.25)}
+                      strokeDasharray="3 3"
+                    />
+                    <circle
+                      cx={mod.x}
+                      cy={mod.y}
+                      r="3"
+                      fill="#10B981"
+                      fillOpacity={mod.opacity}
+                    />
+                  </g>
+                ))}
+              </svg>
+
+              {/* 5 Orbiting SaaS Modules */}
+              {positionedModules.map((mod) => {
+                const IconComp = mod.icon;
+                return (
+                  <div
+                    key={mod.id}
+                    className="absolute pointer-events-auto transition-opacity duration-300"
+                    style={{
+                      transform: `translate3d(${mod.x}px, ${mod.y}px, 0px) scale(${mod.scale})`,
+                      opacity: mod.opacity,
+                      zIndex: mod.zIndex,
+                      left: '50%',
+                      top: '50%',
+                      marginLeft: '-110px',
+                      marginTop: '-45px'
+                    }}
+                  >
+                    <div className="w-[220px] bg-white border border-slate-200/90 rounded-2xl p-3 shadow-lg shadow-slate-900/5 hover:border-emerald-400 hover:shadow-emerald-500/10 transition-all duration-200">
+                      <div className="flex items-center justify-between gap-1 border-b border-slate-100 pb-1.5 mb-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <IconComp className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                          <h4 className="text-[11px] font-extrabold text-slate-800 truncate">{mod.title}</h4>
+                        </div>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${mod.tagBg}`}>
+                          {mod.tag}
+                        </span>
+                      </div>
+                      <div className="text-[11px] font-extrabold text-slate-900 truncate">
+                        {mod.val}
+                      </div>
+                      <div className="text-[10px] font-medium text-slate-500 truncate mt-0.5">
+                        {mod.sub}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* ======================================================== */}
+      {/* MOBILE & TABLET STACKED VIEW                             */}
+      {/* ======================================================== */}
+      <div className="block lg:hidden space-y-8 px-2">
+        
+        {/* 1. CHAOS SECTION (Mobile) */}
+        <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-rose-100 text-rose-700 font-extrabold text-xs">
+                আগে
+              </span>
+              <span className="text-xs font-bold text-slate-600">সবকিছু আলাদা জায়গায়</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {chaosItems.map((item) => {
+              const IconComp = item.icon;
+              return (
+                <div key={item.id} className="bg-white border border-slate-200/90 rounded-xl p-3 shadow-2xs space-y-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center gap-2">
+                      <IconComp className="w-3.5 h-3.5 text-rose-600" />
+                      <span className="text-xs font-bold text-slate-900">{item.title}</span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-slate-500">{item.badge}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600">{item.sub}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Transition Arrow Down (Mobile) */}
+        <div className="flex flex-col items-center justify-center my-2 gap-1 text-emerald-600">
+          <div className="w-0.5 h-6 bg-gradient-to-b from-rose-400 via-teal-400 to-emerald-500 rounded-full animate-pulse" />
+          <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/30">
+            <ArrowRight className="w-4 h-4 rotate-90" />
+          </div>
+        </div>
+
+        {/* 2. DREMOY CORE PLATFORM (Mobile) */}
+        <div className="bg-gradient-to-b from-white via-slate-50 to-emerald-50/70 border-2 border-emerald-400/80 rounded-3xl p-6 text-center space-y-3 shadow-lg shadow-emerald-950/5 relative max-w-sm mx-auto">
+          <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-indigo-600 p-0.5 shadow-md flex items-center justify-center text-white">
+            <span className="font-black text-xl text-white">D</span>
+          </div>
+          <h3 className="text-xl font-black text-slate-900">DREMOY CORE</h3>
+          <p className="text-xs font-bold text-emerald-800 bg-emerald-100/90 px-3 py-1 rounded-full inline-block">
+            একটি সুশৃঙ্খল ব্যবসায়িক সিস্টেম
+          </p>
+        </div>
+
+        {/* Transition Arrow Down (Mobile) */}
+        <div className="flex flex-col items-center justify-center my-2 gap-1 text-emerald-600">
+          <div className="w-0.5 h-6 bg-gradient-to-b from-emerald-500 to-teal-600 rounded-full animate-pulse" />
+          <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center shadow-md shadow-teal-600/30">
+            <ArrowRight className="w-4 h-4 rotate-90" />
+          </div>
+        </div>
+
+        {/* 3. TRANSFORMED MODULES (Mobile) */}
+        <div className="bg-emerald-50/50 border border-emerald-200/80 rounded-3xl p-5 space-y-4">
+          <div className="flex items-center justify-between border-b border-emerald-200/60 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-emerald-600 text-white font-extrabold text-xs">
+                পরে
+              </span>
+              <span className="text-xs font-bold text-emerald-900">সবকিছু এক সিস্টেমে</span>
+            </div>
+          </div>
+          <div className="space-y-2.5">
+            {orbitingModules.map((mod) => {
+              const IconComp = mod.icon;
+              return (
+                <div key={mod.id} className="bg-white border border-emerald-200/90 rounded-2xl p-3.5 shadow-xs space-y-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                      <span className="text-xs font-extrabold text-slate-900">{mod.title}</span>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${mod.tagBg}`}>
+                      {mod.tag}
+                    </span>
+                  </div>
+                  <div className="text-xs font-extrabold text-slate-800 pl-7">{mod.val}</div>
+                  <div className="text-[11px] text-slate-500 font-medium pl-7">{mod.sub}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
 
 export default function LandingPage({ onNavigateToAuth }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -541,300 +1251,9 @@ export default function LandingPage({ onNavigateToAuth }) {
           </div>
 
 
-          {/* ======================================================== */}
-          {/* DESKTOP VIEW: Node Graph Flow Layout                      */}
-          {/* ======================================================== */}
-          <div className="hidden lg:block relative reveal-init py-4">
-            
-            {/* Main Graph Grid */}
-            <div className="grid grid-cols-12 gap-0 items-center relative h-[490px]">
-
-              {/* 1. LEFT CONTAINER: CHAOS (Lilac Solid Card) */}
-              <div className="col-span-4 pr-0 relative z-10 h-full">
-                <div className="bg-[#F3E8FF] rounded-[36px] p-7 space-y-4 border border-purple-200/60 shadow-xs h-full flex flex-col justify-between">
-                  
-                  {/* Card Main Title */}
-                  <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                    প্রতিদিনের <span className="text-purple-600">ঝামেলাগুলো</span>
-                  </h3>
-
-                  {/* Clean White Rounded Pills Stack */}
-                  <div className="space-y-2 flex-grow flex flex-col justify-between pt-1">
-                    {[
-                      "হিসাবটা কোথায় রেখেছিলাম?",
-                      "এই Customer-কে কখন Follow-up করব?",
-                      "কে টাকা দিয়েছে, কে এখনো দেয়নি?",
-                      "Income আর Expense মিলিয়ে বুঝতে ঝামেলা হয়",
-                      "আজ কোন কাজটা আগে করব?",
-                      "এত কিছু মনে রাখতে গিয়ে মাথায় চাপ পড়ে"
-                    ].map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-white rounded-full px-4 py-2 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs border border-purple-100/80 hover:shadow-xs transition-all w-fit max-w-full"
-                      >
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-
-                </div>
-              </div>
-
-              {/* 2. CENTER SECTION: LEFT CONNECTOR + DREMOY ZEN LOTUS HUB + RIGHT BRANCHING SVG */}
-              <div className="col-span-3 relative flex items-center justify-center h-full">
-                
-                {/* Left Connector Line (Left Card to Folder) */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-16 h-0.5 pointer-events-none z-0">
-                  <svg className="w-full h-full overflow-visible" viewBox="0 0 64 2" fill="none">
-                    <line x1="0" y1="1" x2="64" y2="1" stroke="#cbd5e1" strokeWidth="2" />
-                    <line x1="0" y1="1" x2="64" y2="1" stroke="#8B5CF6" strokeWidth="2.5" className="animate-flow-line" />
-                  </svg>
-                </div>
-
-                {/* CENTER TRANSFORM NODE: Image with Animated SVG Gradient Border Trace */}
-                <div className="z-10 relative flex items-center justify-center group hover:scale-105 transition-transform duration-300">
-                  <div className="relative w-28 sm:w-32 h-auto p-0.5 rounded-2xl overflow-hidden">
-                    
-                    {/* SVG High-Contrast Animated Gradient Border Trace */}
-                    <svg className="absolute -inset-[3px] w-[calc(100%+6px)] h-[calc(100%+6px)] pointer-events-none z-20 overflow-visible">
-                      <defs>
-                        <linearGradient id="image-border-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#F59E0B" />
-                          <stop offset="30%" stopColor="#10B981" />
-                          <stop offset="65%" stopColor="#06B6D4" />
-                          <stop offset="100%" stopColor="#EC4899" />
-                        </linearGradient>
-                      </defs>
-                      {/* Subtle Base Track */}
-                      <rect
-                        x="2"
-                        y="2"
-                        width="calc(100% - 4px)"
-                        height="calc(100% - 4px)"
-                        rx="14"
-                        ry="14"
-                        fill="none"
-                        stroke="rgba(16, 185, 129, 0.25)"
-                        strokeWidth="3"
-                      />
-                      {/* Animated Neon Gradient Laser Beam */}
-                      <rect
-                        x="2"
-                        y="2"
-                        width="calc(100% - 4px)"
-                        height="calc(100% - 4px)"
-                        rx="14"
-                        ry="14"
-                        fill="none"
-                        stroke="url(#image-border-gradient)"
-                        strokeWidth="3.5"
-                        strokeLinecap="round"
-                        className="animate-svg-border-trace"
-                      />
-                    </svg>
-
-                    <img
-                      src="/images/dremoy_cube_3d.jpg"
-                      alt="Dremoy 3D Glass Crystal Storage Cluster"
-                      className="w-full h-auto object-contain rounded-xl filter drop-shadow-xl relative z-10"
-                    />
-                  </div>
-                </div>
-
-                {/* Right Branching SVG Bezier Lines (Folder to 6 Right Items) */}
-                <div className="absolute right-0 top-0 bottom-0 w-32 pointer-events-none z-0">
-                  <svg className="w-full h-full overflow-visible" viewBox="0 0 128 490" fill="none">
-                    <defs>
-                      <linearGradient id="purple-stream" x1="0%" y1="50%" x2="100%" y2="50%">
-                        <stop offset="0%" stopColor="#06B6D4" />
-                        <stop offset="100%" stopColor="#10B981" />
-                      </linearGradient>
-                    </defs>
-
-                    {[
-                      { yEnd: 75 },
-                      { yEnd: 150 },
-                      { yEnd: 225 },
-                      { yEnd: 300 },
-                      { yEnd: 375 },
-                      { yEnd: 450 }
-                    ].map((branch, index) => (
-                      <g key={index}>
-                        {/* Base subtle silver curve */}
-                        <path
-                          d={`M 0 245 C 65 245, 75 ${branch.yEnd}, 128 ${branch.yEnd}`}
-                          stroke="#cbd5e1"
-                          strokeWidth="2"
-                        />
-                        {/* Animated flowing line */}
-                        <path
-                          d={`M 0 245 C 65 245, 75 ${branch.yEnd}, 128 ${branch.yEnd}`}
-                          stroke={index === 4 ? "#10B981" : "url(#purple-stream)"}
-                          strokeWidth={index === 4 ? "3" : "2.5"}
-                          className="animate-flow-line"
-                          style={{ animationDelay: `${index * 2.3}s` }}
-                        />
-                      </g>
-                    ))}
-                  </svg>
-                </div>
-
-              </div>
-
-              {/* 3. RIGHT CONTAINER: CONTROL OUTCOME PILLS */}
-              <div className="col-span-5 pl-4 z-10 h-full flex flex-col justify-between py-0.5 space-y-4">
-                
-                {/* Right Container Main Title */}
-                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                  Dremoy-তে যেভাবে <span className="text-emerald-600">গুছিয়ে যাবে</span>
-                </h3>
-
-                <div className="space-y-2 flex-grow flex flex-col justify-between max-w-[400px] w-full">
-                  {[
-                    "প্রয়োজনীয় তথ্য এক জায়গায়",
-                    "Customer ও Follow-up গুছানো",
-                    "Income/Expense পরিষ্কারভাবে দেখা",
-                    "Tuition payment ও বকেয়া সহজে track করা",
-                    "90 দিনের লক্ষ্য ও progress দেখা",
-                    "আজকের গুরুত্বপূর্ণ কাজ সহজে বুঝে নেওয়া"
-                  ].map((outcome, idx) => (
-                    <div
-                      key={idx}
-                      className="relative overflow-hidden rounded-full px-5 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-3 transition-all bg-[#F1F5F9] text-slate-800 border border-slate-200/80 shadow-2xs group w-full"
-                    >
-                      {/* Synchronized Sequential Emerald Border Sweep Animation */}
-                      <div className={`pill-border-base animate-pill-border-${idx}`} />
-
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-emerald-500 text-white shadow-xs z-10 group-hover:scale-110 transition-transform">
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      </div>
-                      <span className="z-10 relative font-extrabold text-slate-900 tracking-tight">{outcome}</span>
-                    </div>
-                  ))}
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          {/* ======================================================== */}
-          {/* MOBILE VIEW: Vertical Flow with Animated Connectors      */}
-          {/* ======================================================== */}
-          <div className="block lg:hidden space-y-8 reveal-init">
-
-            {/* 1. CHAOS CARD (Mobile) */}
-            <div className="bg-[#F3E8FF] border border-purple-200 rounded-[32px] p-6 space-y-4 shadow-sm">
-              <div className="text-center">
-                <h3 className="text-xl font-black text-slate-900">
-                  প্রতিদিনের <span className="text-purple-600">ঝামেলাগুলো</span>
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {[
-                  "হিসাবটা কোথায় রেখেছিলাম?",
-                  "এই Customer-কে কখন Follow-up করব?",
-                  "কে টাকা দিয়েছে, কে এখনো দেয়নি?",
-                  "Income আর Expense মিলিয়ে বুঝতে ঝামেলা হয়",
-                  "আজ কোন কাজটা আগে করব?",
-                  "এত কিছু মনে রাখতে গিয়ে মাথায় চাপ পড়ে"
-                ].map((item, idx) => (
-                  <div key={idx} className="bg-white rounded-full px-4 py-2 text-xs font-semibold text-slate-700 border border-purple-100 shadow-2xs">
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Vertical Flow Stream Connector (Top to Middle) */}
-            <div className="flex flex-col items-center justify-center my-2">
-              <div className="w-0.5 h-8 bg-gradient-to-b from-purple-400 to-purple-600 rounded-full animate-pulse" />
-              <div className="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center -mt-1 shadow-md">
-                <ArrowRight className="w-3.5 h-3.5 rotate-90" />
-              </div>
-            </div>
-
-            {/* 2. DREMOY TRANSFORMATION HUB (Mobile) */}
-            <div className="w-full mx-auto text-center flex justify-center">
-              <div className="relative w-24 h-auto p-0.5 rounded-2xl overflow-hidden hover:scale-105 transition-transform duration-300">
-                {/* SVG Animated Gradient Border Trace */}
-                <svg className="absolute -inset-[3px] w-[calc(100%+6px)] h-[calc(100%+6px)] pointer-events-none z-20 overflow-visible">
-                  {/* Subtle Base Track */}
-                  <rect
-                    x="2"
-                    y="2"
-                    width="calc(100% - 4px)"
-                    height="calc(100% - 4px)"
-                    rx="14"
-                    ry="14"
-                    fill="none"
-                    stroke="rgba(16, 185, 129, 0.25)"
-                    strokeWidth="3"
-                  />
-                  {/* Animated Neon Gradient Laser Beam */}
-                  <rect
-                    x="2"
-                    y="2"
-                    width="calc(100% - 4px)"
-                    height="calc(100% - 4px)"
-                    rx="14"
-                    ry="14"
-                    fill="none"
-                    stroke="url(#image-border-gradient)"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    className="animate-svg-border-trace"
-                  />
-                </svg>
-
-                <img
-                  src="/images/dremoy_cube_3d.jpg"
-                  alt="Dremoy 3D Glass Crystal Storage Cluster"
-                  className="w-full h-auto object-contain rounded-xl filter drop-shadow-xl relative z-10"
-                />
-              </div>
-            </div>
-
-            {/* Vertical Flow Stream Connector (Middle to Bottom) */}
-            <div className="flex flex-col items-center justify-center my-2">
-              <div className="w-0.5 h-8 bg-gradient-to-b from-purple-600 to-emerald-500 rounded-full animate-pulse" />
-              <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center -mt-1 shadow-md">
-                <ArrowRight className="w-3.5 h-3.5 rotate-90" />
-              </div>
-            </div>
-
-            {/* 3. CONTROL OUTCOME ITEMS (Mobile) */}
-            <div className="space-y-3">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                  Dremoy-তে যেভাবে <span className="text-emerald-600">গুছিয়ে যাবে</span>
-                </h3>
-              </div>
-              {[
-                "প্রয়োজনীয় তথ্য এক জায়গায়",
-                "Customer ও Follow-up গুছানো",
-                "Income/Expense পরিষ্কারভাবে দেখা",
-                "Tuition payment ও বকেয়া সহজে track করা",
-                "90 দিনের লক্ষ্য ও progress দেখা",
-                "আজকের গুরুত্বপূর্ণ কাজ সহজে বুঝে নেওয়া"
-              ].map((outcome, idx) => (
-                <div
-                  key={idx}
-                  className="relative overflow-hidden rounded-full px-5 py-3 text-xs font-bold flex items-center gap-3 bg-[#F1F5F9] text-slate-800 border border-slate-200/70 shadow-2xs group w-full"
-                >
-                  {/* Synchronized Sequential Emerald Border Sweep Animation */}
-                  <div className={`pill-border-base animate-pill-border-${idx}`} />
-
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-emerald-500 text-white shadow-xs z-10">
-                    <Check className="w-3 h-3 stroke-[3]" />
-                  </div>
-                  <span className="z-10 relative font-extrabold text-slate-900 tracking-tight">{outcome}</span>
-                </div>
-              ))}
-            </div>
-
+          {/* Visual Connected Transformation System */}
+          <div className="reveal-init">
+            <TransformationVisualization />
           </div>
 
 

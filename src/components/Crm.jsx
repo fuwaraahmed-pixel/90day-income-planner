@@ -25,10 +25,20 @@ import Modal from './ui/Modal';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 
-export default function Crm({ leads, setLeads, services = [], crmPayments = [], onRecordPayment }) {
+export default function Crm({ 
+  leads, 
+  setLeads, 
+  services = [], 
+  crmPayments = [], 
+  customerDues = [],
+  duePayments = [],
+  onRecordPayment,
+  onNavigateToDues
+}) {
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'kanban'
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [selectedCustomerProfile, setSelectedCustomerProfile] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [dragOverStatus, setDragOverStatus] = useState(null);
@@ -572,6 +582,15 @@ export default function Crm({ leads, setLeads, services = [], crmPayments = [], 
 
                     <div className="flex items-center gap-2 self-start sm:self-auto">
                       <button
+                        onClick={() => setSelectedCustomerProfile(lead)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all"
+                        title="কাস্টমার প্রোফাইল ও পাওনা দেখুন"
+                      >
+                        <Users className="w-3.5 h-3.5 text-slate-500" />
+                        <span>প্রোফাইল</span>
+                      </button>
+
+                      <button
                         onClick={() => handleOpenPaymentModal(lead)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all shadow-2xs"
                       >
@@ -902,6 +921,138 @@ export default function Crm({ leads, setLeads, services = [], crmPayments = [], 
           </form>
         )}
       </Modal>
+
+      {/* CUSTOMER FINANCIAL PROFILE & DUES SUMMARY MODAL */}
+      {selectedCustomerProfile && (
+        <Modal
+          isOpen={Boolean(selectedCustomerProfile)}
+          onClose={() => setSelectedCustomerProfile(null)}
+          title="👤 কাস্টমার ফাইন্যান্সিয়াল প্রোফাইল ও পাওনা"
+        >
+          {(() => {
+            const client = selectedCustomerProfile;
+            const clientDues = customerDues.filter(d => 
+              String(d.customerId) === String(client.id) || 
+              d.customerName?.toLowerCase().includes(client.clientName.toLowerCase()) ||
+              d.customerName?.toLowerCase().includes(client.businessName.toLowerCase())
+            );
+            
+            const totalDuesBusiness = clientDues.reduce((sum, d) => sum + (Number(d.totalAmount) || 0), 0);
+            const totalDuesPaid = clientDues.reduce((sum, d) => sum + (Number(d.paidAmount) || 0), 0);
+            
+            const clientCrmPayments = crmPayments.filter(p => String(p.crmClientId) === String(client.id));
+            const crmPaid = clientCrmPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), Number(client.advance) || 0);
+
+            const totalBusiness = totalDuesBusiness > 0 ? totalDuesBusiness : (Number(client.quotedPrice) || 0);
+            const totalPaid = totalDuesBusiness > 0 ? totalDuesPaid : crmPaid;
+            const totalDue = Math.max(0, totalBusiness - totalPaid);
+
+            return (
+              <div className="space-y-4 pt-1">
+                {/* Financial Summary Card */}
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white space-y-3 shadow-md">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-extrabold text-base text-white">{client.businessName}</h3>
+                      <p className="text-xs text-slate-300 font-medium">
+                        {client.clientName} {client.contact && `• ${client.contact}`}
+                      </p>
+                    </div>
+                    <span className="text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2.5 py-1 rounded-full">
+                      {client.service}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-700/80 text-center">
+                    <div className="bg-white/10 p-2.5 rounded-xl border border-white/10">
+                      <div className="text-[10px] text-slate-300 font-medium">Total Business</div>
+                      <div className="text-xs font-bold text-white">৳{totalBusiness.toLocaleString()}</div>
+                    </div>
+                    <div className="bg-white/10 p-2.5 rounded-xl border border-white/10">
+                      <div className="text-[10px] text-slate-300 font-medium">Paid (পরিশোধিত)</div>
+                      <div className="text-xs font-bold text-emerald-400">৳{totalPaid.toLocaleString()}</div>
+                    </div>
+                    <div className="bg-white/10 p-2.5 rounded-xl border border-white/10">
+                      <div className="text-[10px] text-slate-300 font-medium">Due (বাকি পাওনা)</div>
+                      <div className="text-xs font-extrabold text-rose-400">৳{totalDue.toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transactions History */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center justify-between">
+                    <span>পাওনা ও কাজ সমূহের তালিকা ({clientDues.length})</span>
+                    {onNavigateToDues && (
+                      <button
+                        onClick={() => {
+                          setSelectedCustomerProfile(null);
+                          onNavigateToDues();
+                        }}
+                        className="text-[11px] text-emerald-600 font-bold hover:underline"
+                      >
+                        পাওনা পেজে যান →
+                      </button>
+                    )}
+                  </h4>
+
+                  {clientDues.length === 0 ? (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 text-center">
+                      এই কাস্টমারের কোনো আলাদা পাওনা এন্ট্রি নেই (কোটেড প্রাইস: ৳{(Number(client.quotedPrice) || 0).toLocaleString()})।
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {clientDues.map(d => {
+                        const dDue = Math.max(0, (Number(d.totalAmount) || 0) - (Number(d.paidAmount) || 0));
+                        return (
+                          <div key={d.id} className="p-2.5 bg-white border border-slate-200 rounded-xl text-xs flex justify-between items-center">
+                            <div>
+                              <div className="font-bold text-slate-900">{d.description}</div>
+                              <div className="text-[10px] text-slate-400">মেয়াদ: {d.dueDate || 'N/A'}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold text-slate-900">৳{Number(d.totalAmount).toLocaleString()}</div>
+                              <div className="text-[10px] text-rose-600 font-bold">বাকি: ৳{dDue.toLocaleString()}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Follow-up Notes */}
+                {client.notes && (
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                    <span className="font-bold text-slate-700">ফলো-আপ নোটস: </span>
+                    <span className="text-slate-600">{client.notes}</span>
+                  </div>
+                )}
+
+                <div className="pt-3 flex justify-between items-center border-t border-slate-100">
+                  <button
+                    onClick={() => {
+                      const leadToPay = client;
+                      setSelectedCustomerProfile(null);
+                      handleOpenPaymentModal(leadToPay);
+                    }}
+                    className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-2xs transition-colors flex items-center gap-1.5"
+                  >
+                    <DollarSign className="w-3.5 h-3.5" />
+                    <span>+ পেমেন্ট জমা নিন</span>
+                  </button>
+                  <button
+                    onClick={() => setSelectedCustomerProfile(null)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  >
+                    বন্ধ করুন
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+        </Modal>
+      )}
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal

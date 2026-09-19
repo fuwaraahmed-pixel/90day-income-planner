@@ -250,6 +250,286 @@
   filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.95)) drop-shadow(0 0 16px rgba(236, 72, 153, 0.8));
 }
 
+/* ======================================================== */
+/* CLEAN DREMOY BUSINESS CARDS - STRAIGHT TOP-TO-BOTTOM DROP */
+/* ======================================================== */
+.isometric-tower-container {
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1200px;
+}
 
+.isometric-stack-scene {
+  position: relative;
+  width: 230px;
+  height: 230px;
+  transform: none;
+  transition: transform 600ms ease;
+}
+
+.isometric-stack-scene:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+.iso-slab {
+  position: absolute;
+  width: 100%;
+  height: 46px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-weight: 800;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  transform: translateY(-260px) scale(0.85);
+  will-change: transform, opacity;
+  cursor: pointer;
+}
+
+/* Light Slabs Shading */
+.iso-slab-neutral {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  color: #1e293b;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.iso-slab-accent {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  color: #0f172a;
+  border: 1.5px solid #94a3b8;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1), 0 3px 8px rgba(15, 23, 42, 0.05);
+}
+
+/* Top Neon Cap Shading */
+.iso-slab-cap {
+  background: linear-gradient(135deg, #7e22ce 0%, #9333ea 50%, #4c1d95 100%);
+  color: #ffffff;
+  border: 2px solid #c084fc;
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.55), 0 14px 30px rgba(15, 23, 42, 0.25);
+}
+
+/* Single-Origin Top Spawn & Straight Vertical Drop Animations (8.5s Loop) */
+@keyframes dremoyDropSlab1 {
+  0%, 2% { opacity: 0; transform: translateY(-240px) scale(0.8); }
+  14% { opacity: 1; transform: translateY(160px) scale(0.92); }
+  90% { opacity: 1; transform: translateY(160px) scale(0.92); }
+  97%, 100% { opacity: 0; transform: translateY(-240px) scale(0.8); }
+}
+
+@keyframes dremoyDropSlab2 {
+  0%, 16% { opacity: 0; transform: translateY(-240px) scale(0.8); }
+  28% { opacity: 1; transform: translateY(120px) scale(0.94); }
+  90% { opacity: 1; transform: translateY(120px) scale(0.94); }
+  97%, 100% { opacity: 0; transform: translateY(-240px) scale(0.8); }
+}
+
+@keyframes dremoyDropSlab3 {
+  0%, 31% { opacity: 0; transform: translateY(-240px) scale(0.8); }
+  43% { opacity: 1; transform: translateY(80px) scale(0.96); }
+  90% { opacity: 1; transform: translateY(80px) scale(0.96); }
+  97%, 100% { opacity: 0; transform: translateY(-240px) scale(0.8); }
+}
+
+@keyframes dremoyDropSlab4 {
+  0%, 46% { opacity: 0; transform: translateY(-240px) scale(0.8); }
+  58% { opacity: 1; transform: translateY(40px) scale(0.98); }
+  90% { opacity: 1; transform: translateY(40px) scale(0.98); }
+  97%, 100% { opacity: 0; transform: translateY(-240px) scale(0.8); }
+}
+
+@keyframes dremoyDropSlab5 {
+  0%, 61% { opacity: 0; transform: translateY(-240px) scale(0.8); }
+  73% { opacity: 1; transform: translateY(0px) scale(1); }
+  90% { opacity: 1; transform: translateY(0px) scale(1); }
+  97%, 100% { opacity: 0; transform: translateY(-240px) scale(0.8); }
+}
+
+.isometric-tower-container.in-view .iso-slab-1 {
+  animation: dremoyDropSlab1 8.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  z-index: 10;
+}
+
+.isometric-tower-container.in-view .iso-slab-2 {
+  animation: dremoyDropSlab2 8.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  z-index: 20;
+}
+
+.isometric-tower-container.in-view .iso-slab-3 {
+  animation: dremoyDropSlab3 8.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  z-index: 30;
+}
+
+.isometric-tower-container.in-view .iso-slab-4 {
+  animation: dremoyDropSlab4 8.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  z-index: 40;
+}
+
+.isometric-tower-container.in-view .iso-slab-5 {
+  animation: dremoyDropSlab5 8.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  z-index: 50;
+}
+
+/* Hover Spread & Elevation Effect */
+.isometric-tower-container.in-view:hover .iso-slab {
+  animation-play-state: paused;
+}
+
+.isometric-tower-container.in-view:hover .iso-slab-5 {
+  transform: translateY(-14px) scale(1.02) !important;
+  opacity: 1 !important;
+  box-shadow: 0 10px 40px rgba(168, 85, 247, 0.6);
+}
+
+.isometric-tower-container.in-view:hover .iso-slab-4 {
+  transform: translateY(32px) scale(0.99) !important;
+  opacity: 0.98 !important;
+}
+
+.isometric-tower-container.in-view:hover .iso-slab-3 {
+  transform: translateY(80px) scale(0.97) !important;
+  opacity: 0.96 !important;
+}
+
+.isometric-tower-container.in-view:hover .iso-slab-2 {
+  transform: translateY(128px) scale(0.95) !important;
+  opacity: 0.92 !important;
+}
+
+.isometric-tower-container.in-view:hover .iso-slab-1 {
+  transform: translateY(176px) scale(0.93) !important;
+  opacity: 0.88 !important;
+}
+
+/* Flow line dash animation */
+@keyframes flowLineDash {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-flow-line {
+  animation: flowLineDash 1.8s linear infinite;
+}
+
+/* 3D Isometric Float Animation */
+@keyframes float3D {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float-3d {
+  animation: float3D 4s ease-in-out infinite;
+}
+
+/* True 3D Isometric Platform Slab (Inspired by Reference Image 2 - 30% Reduced Size) */
+.iso-3d-perspective-wrapper {
+  perspective: 1000px;
+  perspective-origin: 50% 50%;
+}
+
+.iso-3d-slab-card {
+  width: 195px;
+  height: 162px;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(58deg) rotateZ(-38deg);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.iso-3d-slab-card:hover {
+  transform: rotateX(50deg) rotateZ(-32deg) translateY(-6px);
+}
+
+/* 3D Side Extrusion Thickness Walls (Metallic Glowing Purple/Emerald Rims) */
+.iso-3d-slab-side-bottom {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 40%, #064e3b 100%);
+  transform: translateZ(-16px) translateY(9px) translateX(4px);
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.5), 0 0 24px rgba(168, 85, 247, 0.4);
+}
+
+.iso-3d-slab-side-middle {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #c084fc 0%, #9333ea 50%, #10b981 100%);
+  transform: translateZ(-8px) translateY(4px) translateX(2px);
+  opacity: 0.9;
+}
+
+/* Top Surface Face Slab (Dark textured face with glowing neon border matching Image 2) */
+.iso-3d-slab-top-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  background: radial-gradient(circle at 30% 20%, #1e1b4b 0%, #0f172a 60%, #022c22 100%);
+  border: 2.5px solid #c084fc;
+  box-shadow: 
+    0 0 25px rgba(168, 85, 247, 0.55),
+    inset 0 0 15px rgba(192, 132, 252, 0.25),
+    inset 0 1.5px 3px rgba(255, 255, 255, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 0.6rem;
+  color: #ffffff;
+  overflow: visible;
+}
+
+/* 3D Extruded Metallic Lettering (Inspired by 'METAL' 3D Text Reference Image) */
+.dremoy-3d-standing {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateZ(38deg) rotateX(-54deg) translateZ(12px);
+  filter: drop-shadow(0px 8px 10px rgba(0, 0, 0, 0.9));
+}
+
+.text-3d-metallic {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 1.15rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  background: linear-gradient(180deg, #ffffff 0%, #a7f3d0 40%, #059669 75%, #064e3b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 
+    1px 1px 0px #047857,
+    2px 2px 0px #065f46,
+    3px 3px 0px #064e3b,
+    4px 4px 8px rgba(0, 0, 0, 0.85);
+}
+
+.dremoy-3d-floor-shadow {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%) scaleY(0.4);
+  width: 110px;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  filter: blur(4px);
+  border-radius: 50%;
+  pointer-events: none;
+}
 
 
