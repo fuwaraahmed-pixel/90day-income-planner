@@ -111,7 +111,7 @@
 
 .animate-flow-line {
   stroke-dasharray: 8 6;
-  animation: flowDash 1.8s linear infinite;
+  animation: flowDash 3.5s linear infinite;
 }
 
 @keyframes pulseGlow {
@@ -126,5 +126,130 @@
 .animate-pulse-glow {
   animation: pulseGlow 2.5s ease-in-out infinite;
 }
+
+/* Outcome Pill Synchronized Sequential Keyframes (Extended Reading Pacing - 24s total cycle) */
+/* Each item has ~3.8s total block time (reading pause included). All stay lit, then ALL reset together */
+
+@keyframes pillBorderStep0 {
+  0% { clip-path: inset(0 100% 0 0); opacity: 0; }
+  0.5% { opacity: 1; }
+  12% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  93% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  97%, 100% { clip-path: inset(0 100% 0 0); opacity: 0; }
+}
+
+@keyframes pillBorderStep1 {
+  0%, 15% { clip-path: inset(0 100% 0 0); opacity: 0; }
+  16.66% { opacity: 1; }
+  28.66% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  93% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  97%, 100% { clip-path: inset(0 100% 0 0); opacity: 0; }
+}
+
+@keyframes pillBorderStep2 {
+  0%, 32% { clip-path: inset(0 100% 0 0); opacity: 0; }
+  33.33% { opacity: 1; }
+  45.33% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  93% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  97%, 100% { clip-path: inset(0 100% 0 0); opacity: 0; }
+}
+
+@keyframes pillBorderStep3 {
+  0%, 48.5% { clip-path: inset(0 100% 0 0); opacity: 0; }
+  50.0% { opacity: 1; }
+  62.0% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  93% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  97%, 100% { clip-path: inset(0 100% 0 0); opacity: 0; }
+}
+
+@keyframes pillBorderStep4 {
+  0%, 65% { clip-path: inset(0 100% 0 0); opacity: 0; }
+  66.66% { opacity: 1; }
+  78.66% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  93% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  97%, 100% { clip-path: inset(0 100% 0 0); opacity: 0; }
+}
+
+@keyframes pillBorderStep5 {
+  0%, 81.5% { clip-path: inset(0 100% 0 0); opacity: 0; }
+  83.33% { opacity: 1; }
+  92.0% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  93% { clip-path: inset(0 0% 0 0); opacity: 1; }
+  97%, 100% { clip-path: inset(0 100% 0 0); opacity: 0; }
+}
+
+.pill-border-base {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  border-radius: 9999px;
+  border: 2px solid #10B981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4), inset 0 0 8px rgba(16, 185, 129, 0.12);
+  pointer-events: none;
+}
+
+.animate-pill-border-0 { animation: pillBorderStep0 24s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
+.animate-pill-border-1 { animation: pillBorderStep1 24s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
+.animate-pill-border-2 { animation: pillBorderStep2 24s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
+.animate-pill-border-3 { animation: pillBorderStep3 24s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
+.animate-pill-border-4 { animation: pillBorderStep4 24s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
+.animate-pill-border-5 { animation: pillBorderStep5 24s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
+
+/* Continuous Rotating Gradient Border around Center Node Image */
+@keyframes spinBorder {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rotating-gradient-border-wrapper {
+  position: relative;
+  overflow: hidden;
+  padding: 1.75px;
+  border-radius: 1.1rem;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+}
+
+.rotating-gradient-border-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -60%;
+  width: 220%;
+  height: 220%;
+  background: conic-gradient(
+    from 0deg,
+    #06B6D4,
+    #3B82F6,
+    #10B981,
+    #A855F7,
+    #06B6D4
+  );
+  animation: spinBorder 5s linear infinite;
+  z-index: 0;
+}
+
+/* Animated SVG Gradient Border Path Trace around Center Image */
+@keyframes svgBorderTrace {
+  0% {
+    stroke-dashoffset: 700;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-svg-border-trace {
+  stroke-dasharray: 220 120;
+  animation: svgBorderTrace 3.5s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.95)) drop-shadow(0 0 16px rgba(236, 72, 153, 0.8));
+}
+
+
 
 

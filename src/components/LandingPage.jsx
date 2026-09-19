@@ -25,7 +25,18 @@ import {
   Check,
   GraduationCap,
   Calendar,
-  Clock
+  Clock,
+  ShieldCheck,
+  Shield,
+  Heart,
+  Crown,
+  Infinity,
+  Award,
+  Zap,
+  Anchor,
+  Compass,
+  Lock,
+  Sun
 } from 'lucide-react';
 
 export default function LandingPage({ onNavigateToAuth }) {
@@ -515,7 +526,7 @@ export default function LandingPage({ onNavigateToAuth }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
 
           {/* Section Header */}
-          <div className="text-center space-y-3 max-w-3xl mx-auto reveal-init">
+          <div className="text-center space-y-4 max-w-3xl mx-auto reveal-init">
             <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-xs sm:text-sm font-bold shadow-2xs">
               <Sparkles className="w-4 h-4 text-emerald-600" />
               <span>ব্যবসার রূপান্তর চিত্র</span>
@@ -569,7 +580,7 @@ export default function LandingPage({ onNavigateToAuth }) {
                 </div>
               </div>
 
-              {/* 2. CENTER SECTION: LEFT CONNECTOR + DREMOY FOLDER NODE + RIGHT BRANCHING SVG */}
+              {/* 2. CENTER SECTION: LEFT CONNECTOR + DREMOY ZEN LOTUS HUB + RIGHT BRANCHING SVG */}
               <div className="col-span-3 relative flex items-center justify-center h-full">
                 
                 {/* Left Connector Line (Left Card to Folder) */}
@@ -580,27 +591,53 @@ export default function LandingPage({ onNavigateToAuth }) {
                   </svg>
                 </div>
 
-                {/* 3D Purple Folder Card Hub Node */}
-                <div className="z-10 relative group hover-lift">
-                  {/* Folder Top Tab */}
-                  <div className="w-24 h-4 bg-[#8B5CF6] rounded-t-xl mx-auto -mb-1 shadow-xs border-t border-x border-purple-300/40" />
-
-                  {/* Main Folder Body */}
-                  <div className="w-44 h-44 bg-gradient-to-b from-[#8B5CF6] via-[#7C3AED] to-[#6D28D9] text-white rounded-3xl p-6 shadow-2xl flex flex-col justify-between border border-purple-400/40 relative overflow-hidden">
+                {/* CENTER TRANSFORM NODE: Image with Animated SVG Gradient Border Trace */}
+                <div className="z-10 relative flex items-center justify-center group hover:scale-105 transition-transform duration-300">
+                  <div className="relative w-28 sm:w-32 h-auto p-0.5 rounded-2xl overflow-hidden">
                     
-                    {/* Subtle inner highlight */}
-                    <div className="absolute -top-10 -right-10 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none" />
+                    {/* SVG High-Contrast Animated Gradient Border Trace */}
+                    <svg className="absolute -inset-[3px] w-[calc(100%+6px)] h-[calc(100%+6px)] pointer-events-none z-20 overflow-visible">
+                      <defs>
+                        <linearGradient id="image-border-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#F59E0B" />
+                          <stop offset="30%" stopColor="#10B981" />
+                          <stop offset="65%" stopColor="#06B6D4" />
+                          <stop offset="100%" stopColor="#EC4899" />
+                        </linearGradient>
+                      </defs>
+                      {/* Subtle Base Track */}
+                      <rect
+                        x="2"
+                        y="2"
+                        width="calc(100% - 4px)"
+                        height="calc(100% - 4px)"
+                        rx="14"
+                        ry="14"
+                        fill="none"
+                        stroke="rgba(16, 185, 129, 0.25)"
+                        strokeWidth="3"
+                      />
+                      {/* Animated Neon Gradient Laser Beam */}
+                      <rect
+                        x="2"
+                        y="2"
+                        width="calc(100% - 4px)"
+                        height="calc(100% - 4px)"
+                        rx="14"
+                        ry="14"
+                        fill="none"
+                        stroke="url(#image-border-gradient)"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                        className="animate-svg-border-trace"
+                      />
+                    </svg>
 
-                    <div className="w-8 h-1 bg-white/40 rounded-full" />
-
-                    <div className="space-y-0.5 text-left">
-                      <div className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                        Dremoy
-                      </div>
-                      <div className="text-4xl sm:text-5xl font-black tracking-tight text-white/90">
-                        01
-                      </div>
-                    </div>
+                    <img
+                      src="/images/dremoy_cube_3d.jpg"
+                      alt="Dremoy 3D Glass Crystal Storage Cluster"
+                      className="w-full h-auto object-contain rounded-xl filter drop-shadow-xl relative z-10"
+                    />
                   </div>
                 </div>
 
@@ -609,7 +646,7 @@ export default function LandingPage({ onNavigateToAuth }) {
                   <svg className="w-full h-full overflow-visible" viewBox="0 0 128 490" fill="none">
                     <defs>
                       <linearGradient id="purple-stream" x1="0%" y1="50%" x2="100%" y2="50%">
-                        <stop offset="0%" stopColor="#8B5CF6" />
+                        <stop offset="0%" stopColor="#06B6D4" />
                         <stop offset="100%" stopColor="#10B981" />
                       </linearGradient>
                     </defs>
@@ -635,7 +672,7 @@ export default function LandingPage({ onNavigateToAuth }) {
                           stroke={index === 4 ? "#10B981" : "url(#purple-stream)"}
                           strokeWidth={index === 4 ? "3" : "2.5"}
                           className="animate-flow-line"
-                          style={{ animationDelay: `${index * 0.18}s` }}
+                          style={{ animationDelay: `${index * 2.3}s` }}
                         />
                       </g>
                     ))}
@@ -652,7 +689,7 @@ export default function LandingPage({ onNavigateToAuth }) {
                   Dremoy-তে যেভাবে <span className="text-emerald-600">গুছিয়ে যাবে</span>
                 </h3>
 
-                <div className="space-y-2 flex-grow flex flex-col justify-between">
+                <div className="space-y-2 flex-grow flex flex-col justify-between max-w-[400px] w-full">
                   {[
                     "প্রয়োজনীয় তথ্য এক জায়গায়",
                     "Customer ও Follow-up গুছানো",
@@ -663,22 +700,15 @@ export default function LandingPage({ onNavigateToAuth }) {
                   ].map((outcome, idx) => (
                     <div
                       key={idx}
-                      className={`rounded-full px-5 py-2 text-xs sm:text-sm font-bold flex items-center gap-3 transition-all ${
-                        idx === 4
-                          ? 'bg-emerald-50 border-2 border-emerald-500 text-emerald-950 shadow-md scale-[1.01]'
-                          : 'bg-[#F1F5F9] text-slate-700 hover:bg-slate-200/80 border border-slate-200/80 shadow-2xs'
-                      }`}
+                      className="relative overflow-hidden rounded-full px-5 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-3 transition-all bg-[#F1F5F9] text-slate-800 border border-slate-200/80 shadow-2xs group w-full"
                     >
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          idx === 4
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-slate-300 text-slate-600'
-                        }`}
-                      >
-                        <Check className="w-3.5 h-3.5" />
+                      {/* Synchronized Sequential Emerald Border Sweep Animation */}
+                      <div className={`pill-border-base animate-pill-border-${idx}`} />
+
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-emerald-500 text-white shadow-xs z-10 group-hover:scale-110 transition-transform">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
                       </div>
-                      <span>{outcome}</span>
+                      <span className="z-10 relative font-extrabold text-slate-900 tracking-tight">{outcome}</span>
                     </div>
                   ))}
                 </div>
@@ -727,12 +757,43 @@ export default function LandingPage({ onNavigateToAuth }) {
             </div>
 
             {/* 2. DREMOY TRANSFORMATION HUB (Mobile) */}
-            <div className="w-44 mx-auto">
-              <div className="w-20 h-3 bg-[#8B5CF6] rounded-t-xl mx-auto -mb-1 shadow-xs" />
-              <div className="bg-gradient-to-b from-[#8B5CF6] via-[#7C3AED] to-[#6D28D9] text-white rounded-3xl p-6 shadow-xl text-left space-y-1">
-                <div className="w-6 h-1 bg-white/40 rounded-full mb-4" />
-                <div className="text-lg font-black text-white">Dremoy</div>
-                <div className="text-3xl font-black text-white/90">01</div>
+            <div className="w-full mx-auto text-center flex justify-center">
+              <div className="relative w-24 h-auto p-0.5 rounded-2xl overflow-hidden hover:scale-105 transition-transform duration-300">
+                {/* SVG Animated Gradient Border Trace */}
+                <svg className="absolute -inset-[3px] w-[calc(100%+6px)] h-[calc(100%+6px)] pointer-events-none z-20 overflow-visible">
+                  {/* Subtle Base Track */}
+                  <rect
+                    x="2"
+                    y="2"
+                    width="calc(100% - 4px)"
+                    height="calc(100% - 4px)"
+                    rx="14"
+                    ry="14"
+                    fill="none"
+                    stroke="rgba(16, 185, 129, 0.25)"
+                    strokeWidth="3"
+                  />
+                  {/* Animated Neon Gradient Laser Beam */}
+                  <rect
+                    x="2"
+                    y="2"
+                    width="calc(100% - 4px)"
+                    height="calc(100% - 4px)"
+                    rx="14"
+                    ry="14"
+                    fill="none"
+                    stroke="url(#image-border-gradient)"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    className="animate-svg-border-trace"
+                  />
+                </svg>
+
+                <img
+                  src="/images/dremoy_cube_3d.jpg"
+                  alt="Dremoy 3D Glass Crystal Storage Cluster"
+                  className="w-full h-auto object-contain rounded-xl filter drop-shadow-xl relative z-10"
+                />
               </div>
             </div>
 
@@ -761,20 +822,15 @@ export default function LandingPage({ onNavigateToAuth }) {
               ].map((outcome, idx) => (
                 <div
                   key={idx}
-                  className={`rounded-full px-5 py-3 text-xs font-bold flex items-center gap-3 ${
-                    idx === 4
-                      ? 'bg-emerald-50 border-2 border-emerald-500 text-emerald-950 shadow-sm'
-                      : 'bg-[#F1F5F9] text-slate-700 border border-slate-200/70'
-                  }`}
+                  className="relative overflow-hidden rounded-full px-5 py-3 text-xs font-bold flex items-center gap-3 bg-[#F1F5F9] text-slate-800 border border-slate-200/70 shadow-2xs group w-full"
                 >
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      idx === 4 ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-slate-600'
-                    }`}
-                  >
-                    <Check className="w-3 h-3" />
+                  {/* Synchronized Sequential Emerald Border Sweep Animation */}
+                  <div className={`pill-border-base animate-pill-border-${idx}`} />
+
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-emerald-500 text-white shadow-xs z-10">
+                    <Check className="w-3 h-3 stroke-[3]" />
                   </div>
-                  <span>{outcome}</span>
+                  <span className="z-10 relative font-extrabold text-slate-900 tracking-tight">{outcome}</span>
                 </div>
               ))}
             </div>
