@@ -827,6 +827,18 @@ export const migrateLocalStorageToSupabase = async (userId) => {
 // ====================================================================
 // TUITION MANAGEMENT SERVICES
 // ====================================================================
+const formatTuitionStudent = (raw) => {
+  if (!raw) return null;
+  const item = toCamel(raw);
+  if (!item.billingStartMonth && item.notes) {
+    const match = item.notes.match(/\[BSM:(\d{4}-\d{2})\]/);
+    if (match) {
+      item.billingStartMonth = match[1];
+    }
+  }
+  return item;
+};
+
 export const getTuitionStudents = async (userId) => {
   if (!isSupabaseConfigured || !userId) return [];
   const { data, error } = await supabase
@@ -839,7 +851,7 @@ export const getTuitionStudents = async (userId) => {
     console.error('Error fetching tuition students:', error);
     return [];
   }
-  return data ? data.map(toCamel) : [];
+  return data ? data.map(formatTuitionStudent) : [];
 };
 
 export const addTuitionStudent = async (userId, studentData) => {
@@ -859,11 +871,30 @@ export const addTuitionStudent = async (userId, studentData) => {
     notes: studentData.notes || ''
   };
 
-  const { data, error } = await supabase
+  if (studentData.billingStartMonth) {
+    payload.billing_start_month = studentData.billingStartMonth;
+  }
+
+  let { data, error } = await supabase
     .from('tuition_students')
     .insert(payload)
     .select()
     .single();
+
+  // If column doesn't exist in Supabase DB yet, embed BSM tag in notes fallback & retry insert!
+  if (error && (error.message?.includes('billing_start_month') || error.code === 'PGRST204' || error.code === '42703')) {
+    delete payload.billing_start_month;
+    const cleanNotes = (payload.notes || '').replace(/\[BSM:\d{4}-\d{2}\]/g, '').trim();
+    payload.notes = studentData.billingStartMonth ? `${cleanNotes} [BSM:${studentData.billingStartMonth}]`.trim() : cleanNotes;
+
+    const retry = await supabase
+      .from('tuition_students')
+      .insert(payload)
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     console.error('Error adding tuition student:', error);
@@ -872,7 +903,7 @@ export const addTuitionStudent = async (userId, studentData) => {
     }
     throw new Error(error.message);
   }
-  return data ? toCamel(data) : null;
+  return data ? formatTuitionStudent(data) : null;
 };
 
 export const updateTuitionStudent = async (studentId, studentData) => {
@@ -892,12 +923,32 @@ export const updateTuitionStudent = async (studentId, studentData) => {
     updated_at: new Date().toISOString()
   };
 
-  const { data, error } = await supabase
+  if (studentData.billingStartMonth) {
+    payload.billing_start_month = studentData.billingStartMonth;
+  }
+
+  let { data, error } = await supabase
     .from('tuition_students')
     .update(payload)
     .eq('id', studentId)
     .select()
     .single();
+
+  // If column doesn't exist in Supabase DB yet, embed BSM tag in notes fallback & retry update!
+  if (error && (error.message?.includes('billing_start_month') || error.code === 'PGRST204' || error.code === '42703')) {
+    delete payload.billing_start_month;
+    const cleanNotes = (payload.notes || '').replace(/\[BSM:\d{4}-\d{2}\]/g, '').trim();
+    payload.notes = studentData.billingStartMonth ? `${cleanNotes} [BSM:${studentData.billingStartMonth}]`.trim() : cleanNotes;
+
+    const retry = await supabase
+      .from('tuition_students')
+      .update(payload)
+      .eq('id', studentId)
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     console.error('Error updating tuition student:', error);
@@ -906,7 +957,7 @@ export const updateTuitionStudent = async (studentId, studentData) => {
     }
     throw new Error(error.message);
   }
-  return data ? toCamel(data) : null;
+  return data ? formatTuitionStudent(data) : null;
 };
 
 export const getTuitionPayments = async (userId) => {
@@ -947,6 +998,43 @@ export const recordTuitionPayment = async (paymentData) => {
   }
 
   return data;
+};
+
+export const deleteTuitionPayment = async (paymentId, userId) => {
+  if (!isSupabaseConfigured || !userId) {
+    return { success: true };
+  }
+
+  // 1. Fetch payment record to find associated income_id
+  const { data: payRecord } = await supabase
+    .from('tuition_payments')
+    .select('id, income_id')
+    .eq('id', paymentId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  // 2. Delete tuition payment
+  const { error } = await supabase
+    .from('tuition_payments')
+    .delete()
+    .eq('id', paymentId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error deleting tuition payment:', error);
+    return { success: false, message: error.message };
+  }
+
+  // 3. Delete linked income record if exists
+  if (payRecord?.income_id) {
+    await supabase
+      .from('income')
+      .delete()
+      .eq('id', payRecord.income_id)
+      .eq('user_id', userId);
+  }
+
+  return { success: true };
 };
 
 // ====================================================================

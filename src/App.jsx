@@ -631,6 +631,24 @@ export default function App() {
     }
   };
 
+  const handleDeleteTuitionPayment = async (paymentId) => {
+    if (session?.user?.id) {
+      const res = await api.deleteTuitionPayment(paymentId, session.user.id);
+      if (res && res.success !== false) {
+        const [paysRes, incsRes] = await Promise.all([
+          api.getTuitionPayments(session.user.id),
+          api.getIncome(session.user.id)
+        ]);
+        if (paysRes) setTuitionPayments(paysRes);
+        if (incsRes) setIncomesState(incsRes);
+      }
+      return res;
+    } else {
+      setTuitionPayments(prev => prev.filter(p => p.id !== paymentId && String(p.id) !== String(paymentId)));
+      return { success: true };
+    }
+  };
+
   const handleRecordCrmPayment = async (paymentData) => {
     if (session?.user?.id) {
       const res = await api.rpcRecordCrmPayment(paymentData);
@@ -985,6 +1003,7 @@ export default function App() {
             onAddStudent={handleAddTuitionStudent}
             onUpdateStudent={handleUpdateTuitionStudent}
             onRecordPayment={handleRecordTuitionPayment}
+            onDeletePayment={handleDeleteTuitionPayment}
             currency={appData.currency}
           />
         )}

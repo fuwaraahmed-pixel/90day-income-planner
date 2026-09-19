@@ -10,6 +10,7 @@ export default function TuitionStudentModal({ isOpen, onClose, onSave, student =
     batch: '',
     monthlyFee: '',
     joiningDate: new Date().toISOString().split('T')[0],
+    billingStartMonth: new Date().toISOString().slice(0, 7),
     status: 'Active',
     leavingDate: '',
     leavingReason: '',
@@ -20,7 +21,19 @@ export default function TuitionStudentModal({ isOpen, onClose, onSave, student =
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const currentMonthStr = todayStr.slice(0, 7);
+
     if (student) {
+      const joinStr = student.joiningDate || todayStr;
+      let bsm = student.billingStartMonth;
+      let rawNotes = student.notes || '';
+      if (!bsm && rawNotes) {
+        const match = rawNotes.match(/\[BSM:(\d{4}-\d{2})\]/);
+        if (match) bsm = match[1];
+      }
+      const cleanNotes = rawNotes.replace(/\[BSM:\d{4}-\d{2}\]/g, '').trim();
+
       setFormData({
         studentName: student.studentName || '',
         guardianName: student.guardianName || '',
@@ -28,11 +41,12 @@ export default function TuitionStudentModal({ isOpen, onClose, onSave, student =
         className: student.className || student.class || '',
         batch: student.batch || '',
         monthlyFee: student.monthlyFee !== undefined ? String(student.monthlyFee) : '',
-        joiningDate: student.joiningDate || new Date().toISOString().split('T')[0],
+        joiningDate: joinStr,
+        billingStartMonth: bsm || joinStr.slice(0, 7),
         status: student.status || 'Active',
         leavingDate: student.leavingDate || '',
         leavingReason: student.leavingReason || '',
-        notes: student.notes || ''
+        notes: cleanNotes
       });
     } else {
       setFormData({
@@ -42,7 +56,8 @@ export default function TuitionStudentModal({ isOpen, onClose, onSave, student =
         className: '',
         batch: '',
         monthlyFee: '',
-        joiningDate: new Date().toISOString().split('T')[0],
+        joiningDate: todayStr,
+        billingStartMonth: currentMonthStr,
         status: 'Active',
         leavingDate: '',
         leavingReason: '',
@@ -56,7 +71,16 @@ export default function TuitionStudentModal({ isOpen, onClose, onSave, student =
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'joiningDate' && value) {
+      const newJoinMonth = value.slice(0, 7);
+      setFormData(prev => ({
+        ...prev,
+        joiningDate: value,
+        billingStartMonth: prev.billingStartMonth || newJoinMonth
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -210,6 +234,22 @@ export default function TuitionStudentModal({ isOpen, onClose, onSave, student =
                 className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 min-h-[44px]"
                 required
               />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                প্রথম ফি আদায়ের মাস (First Fee Month)
+              </label>
+              <input
+                type="month"
+                name="billingStartMonth"
+                value={formData.billingStartMonth}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 min-h-[44px]"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">
+                শিক্ষার্থী যদি এই মাসে ভর্তি হয়ে আগামী মাস থেকে ফি দেয়া শুরু করে, তবে আগামী মাস সিলেক্ট করুন।
+              </p>
             </div>
           </div>
 

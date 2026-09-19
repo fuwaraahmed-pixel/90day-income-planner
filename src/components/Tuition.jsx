@@ -20,7 +20,9 @@ import {
   BookOpen,
   X,
   History,
-  Info
+  Info,
+  RotateCcw,
+  Trash2
 } from 'lucide-react';
 import TuitionStudentModal from './TuitionStudentModal';
 import TuitionPaymentModal from './TuitionPaymentModal';
@@ -30,15 +32,16 @@ import Skeleton from './ui/Skeleton';
 /**
  * Business Rule for Date-Based Eligibility:
  * A student is eligible for selected month 'YYYY-MM' if:
- * 1. joining_date.slice(0, 7) <= 'YYYY-MM'
+ * 1. billingStartMonth (or joining_date.slice(0, 7)) <= 'YYYY-MM'
  * 2. If student has leaving_date:
  *    - If leaving_date day == '01', student stopped before that month -> not eligible for leaveMonth or later.
  *    - Otherwise (day > 01), student attended during leaveMonth -> eligible for leaveMonth, NOT eligible for months strictly after.
  */
 export const isStudentEligibleForMonth = (student, monthStr) => {
   if (!student || !student.joiningDate) return false;
-  const joinMonth = student.joiningDate.slice(0, 7);
-  if (joinMonth > monthStr) return false;
+  
+  const startMonth = student.billingStartMonth || student.joiningDate.slice(0, 7);
+  if (startMonth > monthStr) return false;
 
   if (student.leavingDate) {
     const leaveMonth = student.leavingDate.slice(0, 7);
@@ -59,6 +62,7 @@ export default function Tuition({
   onAddStudent,
   onUpdateStudent,
   onRecordPayment,
+  onDeletePayment,
   currency = '৳',
   loading = false
 }) {
@@ -128,11 +132,11 @@ export default function Tuition({
     return paymentsForSelectedMonth.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   }, [paymentsForSelectedMonth]);
 
-  const expectedThisMonth = useMemo(() => {
-    return eligibleStudents.reduce((sum, s) => sum + (Number(s.monthlyFee) || 0), 0);
-  }, [eligibleStudents]);
+  const dueAmount = useMemo(() => {
+    return dueStudents.reduce((sum, s) => sum + (Number(s.monthlyFee) || 0), 0);
+  }, [dueStudents]);
 
-  const dueAmount = Math.max(0, expectedThisMonth - collectedThisMonth);
+  const expectedThisMonth = collectedThisMonth + dueAmount;
 
   // Class & Batch list for dropdown filters
   const uniqueClasses = useMemo(() => {
@@ -231,6 +235,16 @@ export default function Tuition({
     return res;
   };
 
+  const handleDeletePayment = async (paymentId) => {
+    if (!paymentId) return;
+    if (window.confirm('আপনি কি নিশ্চিত যে এই পেমেন্ট রেকর্ডটি বাতিল/ডিলেট করতে চান? (এটি বাতিল করলে স্ট্যাটাস আবার Due হয়ে যাবে)')) {
+      if (onDeletePayment) {
+        await onDeletePayment(paymentId);
+        showSuccessNotification('পেমেন্ট সফলভাবে বাতিল করা হয়েছে');
+      }
+    }
+  };
+
   return (
     <div className="space-y-4 md:space-y-6 pb-12 max-w-full overflow-x-hidden">
       {/* Toast Notification */}
@@ -292,7 +306,7 @@ export default function Tuition({
           <div>
             <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Total Students</p>
             <div className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 sm:mt-1">{activeStudentsCount}</div>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Active enrolled</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Active ({students.length} Total Registered)</p>
           </div>
           <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-100 text-slate-700 rounded-xl flex items-center justify-center flex-shrink-0">
             <Users className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -546,6 +560,17 @@ export default function Tuition({
                               </button>
                             )}
 
+                            {isEligible && hasPaid && paymentRecord && (
+                              <button
+                                onClick={() => handleDeletePayment(paymentRecord.id)}
+                                className="px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors flex items-center gap-1"
+                                title="পেমেন্ট বাতিল/ডিলিট করুন (Undo Payment)"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>Undo</span>
+                              </button>
+                            )}
+
                             <button
                               onClick={() => setViewingStudent(student)}
                               className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
@@ -649,6 +674,17 @@ export default function Tuition({
                         >
                           <DollarSign className="w-3.5 h-3.5" />
                           <span>Pay Now</span>
+                        </button>
+                      )}
+
+                      {isEligible && hasPaid && paymentRecord && (
+                        <button
+                          onClick={() => handleDeletePayment(paymentRecord.id)}
+                          className="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors flex items-center gap-1 min-h-[36px]"
+                          title="পেমেন্ট বাতিল/ডিলিট করুন (Undo Payment)"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Undo</span>
                         </button>
                       )}
                     </div>
@@ -781,6 +817,7 @@ export default function Tuition({
                               <th className="py-2.5 px-3">Amount</th>
                               <th className="py-2.5 px-3">Method</th>
                               <th className="py-2.5 px-3">Note</th>
+                              <th className="py-2.5 px-3 text-right">Action</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -791,6 +828,15 @@ export default function Tuition({
                                 <td className="py-2.5 px-3 font-bold text-slate-900">{currency}{Number(p.amount).toLocaleString()}</td>
                                 <td className="py-2.5 px-3 text-slate-600">{p.paymentMethod}</td>
                                 <td className="py-2.5 px-3 text-slate-500">{p.note || '-'}</td>
+                                <td className="py-2.5 px-3 text-right">
+                                  <button
+                                    onClick={() => handleDeletePayment(p.id)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                    title="পেমেন্ট রিমুভ/বাতিল করুন"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
                               </tr>
                             ))}
                           </tbody>

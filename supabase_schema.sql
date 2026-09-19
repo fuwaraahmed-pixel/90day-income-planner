@@ -413,6 +413,7 @@ CREATE TABLE IF NOT EXISTS public.tuition_students (
     batch TEXT DEFAULT '',
     monthly_fee NUMERIC NOT NULL CHECK (monthly_fee > 0),
     joining_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    billing_start_month TEXT NULL,
     status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Left', 'Inactive')),
     leaving_date DATE NULL,
     leaving_reason TEXT DEFAULT '',
