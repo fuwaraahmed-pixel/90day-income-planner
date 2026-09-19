@@ -359,7 +359,7 @@ export default function App() {
         setTuitionStudents(tuitionStsRes || []);
         setTuitionPayments(tuitionPaysRes || []);
         setCrmPayments(crmPaysRes || []);
-        setCustomerDuesState(duesRes && duesRes.length > 0 ? duesRes : defaultCustomerDues);
+        setCustomerDuesState(duesRes || []);
         setDuePaymentsState(duePaysRes || []);
 
         setLoadingData(false);
@@ -703,38 +703,44 @@ export default function App() {
     const initialPaid = Number(dueData.paidAmount) || 0;
 
     if (session?.user?.id) {
-      const created = await api.createCustomerDue(session.user.id, dueData);
-      if (created) {
-        setCustomerDuesState(prev => [created, ...prev]);
-
-        if (initialPaid > 0) {
-          const uniquePayId = typeof crypto !== 'undefined' && crypto.randomUUID 
-            ? crypto.randomUUID() 
-            : `pay_due_${Date.now()}`;
-          await api.rpcRecordCustomerDuePayment({
-            paymentId: uniquePayId,
-            dueId: created.id,
-            paymentDate: new Date().toISOString().split('T')[0],
-            amount: initialPaid,
-            paymentMethod: 'bKash',
-            note: 'প্রাথমিক পেমেন্ট প্রাপ্তি'
-          });
-          const [duesRes, paysRes, incsRes] = await Promise.all([
-            api.getCustomerDues(session.user.id),
-            api.getCustomerDuePayments(session.user.id),
-            api.getIncome(session.user.id)
-          ]);
-          if (duesRes) setCustomerDuesState(duesRes);
-          if (paysRes) setDuePaymentsState(paysRes);
-          if (incsRes) setIncomesState(incsRes);
-        }
+      const res = await api.createCustomerDue(session.user.id, dueData);
+      if (res?.error || !res?.data) {
+        throw new Error(res?.error || 'Supabase-এ পাওনা সংরক্ষণ করা সম্ভব হয়নি।');
       }
+      const created = res.data;
+      setCustomerDuesState(prev => [created, ...prev]);
+
+      if (initialPaid > 0) {
+        const uniquePayId = typeof crypto !== 'undefined' && crypto.randomUUID 
+          ? crypto.randomUUID() 
+          : '00000000-0000-4000-8000-' + Date.now().toString(16).padStart(12, '0');
+        const payRes = await api.rpcRecordCustomerDuePayment({
+          paymentId: uniquePayId,
+          dueId: created.id,
+          paymentDate: new Date().toISOString().split('T')[0],
+          amount: initialPaid,
+          paymentMethod: 'bKash',
+          note: 'প্রাথমিক পেমেন্ট প্রাপ্তি'
+        });
+        if (payRes?.success === false) {
+          console.warn('Initial payment recording issue:', payRes.message);
+        }
+        const [duesRes, paysRes, incsRes] = await Promise.all([
+          api.getCustomerDues(session.user.id),
+          api.getCustomerDuePayments(session.user.id),
+          api.getIncome(session.user.id)
+        ]);
+        if (duesRes) setCustomerDuesState(duesRes);
+        if (paysRes) setDuePaymentsState(paysRes);
+        if (incsRes) setIncomesState(incsRes);
+      }
+      return created;
     } else {
       const newDue = {
         id: Date.now(),
         customerId: dueData.customerId ? Number(dueData.customerId) : null,
         customerName: dueData.customerName,
-        description: dueData.description,
+        description: dueData.description || 'পাওনা বিবরণী',
         totalAmount: total,
         paidAmount: initialPaid,
         dueAmount: Math.max(0, total - initialPaid),
@@ -763,7 +769,7 @@ export default function App() {
           id: Date.now(),
           date: newPayment.paymentDate,
           source: 'Customer Payment',
-          clientDetails: `${dueData.customerName} (${dueData.description})`,
+          clientDetails: `${dueData.customerName} (${dueData.description || 'পাওনা বিবরণী'})`,
           amount: initialPaid,
           paymentType: 'bKash',
           month: 'Month 1',
@@ -771,16 +777,19 @@ export default function App() {
         };
         setIncomesState(prev => [newIncome, ...prev]);
       }
+      return newDue;
     }
   };
 
   const handleUpdateCustomerDue = async (dueId, dueData) => {
     if (session?.user?.id) {
-      const updated = await api.updateCustomerDue(session.user.id, dueId, dueData);
-      if (updated) {
-        const duesRes = await api.getCustomerDues(session.user.id);
-        if (duesRes) setCustomerDuesState(duesRes);
+      const res = await api.updateCustomerDue(session.user.id, dueId, dueData);
+      if (res?.error || !res?.data) {
+        throw new Error(res?.error || 'Supabase-এ পাওনা আপডেট করতে সমস্যা হয়েছে।');
       }
+      const duesRes = await api.getCustomerDues(session.user.id);
+      if (duesRes) setCustomerDuesState(duesRes);
+      return res.data;
     } else {
       handleSetCustomerDues(prev => prev.map(d => {
         if (String(d.id) === String(dueId)) {
@@ -797,10 +806,11 @@ export default function App() {
 
   const handleDeleteCustomerDue = async (dueId) => {
     if (session?.user?.id) {
-      const success = await api.deleteCustomerDue(session.user.id, dueId);
-      if (success) {
-        setCustomerDuesState(prev => prev.filter(d => String(d.id) !== String(dueId)));
+      const res = await api.deleteCustomerDue(session.user.id, dueId);
+      if (res?.error || res?.success === false) {
+        throw new Error(res?.error || 'Supabase থেকে মুছে ফেলতে সমস্যা হয়েছে।');
       }
+      setCustomerDuesState(prev => prev.filter(d => String(d.id) !== String(dueId)));
     } else {
       handleSetCustomerDues(prev => prev.filter(d => String(d.id) !== String(dueId)));
     }

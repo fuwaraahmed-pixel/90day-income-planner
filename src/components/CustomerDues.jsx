@@ -158,6 +158,7 @@ export default function CustomerDues({
   // Handlers
   const handleOpenAddModal = () => {
     setEditingDue(null);
+    setFormError(null);
     setDueForm({
       customerId: '',
       customerName: '',
@@ -172,6 +173,7 @@ export default function CustomerDues({
 
   const handleOpenEditModal = (due) => {
     setEditingDue(due);
+    setFormError(null);
     setDueForm({
       customerId: due.customerId || '',
       customerName: due.customerName || '',
@@ -200,20 +202,38 @@ export default function CustomerDues({
     }
   };
 
+  const [formError, setFormError] = useState(null);
+  const [isSubmittingForm, setIsSubmittingForm] = useState(false);
+
   const handleSaveDue = async (e) => {
     e.preventDefault();
-    if (!dueForm.customerName.trim() || !dueForm.description.trim() || !dueForm.totalAmount) {
+    setFormError(null);
+    if (!dueForm.customerName.trim() || !dueForm.totalAmount) {
+      setFormError('অনুগ্রহ করে কাস্টমারের নাম এবং মোট টাকার পরিমাণ পূরণ করুন।');
       return;
     }
 
-    if (editingDue) {
-      await onUpdateDue(editingDue.id, dueForm);
-    } else {
-      await onAddDue(dueForm);
-    }
+    setIsSubmittingForm(true);
+    try {
+      const payload = {
+        ...dueForm,
+        description: dueForm.description.trim() || 'পাওনা বিবরণী'
+      };
 
-    setShowAddModal(false);
-    setEditingDue(null);
+      if (editingDue) {
+        await onUpdateDue(editingDue.id, payload);
+      } else {
+        await onAddDue(payload);
+      }
+
+      setShowAddModal(false);
+      setEditingDue(null);
+    } catch (err) {
+      console.error('Save due error:', err);
+      setFormError(err.message || 'পাওনা সংরক্ষণ করতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।');
+    } finally {
+      setIsSubmittingForm(false);
+    }
   };
 
   const handleOpenPaymentModal = (due) => {
@@ -736,19 +756,28 @@ export default function CustomerDues({
               />
             </div>
 
+            {formError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
             <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                disabled={isSubmittingForm}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50"
               >
                 বাতিল
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 rounded-xl transition-colors shadow-xs"
+                disabled={isSubmittingForm}
+                className="px-5 py-2 text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 rounded-xl transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50"
               >
-                {editingDue ? 'সংশোধন সংরক্ষণ করুন' : 'পাওনা সংরক্ষণ করুন'}
+                {isSubmittingForm ? 'সংরক্ষণ হচ্ছে...' : editingDue ? 'সংশোধন সংরক্ষণ করুন' : 'পাওনা সংরক্ষণ করুন'}
               </button>
             </div>
           </form>

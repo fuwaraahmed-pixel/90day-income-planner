@@ -1006,7 +1006,7 @@ export const getCustomerDues = async (userId) => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    if (error.code !== '42P01') {
+    if (error.code !== '42P01' && error.code !== 'PGRST205') {
       console.error('Error fetching customer dues:', error);
     }
     return [];
@@ -1015,7 +1015,9 @@ export const getCustomerDues = async (userId) => {
 };
 
 export const createCustomerDue = async (userId, dueData) => {
-  if (!isSupabaseConfigured || !userId) return null;
+  if (!isSupabaseConfigured || !userId) {
+    return { data: null, error: 'Supabase সঠিকভাবে কনফিগার করা হয়নি অথবা ব্যবহারকারী লগইন করেননি।' };
+  }
   const total = Number(dueData.totalAmount) || 0;
   const initial = Number(dueData.paidAmount) || 0;
   const due = Math.max(0, total - initial);
@@ -1031,7 +1033,7 @@ export const createCustomerDue = async (userId, dueData) => {
     user_id: userId,
     customer_id: dueData.customerId ? Number(dueData.customerId) : null,
     customer_name: dueData.customerName,
-    description: dueData.description,
+    description: dueData.description || 'পাওনা বিবরণী',
     total_amount: total,
     paid_amount: initial,
     due_amount: due,
@@ -1048,16 +1050,22 @@ export const createCustomerDue = async (userId, dueData) => {
 
   if (error) {
     console.error('Error creating customer due:', error);
-    return null;
+    let errMsg = error.message;
+    if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('schema cache') || error.message?.includes('does not exist')) {
+      errMsg = 'Supabase-এ customer_dues টেবিল পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ supabase_schema.sql-এর কোড রান করুন।';
+    }
+    return { data: null, error: errMsg };
   }
-  return data ? toCamel(data) : null;
+  return { data: data ? toCamel(data) : null, error: null };
 };
 
 export const updateCustomerDue = async (userId, dueId, dueData) => {
-  if (!isSupabaseConfigured || !userId || !dueId) return null;
+  if (!isSupabaseConfigured || !userId || !dueId) {
+    return { data: null, error: 'Supabase সঠিকভাবে কনফিগার করা হয়নি অথবা আইডি পাওয়া যায়নি।' };
+  }
   const payload = {
     customer_name: dueData.customerName,
-    description: dueData.description,
+    description: dueData.description || 'পাওনা বিবরণী',
     total_amount: Number(dueData.totalAmount) || 0,
     due_date: dueData.dueDate || null,
     note: dueData.note || '',
@@ -1074,13 +1082,19 @@ export const updateCustomerDue = async (userId, dueId, dueData) => {
 
   if (error) {
     console.error('Error updating customer due:', error);
-    return null;
+    let errMsg = error.message;
+    if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('schema cache') || error.message?.includes('does not exist')) {
+      errMsg = 'Supabase-এ customer_dues টেবিল পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ supabase_schema.sql-এর কোড রান করুন।';
+    }
+    return { data: null, error: errMsg };
   }
-  return data ? toCamel(data) : null;
+  return { data: data ? toCamel(data) : null, error: null };
 };
 
 export const deleteCustomerDue = async (userId, dueId) => {
-  if (!isSupabaseConfigured || !userId || !dueId) return false;
+  if (!isSupabaseConfigured || !userId || !dueId) {
+    return { success: false, error: 'Supabase সঠিকভাবে কনফিগার করা হয়নি।' };
+  }
   const { error } = await supabase
     .from('customer_dues')
     .delete()
@@ -1089,9 +1103,13 @@ export const deleteCustomerDue = async (userId, dueId) => {
 
   if (error) {
     console.error('Error deleting customer due:', error);
-    return false;
+    let errMsg = error.message;
+    if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('schema cache') || error.message?.includes('does not exist')) {
+      errMsg = 'Supabase-এ customer_dues টেবিল পাওয়া যায়নি।';
+    }
+    return { success: false, error: errMsg };
   }
-  return true;
+  return { success: true, error: null };
 };
 
 export const getCustomerDuePayments = async (userId) => {
@@ -1103,7 +1121,7 @@ export const getCustomerDuePayments = async (userId) => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    if (error.code !== '42P01') {
+    if (error.code !== '42P01' && error.code !== 'PGRST205') {
       console.error('Error fetching customer due payments:', error);
     }
     return [];
@@ -1113,11 +1131,16 @@ export const getCustomerDuePayments = async (userId) => {
 
 export const rpcRecordCustomerDuePayment = async (paymentData) => {
   if (!isSupabaseConfigured) {
-    return { success: false, message: 'Supabase is not configured' };
+    return { success: false, message: 'Supabase Config missing' };
   }
 
+  // Ensure paymentId is a valid UUID
+  const paymentId = paymentData.paymentId && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(paymentData.paymentId)
+    ? paymentData.paymentId
+    : (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '00000000-0000-4000-8000-' + Date.now().toString(16).padStart(12, '0'));
+
   const { data, error } = await supabase.rpc('record_customer_due_payment', {
-    p_payment_id: paymentData.paymentId,
+    p_payment_id: paymentId,
     p_due_id: Number(paymentData.dueId),
     p_payment_date: paymentData.paymentDate || new Date().toISOString().split('T')[0],
     p_amount: Number(paymentData.amount),
@@ -1127,13 +1150,13 @@ export const rpcRecordCustomerDuePayment = async (paymentData) => {
 
   if (error) {
     console.error('RPC record_customer_due_payment Error:', error);
-    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
-      return { success: false, message: 'Supabase-এ record_customer_due_payment ফাংশনটি পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ নতুন SQL কোডটি Run করুন।' };
+    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883' || error.code === '42P01' || error.code === 'PGRST205') {
+      return { success: false, message: 'Supabase-এ record_customer_due_payment ফাংশন বা টেবিল পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ supabase_schema.sql রান করুন।' };
     }
     return { success: false, message: error.message };
   }
 
-  return data;
+  return data || { success: true };
 };
 
 
