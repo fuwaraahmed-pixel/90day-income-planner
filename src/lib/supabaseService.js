@@ -110,6 +110,20 @@ export const getPendingPaymentRequestsForAdmin = async () => {
   return data ? data.map(toCamel) : [];
 };
 
+export const getAllSubscriptionsForAdmin = async () => {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching all subscriptions for admin:', error);
+    return [];
+  }
+  return data ? data.map(toCamel) : [];
+};
+
 export const rpcApprovePaymentRequest = async (requestId) => {
   if (!isSupabaseConfigured) return { success: false, message: 'Supabase Config missing' };
   const { data, error } = await supabase.rpc('approve_payment_request', { request_id: requestId });
