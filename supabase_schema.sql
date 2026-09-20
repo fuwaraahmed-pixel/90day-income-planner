@@ -805,7 +805,7 @@ BEGIN
     SET income_id = v_income_id
     WHERE id = v_payment_id;
 
-    -- 10. Update crm_clients total received advance and status if fully paid
+    -- 10. Update crm_clients status if fully paid (DO NOT update advance to prevent double-counting in frontend)
     v_new_advance := v_current_advance + p_amount;
     v_new_status := v_current_status;
 
@@ -816,8 +816,7 @@ BEGIN
     END IF;
 
     UPDATE public.crm_clients
-    SET advance = v_new_advance,
-        status = v_new_status,
+    SET status = v_new_status,
         updated_at = NOW()
     WHERE id = p_crm_client_id AND user_id = v_user_id;
 
