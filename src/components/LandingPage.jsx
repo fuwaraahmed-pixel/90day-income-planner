@@ -751,6 +751,12 @@ function TransformationVisualization() {
 
 export default function LandingPage({ onNavigateToAuth }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSelectPlan = (planId) => {
+    localStorage.setItem('dremoy_selected_plan', planId);
+    onNavigateToAuth('signup');
+  };
+
   const [openFaq, setOpenFaq] = useState(null);
   const [legalModal, setLegalModal] = useState(null); // 'privacy' | 'terms' | null
   const [activeSection, setActiveSection] = useState('');
@@ -2359,7 +2365,7 @@ export default function LandingPage({ onNavigateToAuth }) {
 
               <div className="pt-6">
                 <button
-                  onClick={() => onNavigateToAuth('signup')}
+                  onClick={() => handleSelectPlan('starter')}
                   className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-sm transition-all"
                 >
                   শুরু করুন
@@ -2417,7 +2423,7 @@ export default function LandingPage({ onNavigateToAuth }) {
 
               <div className="pt-6">
                 <button
-                  onClick={() => onNavigateToAuth('signup')}
+                  onClick={() => handleSelectPlan('pro_business')}
                   className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-emerald-600/20"
                 >
                   বিনামূল্যে শুরু করুন
@@ -2465,7 +2471,7 @@ export default function LandingPage({ onNavigateToAuth }) {
 
               <div className="pt-6">
                 <button
-                  onClick={() => onNavigateToAuth('signup')}
+                  onClick={() => handleSelectPlan('agency')}
                   className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-sm transition-all"
                 >
                   একাউন্ট তৈরি করুন

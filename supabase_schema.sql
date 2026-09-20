@@ -133,12 +133,17 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
     user_email TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'unpaid', -- 'unpaid', 'pending', 'active', 'expired', 'rejected'
     plan_name TEXT NOT NULL DEFAULT 'Monthly Pro',
+    billing_cycle TEXT NOT NULL DEFAULT 'monthly',
     starts_at TIMESTAMPTZ NULL,
     expires_at TIMESTAMPTZ NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT unique_user_subscription UNIQUE(user_id)
 );
+
+-- Ensure billing_cycle and plan_id exists for additive migration
+ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS billing_cycle TEXT NOT NULL DEFAULT 'monthly';
+ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS plan_id TEXT;
 
 -- 11. PAYMENT REQUESTS TABLE (Payment Submission & Renewal History)
 CREATE TABLE IF NOT EXISTS public.payment_requests (
@@ -155,6 +160,9 @@ CREATE TABLE IF NOT EXISTS public.payment_requests (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Ensure plan_id exists for additive migration
+ALTER TABLE public.payment_requests ADD COLUMN IF NOT EXISTS plan_id TEXT;
 
 -- ====================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
@@ -337,6 +345,9 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
     req RECORD;
+    v_existing_sub RECORD;
+    v_starts_at TIMESTAMPTZ;
+    v_expires_at TIMESTAMPTZ;
 BEGIN
     IF NOT public.is_admin(auth.uid()) THEN
         RAISE EXCEPTION 'Unauthorized: Only system administrators can approve payment requests.';
@@ -352,14 +363,29 @@ BEGIN
     SET status = 'approved', updated_at = NOW() 
     WHERE id = request_id;
 
-    INSERT INTO public.subscriptions (user_id, user_email, status, plan_name, starts_at, expires_at, updated_at)
-    VALUES (req.user_id, req.user_email, 'active', req.plan_name, NOW(), NOW() + INTERVAL '30 days', NOW())
+    -- Fetch existing subscription to handle smart renewal logic
+    SELECT * INTO v_existing_sub FROM public.subscriptions WHERE user_id = req.user_id;
+
+    IF v_existing_sub IS NOT NULL AND v_existing_sub.status = 'active' AND v_existing_sub.expires_at > NOW() THEN
+        -- Active subscription: extend from current expiry
+        v_starts_at := v_existing_sub.starts_at;
+        v_expires_at := v_existing_sub.expires_at + INTERVAL '1 month';
+    ELSE
+        -- Expired or new subscription: start from now
+        v_starts_at := NOW();
+        v_expires_at := NOW() + INTERVAL '1 month';
+    END IF;
+
+    INSERT INTO public.subscriptions (user_id, user_email, status, plan_id, plan_name, billing_cycle, starts_at, expires_at, updated_at)
+    VALUES (req.user_id, req.user_email, 'active', req.plan_id, req.plan_name, 'monthly', v_starts_at, v_expires_at, NOW())
     ON CONFLICT (user_id) 
     DO UPDATE SET 
         status = 'active',
+        plan_id = EXCLUDED.plan_id,
         plan_name = EXCLUDED.plan_name,
-        starts_at = NOW(),
-        expires_at = NOW() + INTERVAL '30 days',
+        billing_cycle = 'monthly',
+        starts_at = v_starts_at,
+        expires_at = v_expires_at,
         updated_at = NOW();
 
     RETURN jsonb_build_object('success', true, 'message', 'Payment request approved successfully.');

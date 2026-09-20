@@ -55,8 +55,9 @@ export const submitPaymentRequest = async (userId, userEmail, paymentDetails) =>
   const payload = {
     user_id: userId,
     user_email: userEmail,
-    plan_name: paymentDetails.planName || 'Monthly Pro',
-    amount: Number(paymentDetails.amount) || 500,
+    plan_id: paymentDetails.planId || 'starter',
+    plan_name: paymentDetails.planName || 'Starter',
+    amount: Number(paymentDetails.amount) || 499,
     payment_method: paymentDetails.paymentMethod || 'bKash',
     sender_number: paymentDetails.senderNumber,
     trx_id: paymentDetails.trxId,
@@ -83,6 +84,7 @@ export const submitPaymentRequest = async (userId, userEmail, paymentDetails) =>
       user_id: userId,
       user_email: userEmail,
       status: 'pending',
+      plan_id: payload.plan_id,
       plan_name: payload.plan_name,
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id' });

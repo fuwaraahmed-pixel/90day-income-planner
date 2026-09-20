@@ -23,6 +23,7 @@ import { loadData, STORAGE_KEYS } from './utils/storage';
 import { RefreshCw, AlertCircle, CloudOff } from 'lucide-react';
 
 import Toast from './components/ui/Toast';
+import { isSubscribed } from './utils/subscriptionHelper';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -38,15 +39,6 @@ export default function App() {
   const [paymentRequests, setPaymentRequests] = useState([]);
   const [loadingSub, setLoadingSub] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-
-  // Subscription Validity Check (Enforces status = 'active' AND expiresAt > NOW)
-  const isSubscribed = (sub) => {
-    if (isAdmin) return true; // Admin bypasses subscription locks
-    if (!sub) return false;
-    const isActive = sub.status === 'active';
-    const notExpired = sub.expiresAt && new Date(sub.expiresAt) > new Date();
-    return isActive && notExpired;
-  };
 
   // Initial Defaults
   const defaultAppData = {
@@ -946,7 +938,7 @@ export default function App() {
   }
 
   // 2. Subscription Guard: Unsubscribed non-admin user gets SubscriptionModal
-  if (!loadingSub && !isSubscribed(subscription) && activeTab !== 'admin') {
+  if (!loadingSub && !isSubscribed(subscription, isAdmin) && activeTab !== 'admin') {
     return (
       <SubscriptionModal
         subscription={subscription}
@@ -954,6 +946,7 @@ export default function App() {
         onSubmitPayment={handleSubmitPayment}
         user={session.user}
         onLogout={handleLogout}
+        selectedPlanId={localStorage.getItem('dremoy_selected_plan')}
       />
     );
   }

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { CreditCard, Send, CheckCircle2, AlertCircle, Clock, ShieldCheck, PhoneCall, Copy, LogOut } from 'lucide-react';
+import { PLANS, DEFAULT_PLAN } from '../utils/plans';
 
-export default function SubscriptionModal({ subscription, paymentRequests, onSubmitPayment, user, onLogout }) {
+export default function SubscriptionModal({ subscription, paymentRequests, onSubmitPayment, user, onLogout, selectedPlanId }) {
   const [paymentMethod, setPaymentMethod] = useState('bKash');
   const [senderNumber, setSenderNumber] = useState('');
   const [trxId, setTrxId] = useState('');
@@ -10,15 +11,19 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
   const [errorMsg, setErrorMsg] = useState('');
   const [copiedNumber, setCopiedNumber] = useState(null);
 
-  const bkashNumber = '01700000000';
-  const nagadNumber = '01800000000';
-  const rocketNumber = '01900000000';
+  const bkashNumber = '01622536026';
+  const nagadNumber = '01622536026';
+  const rocketNumber = '01622536026';
 
   const handleCopy = (num, name) => {
     navigator.clipboard.writeText(num);
     setCopiedNumber(name);
     setTimeout(() => setCopiedNumber(null), 2000);
   };
+
+  // Resolve the plan: find the matching one, ignore legacy 'monthly_pro', fallback to DEFAULT_PLAN
+  const matchedPlan = Object.values(PLANS).find(p => p.id === selectedPlanId);
+  const activePlan = matchedPlan && matchedPlan.id !== 'monthly_pro' ? matchedPlan : DEFAULT_PLAN;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,8 +40,9 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
       paymentMethod,
       senderNumber: senderNumber.trim(),
       trxId: trxId.trim(),
-      amount: 500,
-      planName: 'Monthly Pro'
+      amount: activePlan.price,
+      planName: activePlan.name,
+      planId: activePlan.id
     });
 
     setLoading(false);
@@ -44,6 +50,7 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
       setSubmitSuccess(true);
       setSenderNumber('');
       setTrxId('');
+      localStorage.removeItem('dremoy_selected_plan');
     } else {
       setErrorMsg(res?.message || 'পেমেন্ট রিকোয়েস্ট পাঠাতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
     }
@@ -68,7 +75,7 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                প্রিমিয়াম সাবস্ক্রিপশন ও এক্সেস
+                {activePlan.name} সাবস্ক্রিপশন
               </h1>
               <p className="text-xs text-slate-500 font-medium">
                 অ্যাকাউন্ট: <strong className="text-slate-700">{user?.email}</strong>
@@ -127,7 +134,7 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
               <span>সাবস্ক্রিপশনের মেয়াদ শেষ হয়েছে</span>
             </div>
             <p className="text-slate-700">
-              আপনার ৩০ দিনের মেয়াদী সাবস্ক্রিপশন শেষ হয়ে গেছে। সার্ভিস সচল রাখতে মাসিক ৳৫০০ ফি প্রদান করে ট্রানজেকশন আইডি সাবমিট করুন।
+              আপনার সাবস্ক্রিপশন শেষ হয়ে গেছে। সার্ভিস সচল রাখতে মাসিক ৳{activePlan.price} ফি প্রদান করে ট্রানজেকশন আইডি সাবমিট করুন।
             </p>
           </div>
         )}
@@ -136,10 +143,10 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
           <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-emerald-600" />
-            <span>পেমেন্ট নির্দেশিকা (Send Money / সেন্ড মানি করুন)</span>
+            <span>পেমেন্ট নির্দেশিকা ({activePlan.name} প্যাকেজ)</span>
           </h3>
           <p className="text-xs text-slate-600">
-            নিচের যেকোনো নম্বরে <strong className="text-emerald-700">৳৫০০ (মাসিক ফি)</strong> সেন্ড মানি করুন এবং ফর্মটিতে প্রেরক নম্বর ও TrxID দিয়ে জমা দিন:
+            নিচের যেকোনো নম্বরে <strong className="text-emerald-700">৳{activePlan.price} (মাসিক ফি)</strong> সেন্ড মানি করুন এবং ফর্মটিতে প্রেরক নম্বর ও TrxID দিয়ে জমা দিন:
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
