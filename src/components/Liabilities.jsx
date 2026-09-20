@@ -165,14 +165,14 @@ export default function Liabilities({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Liabilities & Debts</h2>
-          <p className="text-slate-500 mt-1">Manage your loans, EMI, and Hawlads securely.</p>
+          <p className="text-slate-500 mt-1 text-sm sm:text-base">Manage your loans, EMI, and Hawlads securely.</p>
         </div>
-        <Button onClick={() => setShowAddModal(true)} icon={Plus}>
+        <Button onClick={() => setShowAddModal(true)} icon={Plus} className="w-full sm:w-auto">
           Add Liability
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center">
           <p className="text-sm text-slate-500 font-medium mb-1">Total Active Debt</p>
           <p className="text-2xl font-bold text-slate-800">৳{totalDebt.toLocaleString()}</p>
@@ -189,7 +189,7 @@ export default function Liabilities({
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <div className="relative w-full max-w-sm">
+          <div className="relative w-full sm:max-w-sm">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -212,100 +212,204 @@ export default function Liabilities({
         ) : filteredLiabilities.length === 0 ? (
           <div className="p-12 text-center text-slate-500">No results match your search.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-100 text-sm font-medium text-slate-500">
-                  <th className="px-6 py-4">Creditor Name</th>
-                  <th className="px-6 py-4">Type</th>
-                  <th className="px-6 py-4">Total Amount</th>
-                  <th className="px-6 py-4">Paid</th>
-                  <th className="px-6 py-4 text-rose-600">Remaining</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {activeLiabilities.map(liability => (
-                  <tr key={liability.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-800">{liability.creditorName}</div>
-                      {liability.dueDate && (
-                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                          <Clock className="w-3 h-3" /> Due: {new Date(liability.dueDate).toLocaleDateString('en-GB')}
+          <div className="w-full">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse whitespace-nowrap">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-100 text-sm font-medium text-slate-500">
+                    <th className="px-6 py-4">Creditor Name</th>
+                    <th className="px-6 py-4">Type</th>
+                    <th className="px-6 py-4">Total Amount</th>
+                    <th className="px-6 py-4">Paid</th>
+                    <th className="px-6 py-4 text-rose-600">Remaining</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {activeLiabilities.map(liability => (
+                    <tr key={liability.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-slate-800 whitespace-normal min-w-[150px]">{liability.creditorName}</div>
+                        {liability.dueDate && (
+                          <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                            <Clock className="w-3 h-3" /> Due: {new Date(liability.dueDate).toLocaleDateString('en-GB')}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-slate-600 text-sm">
+                          {getTypeIcon(liability.liabilityType)}
+                          {liability.liabilityType}
                         </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-slate-600 text-sm">
-                        {getTypeIcon(liability.liabilityType)}
-                        {liability.liabilityType}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-700">৳{Number(liability.totalAmount).toLocaleString()}</td>
-                    <td className="px-6 py-4 font-medium text-emerald-600">৳{Number(liability.paidAmount).toLocaleString()}</td>
-                    <td className="px-6 py-4 font-bold text-rose-600">৳{Number(liability.remainingAmount).toLocaleString()}</td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(liability.status)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button 
-                          variant="secondary" 
-                          size="sm"
-                          onClick={() => handleOpenPaymentModal(liability)}
-                        >
-                          Pay
-                        </Button>
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-700">৳{Number(liability.totalAmount).toLocaleString()}</td>
+                      <td className="px-6 py-4 font-medium text-emerald-600">৳{Number(liability.paidAmount).toLocaleString()}</td>
+                      <td className="px-6 py-4 font-bold text-rose-600">৳{Number(liability.remainingAmount).toLocaleString()}</td>
+                      <td className="px-6 py-4">
+                        {getStatusBadge(liability.status)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button 
+                            variant="secondary" 
+                            size="sm"
+                            onClick={() => handleOpenPaymentModal(liability)}
+                          >
+                            Pay
+                          </Button>
+                          <button 
+                            onClick={() => setDeleteConfirmId(liability.id)}
+                            className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Delete Liability"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {completedLiabilities.length > 0 && (
+                    <tr>
+                      <td colSpan="7" className="bg-slate-50 py-3 px-6 text-sm font-semibold text-slate-500">
+                        Completed / Paid Off
+                      </td>
+                    </tr>
+                  )}
+
+                  {completedLiabilities.map(liability => (
+                    <tr key={liability.id} className="hover:bg-slate-50/50 transition-colors opacity-75">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-slate-800 line-through decoration-slate-300 whitespace-normal min-w-[150px]">{liability.creditorName}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-slate-500 text-sm">
+                          {getTypeIcon(liability.liabilityType)}
+                          {liability.liabilityType}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-500">৳{Number(liability.totalAmount).toLocaleString()}</td>
+                      <td className="px-6 py-4 font-medium text-slate-500">৳{Number(liability.paidAmount).toLocaleString()}</td>
+                      <td className="px-6 py-4 font-medium text-slate-500">৳0</td>
+                      <td className="px-6 py-4">
+                        {getStatusBadge(liability.status)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
                         <button 
                           onClick={() => setDeleteConfirmId(liability.id)}
                           className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Delete Liability"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-                {completedLiabilities.length > 0 && (
-                  <tr>
-                    <td colSpan="7" className="bg-slate-50 py-3 px-6 text-sm font-semibold text-slate-500">
-                      Completed / Paid Off
-                    </td>
-                  </tr>
-                )}
-
-                {completedLiabilities.map(liability => (
-                  <tr key={liability.id} className="hover:bg-slate-50/50 transition-colors opacity-75">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-800 line-through decoration-slate-300">{liability.creditorName}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-slate-500 text-sm">
+            {/* Mobile Cards */}
+            <div className="md:hidden flex flex-col divide-y divide-slate-100">
+              {activeLiabilities.map(liability => (
+                <div key={liability.id} className="p-4 space-y-4">
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-slate-800 truncate">{liability.creditorName}</div>
+                      <div className="flex items-center gap-1.5 text-slate-500 text-xs mt-1">
                         {getTypeIcon(liability.liabilityType)}
-                        {liability.liabilityType}
+                        <span>{liability.liabilityType}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-500">৳{Number(liability.totalAmount).toLocaleString()}</td>
-                    <td className="px-6 py-4 font-medium text-slate-500">৳{Number(liability.paidAmount).toLocaleString()}</td>
-                    <td className="px-6 py-4 font-medium text-slate-500">৳0</td>
-                    <td className="px-6 py-4">
+                    </div>
+                    <div className="shrink-0">
                       {getStatusBadge(liability.status)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => setDeleteConfirmId(liability.id)}
-                        className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-sm bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                    <div>
+                      <div className="text-slate-500 text-xs mb-1">Total Amount</div>
+                      <div className="font-medium text-slate-700">৳{Number(liability.totalAmount).toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-slate-500 text-xs mb-1">Paid Amount</div>
+                      <div className="font-medium text-emerald-600">৳{Number(liability.paidAmount).toLocaleString()}</div>
+                    </div>
+                    <div className="col-span-2 pt-3 mt-1 border-t border-slate-200/60">
+                      <div className="text-slate-500 text-xs mb-1">Remaining Balance</div>
+                      <div className="font-bold text-rose-600 text-lg">৳{Number(liability.remainingAmount).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  {liability.dueDate && (
+                    <div className="text-xs text-slate-500 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" /> Due: {new Date(liability.dueDate).toLocaleDateString('en-GB')}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      variant="secondary" 
+                      className="flex-1 justify-center"
+                      onClick={() => handleOpenPaymentModal(liability)}
+                    >
+                      Record Payment
+                    </Button>
+                    <button 
+                      onClick={() => setDeleteConfirmId(liability.id)}
+                      className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors border border-slate-200"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {completedLiabilities.length > 0 && (
+                <div className="bg-slate-50/80 py-3 px-4 text-sm font-semibold text-slate-500 border-y border-slate-100">
+                  Completed / Paid Off
+                </div>
+              )}
+
+              {completedLiabilities.map(liability => (
+                <div key={liability.id} className="p-4 space-y-4 opacity-75">
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-slate-800 line-through decoration-slate-300 truncate">{liability.creditorName}</div>
+                      <div className="flex items-center gap-1.5 text-slate-500 text-xs mt-1">
+                        {getTypeIcon(liability.liabilityType)}
+                        <span>{liability.liabilityType}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      {getStatusBadge(liability.status)}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-sm bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                    <div>
+                      <div className="text-slate-500 text-xs mb-1">Total Amount</div>
+                      <div className="font-medium text-slate-500">৳{Number(liability.totalAmount).toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-slate-500 text-xs mb-1">Paid Amount</div>
+                      <div className="font-medium text-slate-500">৳{Number(liability.paidAmount).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex pt-2">
+                    <button 
+                      onClick={() => setDeleteConfirmId(liability.id)}
+                      className="w-full flex justify-center items-center gap-2 p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors border border-slate-200"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="text-sm font-medium">Delete Record</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -320,7 +424,7 @@ export default function Liabilities({
             onChange={(e) => setNewLiability({...newLiability, creditorName: e.target.value})}
             required
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Liability Type *</label>
               <select
@@ -343,7 +447,7 @@ export default function Liabilities({
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input 
               label="Already Paid (৳)" 
               type="number" 
@@ -364,9 +468,9 @@ export default function Liabilities({
             value={newLiability.notes}
             onChange={(e) => setNewLiability({...newLiability, notes: e.target.value})}
           />
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>Cancel</Button>
-            <Button type="submit">Save Liability</Button>
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
+            <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)} className="w-full sm:w-auto">Cancel</Button>
+            <Button type="submit" className="w-full sm:w-auto">Save Liability</Button>
           </div>
         </form>
       </Modal>
@@ -393,7 +497,7 @@ export default function Liabilities({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input 
                 label="Payment Amount (৳) *" 
                 type="number" 
@@ -444,11 +548,11 @@ export default function Liabilities({
               </label>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <Button variant="secondary" type="button" onClick={() => setPaymentModalLiability(null)} disabled={isSubmittingPayment}>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
+              <Button variant="secondary" type="button" onClick={() => setPaymentModalLiability(null)} disabled={isSubmittingPayment} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button type="submit" isLoading={isSubmittingPayment} disabled={isSubmittingPayment}>
+              <Button type="submit" isLoading={isSubmittingPayment} disabled={isSubmittingPayment} className="w-full sm:w-auto">
                 Confirm Payment
               </Button>
             </div>
