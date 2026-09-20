@@ -905,7 +905,7 @@ export default function App() {
         return { success: false, message: res?.error || 'Supabase-এ দেনা সংরক্ষণ করা সম্ভব হয়নি।' };
       }
       setLiabilitiesState(prev => [res.data, ...prev]);
-      return { success: true };
+      return { success: true, data: res.data };
     }
     return { success: false, message: 'লগইন করা নেই' };
   };
@@ -956,6 +956,8 @@ export default function App() {
     tuitionStudents: tuitionStudents,
     customerDues: customerDues,
     duePayments: duePayments,
+    liabilities: liabilities,
+    liabilityPayments: liabilityPayments,
     user: session?.user
   };
 
@@ -1029,7 +1031,11 @@ export default function App() {
 
         {/* Tab Content */}
         {activeTab === 'dashboard' && (
-          <Dashboard data={updatedAppData} setActiveTab={setActiveTab} />
+          <Dashboard 
+            data={updatedAppData} 
+            setActiveTab={setActiveTab}
+            onRecordLiabilityPayment={handleRecordLiabilityPayment}
+          />
         )}
 
         {activeTab === 'plan' && (
@@ -1105,6 +1111,7 @@ export default function App() {
             expenses={expenses} 
             setExpenses={handleSetExpenses} 
             totalIncome={salarySum + newIncomeSum}
+            appData={appData}
           />
         )}
 

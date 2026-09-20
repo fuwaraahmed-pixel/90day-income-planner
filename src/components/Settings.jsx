@@ -13,7 +13,6 @@ import {
 export default function Settings({ appData, setAppData, user, onMigrate, isMigrating }) {
   const [formData, setFormData] = useState({
     targetIncome: appData.targetIncome || 100000,
-    installment: appData.installment || 80000,
     dailyOutreachTarget: appData.dailyOutreachTarget || 10,
     currency: appData.currency || '৳'
   });
@@ -26,7 +25,6 @@ export default function Settings({ appData, setAppData, user, onMigrate, isMigra
     setAppData({
       ...appData,
       targetIncome: Number(formData.targetIncome) || 100000,
-      installment: Number(formData.installment) || 80000,
       dailyOutreachTarget: Number(formData.dailyOutreachTarget) || 10,
       currency: formData.currency
     });
@@ -50,7 +48,7 @@ export default function Settings({ appData, setAppData, user, onMigrate, isMigra
           ⚙️ অ্যাপ সেটিংস (Settings)
         </h1>
         <p className="text-sm text-slate-500 mt-1 font-medium">
-          আপনার ইনকাম টার্গেট, মাসিক কিস্তি এবং গোল প্যারামিটার পরিবর্তন করুন
+          আপনার ইনকাম টার্গেট এবং গোল প্যারামিটার পরিবর্তন করুন
         </p>
       </div>
 
@@ -82,17 +80,7 @@ export default function Settings({ appData, setAppData, user, onMigrate, isMigra
               <span className="text-[11px] text-slate-400 mt-1 block">যেমন: ১,০০,০০০ বা ২,০০,০০০</span>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">মাসিক কিস্তির টাকা (Monthly Installment ৳)</label>
-              <input
-                type="number"
-                required
-                value={formData.installment}
-                onChange={(e) => setFormData({ ...formData, installment: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-rose-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-              <span className="text-[11px] text-slate-400 mt-1 block">যেমন: ৮০,০০০</span>
-            </div>
+
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">দৈনিক আউটরিচ টার্গেট (Daily Outreach)</label>

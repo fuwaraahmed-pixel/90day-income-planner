@@ -36,7 +36,8 @@ export default function Liabilities({
     totalAmount: '',
     paidAmount: '',
     dueDate: '',
-    notes: ''
+    notes: '',
+    addToExpense: true
   });
 
   // Payment Modal State
@@ -73,6 +74,21 @@ export default function Liabilities({
 
     const res = await onCreateLiability(newLiability);
     if (res && res.success) {
+      if (newLiability.addToExpense && Number(newLiability.paidAmount) > 0 && res.data?.id) {
+        const uniquePaymentId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `pay_${Date.now()}`;
+        if (onRecordPayment) {
+          await onRecordPayment({
+            paymentId: uniquePaymentId,
+            liabilityId: res.data.id,
+            paymentDate: new Date().toISOString().split('T')[0],
+            amount: Number(newLiability.paidAmount),
+            paymentMethod: 'Cash',
+            notes: 'Initial Payment',
+            addToExpense: true
+          });
+        }
+      }
+
       setShowAddModal(false);
       setNewLiability({
         creditorName: '',
@@ -80,7 +96,8 @@ export default function Liabilities({
         totalAmount: '',
         paidAmount: '',
         dueDate: '',
-        notes: ''
+        notes: '',
+        addToExpense: true
       });
     } else {
       alert(res?.message || 'Error adding liability');
@@ -468,6 +485,20 @@ export default function Liabilities({
             value={newLiability.notes}
             onChange={(e) => setNewLiability({...newLiability, notes: e.target.value})}
           />
+          {Number(newLiability.paidAmount) > 0 && (
+            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 mt-2">
+              <input 
+                type="checkbox" 
+                id="newLiabilityAddToExpense" 
+                checked={newLiability.addToExpense}
+                onChange={(e) => setNewLiability({...newLiability, addToExpense: e.target.checked})}
+                className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+              />
+              <label htmlFor="newLiabilityAddToExpense" className="text-sm font-medium text-slate-700 cursor-pointer">
+                Add already paid amount to Expense Tracker (খরচ হিসেবে যুক্ত করুন)
+              </label>
+            </div>
+          )}
           <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
             <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)} className="w-full sm:w-auto">Cancel</Button>
             <Button type="submit" className="w-full sm:w-auto">Save Liability</Button>

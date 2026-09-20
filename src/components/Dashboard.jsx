@@ -22,8 +22,9 @@ import {
 import IncomeProgressChart from './charts/IncomeProgressChart';
 import IncomeSourceChart from './charts/IncomeSourceChart';
 
-export default function Dashboard({ data, setActiveTab }) {
+export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment }) {
   const [activeSubView, setActiveSubView] = useState('overview'); // 'overview' | 'tuition'
+  const [payingEmiId, setPayingEmiId] = useState(null);
 
   // Standardized Data Processing
   const currentIncome = data?.currentIncome ?? 0;
@@ -31,7 +32,41 @@ export default function Dashboard({ data, setActiveTab }) {
   const totalIncome = currentIncome + newIncome;
   const targetIncome = data?.targetIncome || 100000;
   const remainingTarget = Math.max(0, targetIncome - totalIncome);
-  const installment = data?.installment || 80000;
+  
+  // EMI Liabilities Quick Action
+  const liabilities = data?.liabilities || [];
+  const liabilityPayments = data?.liabilityPayments || [];
+  const currentMonthPrefix = new Date().toISOString().substring(0, 7);
+  const activeEmis = liabilities.filter(l => l.liabilityType === 'EMI' && l.status !== 'Paid Off');
+  
+  const unpaidEmis = activeEmis.filter(emi => {
+    return !liabilityPayments.some(p => p.liabilityId === emi.id && p.paymentDate?.startsWith(currentMonthPrefix));
+  });
+
+  const handleQuickPayEmi = async (emi) => {
+    const amountStr = window.prompt(`Please enter the EMI amount you paid for ${emi.creditorName}:`, emi.remainingAmount > 0 ? emi.remainingAmount : '');
+    const amount = Number(amountStr);
+    if (!amount || amount <= 0) return;
+    
+    setPayingEmiId(emi.id);
+    const uniquePaymentId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `pay_${Date.now()}`;
+    
+    if (onRecordLiabilityPayment) {
+      const res = await onRecordLiabilityPayment({
+        paymentId: uniquePaymentId,
+        liabilityId: emi.id,
+        paymentDate: new Date().toISOString().split('T')[0],
+        amount: amount,
+        paymentMethod: 'Cash',
+        notes: 'Quick EMI Payment from Dashboard',
+        addToExpense: true
+      });
+      if (res && res.success === false) {
+        alert(res.message || 'Error recording EMI payment');
+      }
+    }
+    setPayingEmiId(null);
+  };
 
   // Expenses & Net Position calculations
   const expensesList = data?.expenses || [];
@@ -294,16 +329,32 @@ export default function Dashboard({ data, setActiveTab }) {
               <p className="text-[10px] text-rose-600/80">প্রয়োজনীয় অতিরিক্ত আয়</p>
             </div>
 
-            {/* Stat 4: Monthly Installment */}
+            {/* Stat 4: Monthly Installment / EMI */}
             <div className="p-3.5 rounded-xl bg-gradient-to-br from-amber-50/80 via-amber-50/40 to-yellow-50/60 border border-amber-200/90 shadow-2xs space-y-1">
               <div className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
                 <Receipt className="w-3.5 h-3.5 text-amber-600" />
                 মাসিক কিস্তি/দায়
               </div>
               <div className="text-xl font-bold text-amber-900">
-                ৳{installment.toLocaleString()}
+                {unpaidEmis.length > 0 ? `${unpaidEmis.length}টি কিস্তি বাকি` : 'সব কিস্তি পরিশোধিত'}
               </div>
-              <p className="text-[10px] text-amber-700/80">স্থায়ী মাসিক পরিশোধ</p>
+              {unpaidEmis.length > 0 ? (
+                <div className="pt-1 flex flex-col gap-1">
+                  {unpaidEmis.map(emi => (
+                    <button 
+                      key={emi.id}
+                      onClick={() => handleQuickPayEmi(emi)}
+                      disabled={payingEmiId === emi.id}
+                      className="text-[10px] bg-amber-600 text-white px-2 py-1 rounded shadow-sm hover:bg-amber-700 transition-colors w-full text-left truncate flex justify-between items-center"
+                    >
+                      <span>Pay {emi.creditorName}</span>
+                      {payingEmiId === emi.id && <RefreshCw className="w-3 h-3 animate-spin" />}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[10px] text-amber-700/80">চলতি মাসের দায় নেই</p>
+              )}
             </div>
 
           </div>

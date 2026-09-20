@@ -19,7 +19,7 @@ import Modal from './ui/Modal';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 
-export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
+export default function ExpenseTracker({ expenses, setExpenses, totalIncome, appData }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
@@ -27,7 +27,7 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
   const [filterCategory, setFilterCategory] = useState('All');
 
   const categories = [
-    'Installment (মাসিক কিস্তি ৳৮০,০০০)',
+    'Liability Payment (দেনা/কিস্তি পরিশোধ)',
     'Household (সংসার খরচ)',
     'Business (ব্যবসা খরচ / ডোমেন-হোস্টিং)',
     'Transport (যাতায়াত)',
@@ -74,7 +74,7 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
 
   // Calculations
   const totalExpense = expenses.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-  const installmentPaid = expenses.filter(e => e.category.includes('Installment')).reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+  const installmentPaid = expenses.filter(e => e.category.includes('Installment') || e.category.includes('Liability')).reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
   const householdExpense = expenses.filter(e => e.category.includes('Household')).reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
   const netCashRemaining = totalIncome - totalExpense;
 
@@ -99,13 +99,34 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome }) {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>নতুন খরচ এন্ট্রি করুন</span>
-        </button>
+        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => {
+              const created = {
+                id: Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                category: installmentCategory,
+                description: 'মাসিক কিস্তি পরিশোধ',
+                amount: installmentAmount,
+                month: 'Month 1',
+                notes: 'Quick Add'
+              };
+              setExpenses([created, ...expenses]);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm"
+          >
+            <DollarSign className="w-4 h-4" />
+            <span>এক ক্লিকে কিস্তি যোগ করুন</span>
+          </button>
+
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>নতুন খরচ এন্ট্রি করুন</span>
+          </button>
+        </div>
       </div>
 
       {/* 4 Expense Summary Cards */}
