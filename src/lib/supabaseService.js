@@ -1263,6 +1263,104 @@ export const rpcRecordCustomerDuePayment = async (paymentData) => {
   return data || { success: true };
 };
 
+// ====================================================================
+// LIABILITY MANAGEMENT SERVICES
+// ====================================================================
+export const getLiabilities = async (userId) => {
+  if (!isSupabaseConfigured || !userId) return [];
+  const { data, error } = await supabase
+    .from('liabilities')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
 
+  if (error) {
+    if (error.code !== '42P01') {
+      console.error('Error fetching liabilities:', error);
+    }
+    return [];
+  }
+  return data ? data.map(toCamel) : [];
+};
 
+export const createLiability = async (userId, liabilityData) => {
+  if (!isSupabaseConfigured || !userId) return { data: null, error: 'Supabase is not configured' };
+  
+  const payload = {
+    user_id: userId,
+    creditor_name: liabilityData.creditorName,
+    liability_type: liabilityData.liabilityType || 'Hawlad',
+    total_amount: Number(liabilityData.totalAmount) || 0,
+    paid_amount: Number(liabilityData.paidAmount) || 0,
+    remaining_amount: Math.max(0, (Number(liabilityData.totalAmount) || 0) - (Number(liabilityData.paidAmount) || 0)),
+    due_date: liabilityData.dueDate || null,
+    status: liabilityData.status || 'Active',
+    notes: liabilityData.notes || ''
+  };
 
+  const { data, error } = await supabase
+    .from('liabilities')
+    .insert(payload)
+    .select()
+    .single();
+
+  return { data: data ? toCamel(data) : null, error: error?.message };
+};
+
+export const deleteLiability = async (userId, liabilityId) => {
+  if (!isSupabaseConfigured || !userId) return false;
+  const { error } = await supabase
+    .from('liabilities')
+    .delete()
+    .eq('id', liabilityId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error deleting liability:', error);
+    return false;
+  }
+  return true;
+};
+
+export const getLiabilityPayments = async (userId) => {
+  if (!isSupabaseConfigured || !userId) return [];
+  const { data, error } = await supabase
+    .from('liability_payments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    if (error.code !== '42P01') {
+      console.error('Error fetching liability payments:', error);
+    }
+    return [];
+  }
+  return data ? data.map(toCamel) : [];
+};
+
+export const rpcRecordLiabilityPayment = async (paymentData) => {
+  if (!isSupabaseConfigured) {
+    return { success: false, message: 'Supabase is not configured' };
+  }
+
+  const { data, error } = await supabase.rpc('record_liability_payment', {
+    p_payment_id: paymentData.paymentId,
+    p_liability_id: Number(paymentData.liabilityId),
+    p_payment_date: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+    p_amount: Number(paymentData.amount),
+    p_payment_method: paymentData.paymentMethod || 'Cash',
+    p_notes: paymentData.notes || '',
+    p_add_to_expense: paymentData.addToExpense !== undefined ? paymentData.addToExpense : true
+  });
+
+  if (error) {
+    console.error('RPC record_liability_payment Error:', error);
+    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
+      return { success: false, message: 'Supabase-এ record_liability_payment ফাংশনটি পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ নতুন SQL কোডটি Run করুন।' };
+    }
+    return { success: false, message: error.message };
+  }
+
+  return data;
+};

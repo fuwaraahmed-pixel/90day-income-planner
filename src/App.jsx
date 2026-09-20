@@ -15,6 +15,7 @@ import SubscriptionModal from './components/SubscriptionModal';
 import AdminPanel from './components/AdminPanel';
 import Tuition from './components/Tuition';
 import CustomerDues from './components/CustomerDues';
+import Liabilities from './components/Liabilities';
 
 
 import { supabase, isSupabaseConfigured } from './lib/supabase';
@@ -247,6 +248,8 @@ export default function App() {
   const [crmPayments, setCrmPayments] = useState([]);
   const [customerDues, setCustomerDuesState] = useState(() => loadData(STORAGE_KEYS.CUSTOMER_DUES, defaultCustomerDues));
   const [duePayments, setDuePaymentsState] = useState(() => loadData(STORAGE_KEYS.DUE_PAYMENTS, defaultDuePayments));
+  const [liabilities, setLiabilitiesState] = useState([]);
+  const [liabilityPayments, setLiabilityPaymentsState] = useState([]);
 
   const handleSetCustomerDues = (valueOrFn) => {
     setCustomerDuesState(prev => {
@@ -313,7 +316,9 @@ export default function App() {
           tuitionPaysRes,
           crmPaysRes,
           duesRes,
-          duePaysRes
+          duePaysRes,
+          liabRes,
+          liabPaysRes
         ] = await Promise.all([
           api.checkIsAdmin(userId, session.user.email),
           api.getSubscription(userId),
@@ -330,7 +335,9 @@ export default function App() {
           api.getTuitionPayments(userId),
           api.getCrmPayments(userId),
           api.getCustomerDues(userId),
-          api.getCustomerDuePayments(userId)
+          api.getCustomerDuePayments(userId),
+          api.getLiabilities(userId),
+          api.getLiabilityPayments(userId)
         ]);
 
         if (!isMounted) return;
@@ -353,6 +360,8 @@ export default function App() {
         setCrmPayments(crmPaysRes || []);
         setCustomerDuesState(duesRes || []);
         setDuePaymentsState(duePaysRes || []);
+        setLiabilitiesState(liabRes || []);
+        setLiabilityPaymentsState(liabPaysRes || []);
 
         setLoadingData(false);
       } catch (err) {
@@ -388,6 +397,8 @@ export default function App() {
     setPlanDataState(null);
     setTuitionStudents([]);
     setTuitionPayments([]);
+    setLiabilitiesState([]);
+    setLiabilityPaymentsState([]);
   };
 
   // Submit Payment Request Handler
@@ -886,6 +897,46 @@ export default function App() {
     }
   };
 
+  // Liabilities Handlers
+  const handleCreateLiability = async (liabilityData) => {
+    if (session?.user?.id) {
+      const res = await api.createLiability(session.user.id, liabilityData);
+      if (res?.error || !res?.data) {
+        return { success: false, message: res?.error || 'Supabase-এ দেনা সংরক্ষণ করা সম্ভব হয়নি।' };
+      }
+      setLiabilitiesState(prev => [res.data, ...prev]);
+      return { success: true };
+    }
+    return { success: false, message: 'লগইন করা নেই' };
+  };
+
+  const handleDeleteLiability = async (liabilityId) => {
+    if (session?.user?.id) {
+      const deleted = await api.deleteLiability(session.user.id, liabilityId);
+      if (deleted) {
+        setLiabilitiesState(prev => prev.filter(l => String(l.id) !== String(liabilityId)));
+      }
+    }
+  };
+
+  const handleRecordLiabilityPayment = async (paymentData) => {
+    if (session?.user?.id) {
+      const res = await api.rpcRecordLiabilityPayment(paymentData);
+      if (res && res.success !== false) {
+        const [liabRes, liabPaysRes, expRes] = await Promise.all([
+          api.getLiabilities(session.user.id),
+          api.getLiabilityPayments(session.user.id),
+          api.getExpenses(session.user.id)
+        ]);
+        if (liabRes) setLiabilitiesState(liabRes);
+        if (liabPaysRes) setLiabilityPaymentsState(liabPaysRes);
+        if (expRes) setExpensesState(expRes);
+      }
+      return res;
+    }
+    return { success: false, message: 'লগইন করা নেই' };
+  };
+
   // Dynamic Financial Calculations
   const salarySum = incomes.filter(i => i.source.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const newIncomeSum = incomes.filter(i => !i.source.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
@@ -1010,6 +1061,17 @@ export default function App() {
             onUpdateDue={handleUpdateCustomerDue}
             onDeleteDue={handleDeleteCustomerDue}
             onRecordPayment={handleRecordCustomerDuePayment}
+          />
+        )}
+
+        {activeTab === 'liabilities' && (
+          <Liabilities
+            liabilities={liabilities}
+            setLiabilities={setLiabilitiesState}
+            liabilityPayments={liabilityPayments}
+            onCreateLiability={handleCreateLiability}
+            onDeleteLiability={handleDeleteLiability}
+            onRecordPayment={handleRecordLiabilityPayment}
           />
         )}
 

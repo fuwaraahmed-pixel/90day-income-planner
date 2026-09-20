@@ -1,0 +1,470 @@
+import React, { useState } from 'react';
+import { 
+  Plus, 
+  Search, 
+  Trash2, 
+  CheckCircle,
+  Clock,
+  Landmark,
+  CreditCard,
+  Briefcase
+} from 'lucide-react';
+import Button from './ui/Button';
+import Badge from './ui/Badge';
+import Input from './ui/Input';
+import Modal from './ui/Modal';
+import EmptyState from './ui/EmptyState';
+import ConfirmModal from './ui/ConfirmModal';
+
+export default function Liabilities({ 
+  liabilities = [], 
+  setLiabilities, 
+  liabilityPayments = [],
+  onRecordPayment,
+  onCreateLiability,
+  onDeleteLiability,
+  onRecordExpense
+}) {
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Add Form State
+  const [newLiability, setNewLiability] = useState({
+    creditorName: '',
+    liabilityType: 'Hawlad',
+    totalAmount: '',
+    paidAmount: '',
+    dueDate: '',
+    notes: ''
+  });
+
+  // Payment Modal State
+  const [paymentModalLiability, setPaymentModalLiability] = useState(null);
+  const [paymentForm, setPaymentForm] = useState({
+    paymentId: '',
+    paymentDate: new Date().toISOString().split('T')[0],
+    amount: '',
+    paymentMethod: 'Cash',
+    notes: '',
+    addToExpense: true
+  });
+  const [paymentError, setPaymentError] = useState(null);
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+
+  const liabilityTypes = ['Hawlad', 'Bank Loan', 'EMI', 'Other'];
+  const paymentMethods = ['Cash', 'bKash', 'Nagad', 'Rocket', 'Bank Transfer'];
+
+  const filteredLiabilities = liabilities.filter(l => {
+    return l.creditorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           l.liabilityType.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const activeLiabilities = filteredLiabilities.filter(l => l.status !== 'Paid Off');
+  const completedLiabilities = filteredLiabilities.filter(l => l.status === 'Paid Off');
+
+  const totalDebt = activeLiabilities.reduce((sum, l) => sum + (Number(l.totalAmount) || 0), 0);
+  const totalPaid = activeLiabilities.reduce((sum, l) => sum + (Number(l.paidAmount) || 0), 0);
+  const totalRemaining = activeLiabilities.reduce((sum, l) => sum + (Number(l.remainingAmount) || 0), 0);
+
+  const handleAddLiability = async (e) => {
+    e.preventDefault();
+    if (!newLiability.creditorName.trim() || !newLiability.totalAmount) return;
+
+    const res = await onCreateLiability(newLiability);
+    if (res && res.success) {
+      setShowAddModal(false);
+      setNewLiability({
+        creditorName: '',
+        liabilityType: 'Hawlad',
+        totalAmount: '',
+        paidAmount: '',
+        dueDate: '',
+        notes: ''
+      });
+    } else {
+      alert(res?.message || 'Error adding liability');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deleteConfirmId) {
+      await onDeleteLiability(deleteConfirmId);
+      setDeleteConfirmId(null);
+    }
+  };
+
+  const handleOpenPaymentModal = (liability) => {
+    const uniquePaymentId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `pay_${Date.now()}`;
+    setPaymentModalLiability(liability);
+    setPaymentForm({
+      paymentId: uniquePaymentId,
+      paymentDate: new Date().toISOString().split('T')[0],
+      amount: liability.remainingAmount > 0 ? liability.remainingAmount : '',
+      paymentMethod: 'Cash',
+      notes: '',
+      addToExpense: true
+    });
+    setPaymentError(null);
+  };
+
+  const handleRecordPaymentSubmit = async (e) => {
+    e.preventDefault();
+    if (!paymentModalLiability) return;
+
+    const amountNum = Number(paymentForm.amount);
+    if (!amountNum || amountNum <= 0) {
+      setPaymentError('Payment amount must be greater than zero.');
+      return;
+    }
+
+    if (amountNum > Number(paymentModalLiability.remainingAmount)) {
+      setPaymentError(`Cannot pay more than remaining amount (৳${Number(paymentModalLiability.remainingAmount).toLocaleString()})`);
+      return;
+    }
+
+    setIsSubmittingPayment(true);
+    setPaymentError(null);
+
+    try {
+      const res = await onRecordPayment({
+        paymentId: paymentForm.paymentId,
+        liabilityId: paymentModalLiability.id,
+        paymentDate: paymentForm.paymentDate,
+        amount: amountNum,
+        paymentMethod: paymentForm.paymentMethod,
+        notes: paymentForm.notes,
+        addToExpense: paymentForm.addToExpense
+      });
+
+      if (res && res.success !== false) {
+        setPaymentModalLiability(null);
+      } else {
+        setPaymentError(res?.message || 'Failed to record payment.');
+      }
+    } catch (err) {
+      setPaymentError(err.message || 'Network error.');
+    } finally {
+      setIsSubmittingPayment(false);
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    if (status === 'Paid Off') return <Badge variant="success">Paid Off</Badge>;
+    return <Badge variant="warning">Active</Badge>;
+  };
+
+  const getTypeIcon = (type) => {
+    if (type === 'Bank Loan') return <Landmark className="w-4 h-4 text-slate-500" />;
+    if (type === 'EMI') return <CreditCard className="w-4 h-4 text-slate-500" />;
+    return <Briefcase className="w-4 h-4 text-slate-500" />;
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in pb-20">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Liabilities & Debts</h2>
+          <p className="text-slate-500 mt-1">Manage your loans, EMI, and Hawlads securely.</p>
+        </div>
+        <Button onClick={() => setShowAddModal(true)} icon={Plus}>
+          Add Liability
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center">
+          <p className="text-sm text-slate-500 font-medium mb-1">Total Active Debt</p>
+          <p className="text-2xl font-bold text-slate-800">৳{totalDebt.toLocaleString()}</p>
+        </div>
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center">
+          <p className="text-sm text-slate-500 font-medium mb-1">Total Paid</p>
+          <p className="text-2xl font-bold text-emerald-600">৳{totalPaid.toLocaleString()}</p>
+        </div>
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-rose-100 flex flex-col justify-center bg-rose-50/30">
+          <p className="text-sm text-rose-600 font-medium mb-1">Remaining Balance</p>
+          <p className="text-2xl font-bold text-rose-700">৳{totalRemaining.toLocaleString()}</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <div className="relative w-full max-w-sm">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search liabilities..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            />
+          </div>
+        </div>
+
+        {liabilities.length === 0 ? (
+          <EmptyState 
+            icon={Landmark}
+            title="No Liabilities Found"
+            description="You haven't added any debts or loans yet. Click 'Add Liability' to start tracking."
+            actionLabel="Add Liability"
+            onAction={() => setShowAddModal(true)}
+          />
+        ) : filteredLiabilities.length === 0 ? (
+          <div className="p-12 text-center text-slate-500">No results match your search.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-100 text-sm font-medium text-slate-500">
+                  <th className="px-6 py-4">Creditor Name</th>
+                  <th className="px-6 py-4">Type</th>
+                  <th className="px-6 py-4">Total Amount</th>
+                  <th className="px-6 py-4">Paid</th>
+                  <th className="px-6 py-4 text-rose-600">Remaining</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {activeLiabilities.map(liability => (
+                  <tr key={liability.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-800">{liability.creditorName}</div>
+                      {liability.dueDate && (
+                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                          <Clock className="w-3 h-3" /> Due: {new Date(liability.dueDate).toLocaleDateString('en-GB')}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-slate-600 text-sm">
+                        {getTypeIcon(liability.liabilityType)}
+                        {liability.liabilityType}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-medium text-slate-700">৳{Number(liability.totalAmount).toLocaleString()}</td>
+                    <td className="px-6 py-4 font-medium text-emerald-600">৳{Number(liability.paidAmount).toLocaleString()}</td>
+                    <td className="px-6 py-4 font-bold text-rose-600">৳{Number(liability.remainingAmount).toLocaleString()}</td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(liability.status)}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          variant="secondary" 
+                          size="sm"
+                          onClick={() => handleOpenPaymentModal(liability)}
+                        >
+                          Pay
+                        </Button>
+                        <button 
+                          onClick={() => setDeleteConfirmId(liability.id)}
+                          className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                          title="Delete Liability"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+
+                {completedLiabilities.length > 0 && (
+                  <tr>
+                    <td colSpan="7" className="bg-slate-50 py-3 px-6 text-sm font-semibold text-slate-500">
+                      Completed / Paid Off
+                    </td>
+                  </tr>
+                )}
+
+                {completedLiabilities.map(liability => (
+                  <tr key={liability.id} className="hover:bg-slate-50/50 transition-colors opacity-75">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-800 line-through decoration-slate-300">{liability.creditorName}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-slate-500 text-sm">
+                        {getTypeIcon(liability.liabilityType)}
+                        {liability.liabilityType}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-medium text-slate-500">৳{Number(liability.totalAmount).toLocaleString()}</td>
+                    <td className="px-6 py-4 font-medium text-slate-500">৳{Number(liability.paidAmount).toLocaleString()}</td>
+                    <td className="px-6 py-4 font-medium text-slate-500">৳0</td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(liability.status)}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => setDeleteConfirmId(liability.id)}
+                        className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Add Liability Modal */}
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Liability">
+        <form onSubmit={handleAddLiability} className="space-y-4">
+          <Input 
+            label="Creditor / Source Name *" 
+            placeholder="e.g. Bank, Friend's Name" 
+            value={newLiability.creditorName}
+            onChange={(e) => setNewLiability({...newLiability, creditorName: e.target.value})}
+            required
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Liability Type *</label>
+              <select
+                value={newLiability.liabilityType}
+                onChange={(e) => setNewLiability({...newLiability, liabilityType: e.target.value})}
+                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                required
+              >
+                {liabilityTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+            <Input 
+              label="Total Amount (৳) *" 
+              type="number" 
+              placeholder="e.g. 50000" 
+              value={newLiability.totalAmount}
+              onChange={(e) => setNewLiability({...newLiability, totalAmount: e.target.value})}
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input 
+              label="Already Paid (৳)" 
+              type="number" 
+              placeholder="e.g. 10000" 
+              value={newLiability.paidAmount}
+              onChange={(e) => setNewLiability({...newLiability, paidAmount: e.target.value})}
+            />
+            <Input 
+              label="Due Date (Optional)" 
+              type="date" 
+              value={newLiability.dueDate}
+              onChange={(e) => setNewLiability({...newLiability, dueDate: e.target.value})}
+            />
+          </div>
+          <Input 
+            label="Notes" 
+            placeholder="Any specific details..." 
+            value={newLiability.notes}
+            onChange={(e) => setNewLiability({...newLiability, notes: e.target.value})}
+          />
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button type="submit">Save Liability</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Record Payment Modal */}
+      <Modal 
+        isOpen={!!paymentModalLiability} 
+        onClose={() => setPaymentModalLiability(null)} 
+        title="Record Repayment"
+      >
+        {paymentModalLiability && (
+          <form onSubmit={handleRecordPaymentSubmit} className="space-y-4">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500">Creditor: <span className="font-medium text-slate-800">{paymentModalLiability.creditorName}</span></span>
+                <span className="text-slate-500">Remaining: <span className="font-bold text-rose-600">৳{Number(paymentModalLiability.remainingAmount).toLocaleString()}</span></span>
+              </div>
+            </div>
+
+            {paymentError && (
+              <div className="p-3 bg-rose-50 text-rose-600 text-sm rounded-lg border border-rose-100 flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{paymentError}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input 
+                label="Payment Amount (৳) *" 
+                type="number" 
+                max={paymentModalLiability.remainingAmount}
+                value={paymentForm.amount}
+                onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
+                required
+              />
+              <Input 
+                label="Date *" 
+                type="date" 
+                value={paymentForm.paymentDate}
+                onChange={(e) => setPaymentForm({...paymentForm, paymentDate: e.target.value})}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
+              <select
+                value={paymentForm.paymentMethod}
+                onChange={(e) => setPaymentForm({...paymentForm, paymentMethod: e.target.value})}
+                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+              >
+                {paymentMethods.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            <Input 
+              label="Notes" 
+              placeholder="e.g. 1st installment" 
+              value={paymentForm.notes}
+              onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
+            />
+
+            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 mt-2">
+              <input 
+                type="checkbox" 
+                id="addToExpense" 
+                checked={paymentForm.addToExpense}
+                onChange={(e) => setPaymentForm({...paymentForm, addToExpense: e.target.checked})}
+                className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+              />
+              <label htmlFor="addToExpense" className="text-sm font-medium text-slate-700 cursor-pointer">
+                Add this payment to Expense Tracker (খরচ হিসেবে যুক্ত করুন)
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <Button variant="secondary" type="button" onClick={() => setPaymentModalLiability(null)} disabled={isSubmittingPayment}>
+                Cancel
+              </Button>
+              <Button type="submit" isLoading={isSubmittingPayment} disabled={isSubmittingPayment}>
+                Confirm Payment
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      <ConfirmModal
+        isOpen={!!deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={handleDelete}
+        title="Delete Liability"
+        message="Are you sure you want to delete this liability? All associated payment records will also be deleted. This action cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+      />
+    </div>
+  );
+}

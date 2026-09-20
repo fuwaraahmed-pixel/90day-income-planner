@@ -15,7 +15,8 @@ import {
   User as UserIcon,
   ShieldCheck,
   GraduationCap,
-  Wallet
+  Wallet,
+  Landmark
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdmin = false }) {
@@ -28,6 +29,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
     { id: 'tasks', label: 'আজকের কাজ (Today Tasks)', icon: CheckSquare },
     { id: 'tuition', label: 'টিউশন (Tuition)', icon: GraduationCap },
     { id: 'dues', label: 'পাওনা ম্যানেজমেন্ট (Dues)', icon: Wallet },
+    { id: 'liabilities', label: 'দেনা ও কিস্তি (Liabilities)', icon: Landmark },
     { id: 'crm', label: 'ক্লায়েন্ট CRM (Pipeline)', icon: Users },
     { id: 'income', label: 'ইনকাম ট্র্যাকার (Income)', icon: TrendingUp },
     { id: 'expense', label: 'খরচের ট্র্যাকার (Expense)', icon: Receipt },
