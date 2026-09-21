@@ -1294,6 +1294,10 @@ export const createLiability = async (userId, liabilityData) => {
     paid_amount: Number(liabilityData.paidAmount) || 0,
     remaining_amount: Math.max(0, (Number(liabilityData.totalAmount) || 0) - (Number(liabilityData.paidAmount) || 0)),
     due_date: liabilityData.dueDate || null,
+    emi_amount: Number(liabilityData.emiAmount) || 0,
+    duration_months: Number(liabilityData.durationMonths) || 0,
+    start_date: liabilityData.startDate || null,
+    due_day: Number(liabilityData.dueDay) || null,
     status: liabilityData.status || 'Active',
     notes: liabilityData.notes || ''
   };
@@ -1358,6 +1362,73 @@ export const rpcRecordLiabilityPayment = async (paymentData) => {
     console.error('RPC record_liability_payment Error:', error);
     if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
       return { success: false, message: 'Supabase-এ record_liability_payment ফাংশনটি পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ নতুন SQL কোডটি Run করুন।' };
+    }
+    return { success: false, message: error.message };
+  }
+
+  return data;
+};
+
+export const getEmiInstallments = async (userId) => {
+  if (!isSupabaseConfigured || !userId) return [];
+  const { data, error } = await supabase
+    .from('emi_installments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('due_date', { ascending: true });
+
+  if (error) {
+    if (error.code !== '42P01') {
+      console.error('Error fetching emi_installments:', error);
+    }
+    return [];
+  }
+  return data ? data.map(toCamel) : [];
+};
+
+export const createEmiInstallments = async (userId, installmentsData) => {
+  if (!isSupabaseConfigured || !userId) return { success: false, error: 'Supabase is not configured' };
+  
+  const payload = installmentsData.map(inst => ({
+    user_id: userId,
+    liability_id: inst.liabilityId,
+    installment_number: inst.installmentNumber,
+    due_date: inst.dueDate,
+    expected_amount: inst.expectedAmount,
+    status: 'Upcoming'
+  }));
+
+  const { error } = await supabase
+    .from('emi_installments')
+    .insert(payload);
+
+  if (error) {
+    console.error('Error creating emi_installments:', error);
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+};
+
+export const rpcRecordEmiPayment = async (paymentData) => {
+  if (!isSupabaseConfigured) {
+    return { success: false, message: 'Supabase is not configured' };
+  }
+
+  const { data, error } = await supabase.rpc('record_emi_payment', {
+    p_payment_id: paymentData.paymentId,
+    p_liability_id: Number(paymentData.liabilityId),
+    p_installment_id: paymentData.installmentId,
+    p_payment_date: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+    p_amount: Number(paymentData.amount),
+    p_payment_method: paymentData.paymentMethod || 'Cash',
+    p_notes: paymentData.notes || '',
+    p_add_to_expense: paymentData.addToExpense !== undefined ? paymentData.addToExpense : true
+  });
+
+  if (error) {
+    console.error('RPC record_emi_payment Error:', error);
+    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
+      return { success: false, message: 'Supabase-à¦ record_emi_payment à¦«à¦¾à¦‚à¦¶à¦¨à¦Ÿà¦¿ à¦ªà¦¾à¦“à§Ÿà¦¾ à¦¯à¦¾à§Ÿà¦¨à¦¿à¥¤ à¦¦à§Ÿà¦¾ à¦•à¦°à§‡ Supabase SQL Editor-à¦ à¦¨à¦¤à§à¦¨ SQL à¦•à§‹à¦¡à¦Ÿà¦¿ Run à¦•à¦°à§à¦¨à¥¤' };
     }
     return { success: false, message: error.message };
   }

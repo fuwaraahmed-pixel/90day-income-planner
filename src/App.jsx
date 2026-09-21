@@ -250,6 +250,7 @@ export default function App() {
   const [duePayments, setDuePaymentsState] = useState(() => loadData(STORAGE_KEYS.DUE_PAYMENTS, defaultDuePayments));
   const [liabilities, setLiabilitiesState] = useState([]);
   const [liabilityPayments, setLiabilityPaymentsState] = useState([]);
+  const [emiInstallments, setEmiInstallments] = useState([]);
 
   const handleSetCustomerDues = (valueOrFn) => {
     setCustomerDuesState(prev => {
@@ -318,7 +319,8 @@ export default function App() {
           duesRes,
           duePaysRes,
           liabRes,
-          liabPaysRes
+          liabPaysRes,
+          emiInstallmentsRes
         ] = await Promise.all([
           api.checkIsAdmin(userId, session.user.email),
           api.getSubscription(userId),
@@ -337,7 +339,8 @@ export default function App() {
           api.getCustomerDues(userId),
           api.getCustomerDuePayments(userId),
           api.getLiabilities(userId),
-          api.getLiabilityPayments(userId)
+          api.getLiabilityPayments(userId),
+          api.getEmiInstallments(userId)
         ]);
 
         if (!isMounted) return;
@@ -362,6 +365,7 @@ export default function App() {
         setDuePaymentsState(duePaysRes || []);
         setLiabilitiesState(liabRes || []);
         setLiabilityPaymentsState(liabPaysRes || []);
+        setEmiInstallments(emiInstallmentsRes || []);
 
         setLoadingData(false);
       } catch (err) {
@@ -399,6 +403,7 @@ export default function App() {
     setTuitionPayments([]);
     setLiabilitiesState([]);
     setLiabilityPaymentsState([]);
+    setEmiInstallments([]);
   };
 
   // Submit Payment Request Handler
@@ -904,8 +909,42 @@ export default function App() {
       if (res?.error || !res?.data) {
         return { success: false, message: res?.error || 'Supabase-এ দেনা সংরক্ষণ করা সম্ভব হয়নি।' };
       }
-      setLiabilitiesState(prev => [res.data, ...prev]);
-      return { success: true, data: res.data };
+      
+      const newLiability = res.data;
+      setLiabilitiesState(prev => [newLiability, ...prev]);
+
+      // If it's an EMI, generate and create the schedule
+      if (newLiability.liabilityType === 'EMI' && newLiability.durationMonths > 0) {
+        const installments = [];
+        const startDate = newLiability.startDate ? new Date(newLiability.startDate) : new Date();
+        const dueDay = newLiability.dueDay || startDate.getDate();
+        
+        for (let i = 1; i <= newLiability.durationMonths; i++) {
+          // Calculate due date for this installment
+          const dueDate = new Date(startDate.getFullYear(), startDate.getMonth() + i, dueDay);
+          
+          // Handle month overflow (e.g. Feb 31 -> Feb 28)
+          if (dueDate.getMonth() !== (startDate.getMonth() + i) % 12) {
+            dueDate.setDate(0); // Move to last day of previous month
+          }
+
+          installments.push({
+            liabilityId: newLiability.id,
+            installmentNumber: i,
+            dueDate: dueDate.toISOString().split('T')[0],
+            expectedAmount: newLiability.emiAmount
+          });
+        }
+
+        const emiRes = await api.createEmiInstallments(session.user.id, installments);
+        if (emiRes.success) {
+          // Fetch updated EMI installments to ensure state is synchronized
+          const freshEmis = await api.getEmiInstallments(session.user.id);
+          setEmiInstallments(freshEmis || []);
+        }
+      }
+
+      return { success: true, data: newLiability };
     }
     return { success: false, message: 'লগইন করা নেই' };
   };
@@ -1075,9 +1114,26 @@ export default function App() {
             liabilities={liabilities}
             setLiabilities={setLiabilitiesState}
             liabilityPayments={liabilityPayments}
+            emiInstallments={emiInstallments}
             onCreateLiability={handleCreateLiability}
             onDeleteLiability={handleDeleteLiability}
             onRecordPayment={handleRecordLiabilityPayment}
+            onRecordEmiPayment={async (paymentData) => {
+              if (!session?.user?.id) return { success: false, message: 'Not logged in' };
+              const res = await api.rpcRecordEmiPayment(paymentData);
+              if (res && res.success) {
+                // Refresh data
+                const [liabRes, liabPaysRes, emiRes] = await Promise.all([
+                  api.getLiabilities(session.user.id),
+                  api.getLiabilityPayments(session.user.id),
+                  api.getEmiInstallments(session.user.id)
+                ]);
+                setLiabilitiesState(liabRes || []);
+                setLiabilityPaymentsState(liabPaysRes || []);
+                setEmiInstallments(emiRes || []);
+              }
+              return res;
+            }}
           />
         )}
 

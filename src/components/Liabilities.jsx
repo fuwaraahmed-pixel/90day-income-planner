@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   Search, 
@@ -22,7 +22,9 @@ export default function Liabilities({
   liabilities = [], 
   setLiabilities, 
   liabilityPayments = [],
+  emiInstallments = [],
   onRecordPayment,
+  onRecordEmiPayment,
   onCreateLiability,
   onDeleteLiability,
   onRecordExpense
@@ -31,13 +33,16 @@ export default function Liabilities({
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Add Form State
   const [newLiability, setNewLiability] = useState({
     creditorName: '',
     liabilityType: 'Hawlad',
     totalAmount: '',
     paidAmount: '',
     dueDate: '',
+    emiAmount: '',
+    durationMonths: '',
+    startDate: new Date().toISOString().split('T')[0],
+    dueDay: new Date().getDate(),
     notes: '',
     addToExpense: true
   });
@@ -46,6 +51,7 @@ export default function Liabilities({
   const [paymentModalLiability, setPaymentModalLiability] = useState(null);
   const [paymentForm, setPaymentForm] = useState({
     paymentId: '',
+    installmentId: '',
     paymentDate: new Date().toISOString().split('T')[0],
     amount: '',
     paymentMethod: 'Cash',
@@ -98,6 +104,10 @@ export default function Liabilities({
         totalAmount: '',
         paidAmount: '',
         dueDate: '',
+        emiAmount: '',
+        durationMonths: '',
+        startDate: new Date().toISOString().split('T')[0],
+        dueDay: new Date().getDate(),
         notes: '',
         addToExpense: true
       });
@@ -105,6 +115,16 @@ export default function Liabilities({
       alert(res?.message || 'Error adding liability');
     }
   };
+
+  // Auto-calculate total amount for EMI
+  useEffect(() => {
+    if (newLiability.liabilityType === 'EMI' && newLiability.emiAmount && newLiability.durationMonths) {
+      setNewLiability(prev => ({
+        ...prev,
+        totalAmount: String(Number(prev.emiAmount) * Number(prev.durationMonths))
+      }));
+    }
+  }, [newLiability.emiAmount, newLiability.durationMonths, newLiability.liabilityType]);
 
   const handleDelete = async () => {
     if (deleteConfirmId) {
@@ -116,10 +136,23 @@ export default function Liabilities({
   const handleOpenPaymentModal = (liability) => {
     const uniquePaymentId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `pay_${Date.now()}`;
     setPaymentModalLiability(liability);
+    
+    let defaultAmount = liability.remainingAmount > 0 ? liability.remainingAmount : '';
+    let targetInstallmentId = '';
+    
+    if (liability.liabilityType === 'EMI') {
+      const activeInstallment = emiInstallments.find(i => i.liabilityId === liability.id && ['Upcoming', 'Due', 'Partial', 'Overdue'].includes(i.status));
+      if (activeInstallment) {
+        defaultAmount = activeInstallment.expectedAmount - activeInstallment.paidAmount;
+        targetInstallmentId = activeInstallment.id;
+      }
+    }
+    
     setPaymentForm({
       paymentId: uniquePaymentId,
+      installmentId: targetInstallmentId,
       paymentDate: new Date().toISOString().split('T')[0],
-      amount: liability.remainingAmount > 0 ? liability.remainingAmount : '',
+      amount: defaultAmount,
       paymentMethod: 'Cash',
       notes: '',
       addToExpense: true
@@ -145,15 +178,34 @@ export default function Liabilities({
     setPaymentError(null);
 
     try {
-      const res = await onRecordPayment({
-        paymentId: paymentData.paymentId || paymentForm.paymentId,
-        liabilityId: paymentModalLiability.id,
-        paymentDate: paymentData.paymentDate,
-        amount: amountNum,
-        paymentMethod: paymentData.paymentMethod,
-        notes: paymentData.notes,
-        addToExpense: paymentForm.addToExpense
-      });
+      let res;
+      if (paymentModalLiability.liabilityType === 'EMI') {
+        if (!paymentData.installmentId && !paymentForm.installmentId) {
+          setPaymentError('No active EMI installment found to pay.');
+          setIsSubmittingPayment(false);
+          return;
+        }
+        res = await onRecordEmiPayment({
+          paymentId: paymentData.paymentId || paymentForm.paymentId,
+          liabilityId: paymentModalLiability.id,
+          installmentId: paymentData.installmentId || paymentForm.installmentId,
+          paymentDate: paymentData.paymentDate,
+          amount: amountNum,
+          paymentMethod: paymentData.paymentMethod,
+          notes: paymentData.notes,
+          addToExpense: paymentForm.addToExpense
+        });
+      } else {
+        res = await onRecordPayment({
+          paymentId: paymentData.paymentId || paymentForm.paymentId,
+          liabilityId: paymentModalLiability.id,
+          paymentDate: paymentData.paymentDate,
+          amount: amountNum,
+          paymentMethod: paymentData.paymentMethod,
+          notes: paymentData.notes,
+          addToExpense: paymentForm.addToExpense
+        });
+      }
 
       if (res && res.success !== false) {
         setPaymentModalLiability(null);
@@ -176,6 +228,23 @@ export default function Liabilities({
     if (type === 'Bank Loan') return <Landmark className="w-4 h-4 text-slate-500" />;
     if (type === 'EMI') return <CreditCard className="w-4 h-4 text-slate-500" />;
     return <Briefcase className="w-4 h-4 text-slate-500" />;
+  };
+
+  const renderEmiProgress = (liability) => {
+    if (liability.liabilityType !== 'EMI') return null;
+    const emis = emiInstallments.filter(e => String(e.liabilityId) === String(liability.id));
+    const paid = emis.filter(e => e.status === 'Paid').length;
+    const partial = emis.filter(e => e.status === 'Partial').length;
+    const total = liability.durationMonths || emis.length || 0;
+    const remaining = total - paid - partial;
+
+    return (
+      <div className="text-xs mt-1.5 space-y-0.5">
+        <div className="text-emerald-600 font-medium">Paid: {paid}/{total}</div>
+        {partial > 0 && <div className="text-amber-600 font-medium">Partial: {partial}</div>}
+        <div className="text-rose-600 font-medium">Remaining: {remaining}</div>
+      </div>
+    );
   };
 
   return (
@@ -262,7 +331,10 @@ export default function Liabilities({
                           {liability.liabilityType}
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-medium text-slate-700">৳{Number(liability.totalAmount).toLocaleString()}</td>
+                      <td className="px-6 py-4 font-medium text-slate-700">
+                        ৳{Number(liability.totalAmount).toLocaleString()}
+                        {liability.liabilityType === 'EMI' && renderEmiProgress(liability)}
+                      </td>
                       <td className="px-6 py-4 font-medium text-emerald-600">৳{Number(liability.paidAmount).toLocaleString()}</td>
                       <td className="px-6 py-4 font-bold text-rose-600">৳{Number(liability.remainingAmount).toLocaleString()}</td>
                       <td className="px-6 py-4">
@@ -349,6 +421,7 @@ export default function Liabilities({
                     <div>
                       <div className="text-slate-500 text-xs mb-1">Total Amount</div>
                       <div className="font-medium text-slate-700">৳{Number(liability.totalAmount).toLocaleString()}</div>
+                      {liability.liabilityType === 'EMI' && renderEmiProgress(liability)}
                     </div>
                     <div>
                       <div className="text-slate-500 text-xs mb-1">Paid Amount</div>
@@ -463,8 +536,47 @@ export default function Liabilities({
               value={newLiability.totalAmount}
               onChange={(e) => setNewLiability({...newLiability, totalAmount: e.target.value})}
               required
+              disabled={newLiability.liabilityType === 'EMI'}
             />
           </div>
+          
+          {newLiability.liabilityType === 'EMI' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+              <Input 
+                label="Monthly EMI Amount (৳) *" 
+                type="number" 
+                placeholder="e.g. 5000" 
+                value={newLiability.emiAmount}
+                onChange={(e) => setNewLiability({...newLiability, emiAmount: e.target.value})}
+                required={newLiability.liabilityType === 'EMI'}
+              />
+              <Input 
+                label="Duration (Months) *" 
+                type="number" 
+                placeholder="e.g. 12" 
+                value={newLiability.durationMonths}
+                onChange={(e) => setNewLiability({...newLiability, durationMonths: e.target.value})}
+                required={newLiability.liabilityType === 'EMI'}
+              />
+              <Input 
+                label="Start Date *" 
+                type="date" 
+                value={newLiability.startDate}
+                onChange={(e) => setNewLiability({...newLiability, startDate: e.target.value})}
+                required={newLiability.liabilityType === 'EMI'}
+              />
+              <Input 
+                label="Due Day (1-31) *" 
+                type="number" 
+                min="1" max="31"
+                placeholder="e.g. 15" 
+                value={newLiability.dueDay}
+                onChange={(e) => setNewLiability({...newLiability, dueDay: e.target.value})}
+                required={newLiability.liabilityType === 'EMI'}
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input 
               label="Already Paid (৳)" 
@@ -473,12 +585,14 @@ export default function Liabilities({
               value={newLiability.paidAmount}
               onChange={(e) => setNewLiability({...newLiability, paidAmount: e.target.value})}
             />
-            <Input 
-              label="Due Date (Optional)" 
-              type="date" 
-              value={newLiability.dueDate}
-              onChange={(e) => setNewLiability({...newLiability, dueDate: e.target.value})}
-            />
+            {newLiability.liabilityType !== 'EMI' && (
+              <Input 
+                label="Due Date (Optional)" 
+                type="date" 
+                value={newLiability.dueDate}
+                onChange={(e) => setNewLiability({...newLiability, dueDate: e.target.value})}
+              />
+            )}
           </div>
           <Input 
             label="Notes" 

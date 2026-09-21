@@ -1068,10 +1068,29 @@ CREATE TABLE IF NOT EXISTS public.liabilities (
     paid_amount NUMERIC NOT NULL DEFAULT 0,
     remaining_amount NUMERIC NOT NULL DEFAULT 0,
     due_date DATE NULL,
+    emi_amount NUMERIC DEFAULT 0,
+    duration_months INT DEFAULT 0,
+    start_date DATE NULL,
+    due_day INT NULL,
     status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Paid Off')),
     notes TEXT DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 17.1 EMI INSTALLMENTS TABLE
+CREATE TABLE IF NOT EXISTS public.emi_installments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) DEFAULT auth.uid(),
+    liability_id BIGINT NOT NULL REFERENCES public.liabilities(id) ON DELETE CASCADE,
+    installment_number INT NOT NULL,
+    due_date DATE NOT NULL,
+    expected_amount NUMERIC NOT NULL,
+    paid_amount NUMERIC NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'Upcoming' CHECK (status IN ('Upcoming', 'Due', 'Partial', 'Paid', 'Overdue')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (liability_id, installment_number)
 );
 
 -- 18. LIABILITY PAYMENTS TABLE
@@ -1079,6 +1098,7 @@ CREATE TABLE IF NOT EXISTS public.liability_payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) DEFAULT auth.uid(),
     liability_id BIGINT NOT NULL REFERENCES public.liabilities(id) ON DELETE CASCADE,
+    emi_installment_id UUID NULL REFERENCES public.emi_installments(id) ON DELETE SET NULL,
     payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
     amount NUMERIC NOT NULL CHECK (amount > 0),
     payment_method TEXT NOT NULL DEFAULT 'Cash',
@@ -1090,11 +1110,14 @@ CREATE TABLE IF NOT EXISTS public.liability_payments (
 
 -- INDEXES
 CREATE INDEX IF NOT EXISTS idx_liabilities_user_id ON public.liabilities(user_id);
+CREATE INDEX IF NOT EXISTS idx_emi_installments_user_id ON public.emi_installments(user_id);
+CREATE INDEX IF NOT EXISTS idx_emi_installments_liability_id ON public.emi_installments(liability_id);
 CREATE INDEX IF NOT EXISTS idx_liability_payments_user_id ON public.liability_payments(user_id);
 CREATE INDEX IF NOT EXISTS idx_liability_payments_liability_id ON public.liability_payments(liability_id);
 
 -- RLS
 ALTER TABLE public.liabilities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.emi_installments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.liability_payments ENABLE ROW LEVEL SECURITY;
 
 -- POLICIES
@@ -1107,6 +1130,16 @@ CREATE POLICY "Users can select own liabilities" ON public.liabilities FOR SELEC
 CREATE POLICY "Users can insert own liabilities" ON public.liabilities FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own liabilities" ON public.liabilities FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own liabilities" ON public.liabilities FOR DELETE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can select own emi_installments" ON public.emi_installments;
+DROP POLICY IF EXISTS "Users can insert own emi_installments" ON public.emi_installments;
+DROP POLICY IF EXISTS "Users can update own emi_installments" ON public.emi_installments;
+DROP POLICY IF EXISTS "Users can delete own emi_installments" ON public.emi_installments;
+
+CREATE POLICY "Users can select own emi_installments" ON public.emi_installments FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own emi_installments" ON public.emi_installments FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own emi_installments" ON public.emi_installments FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own emi_installments" ON public.emi_installments FOR DELETE USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can select own liability_payments" ON public.liability_payments;
 DROP POLICY IF EXISTS "Users can insert own liability_payments" ON public.liability_payments;
@@ -1264,3 +1297,182 @@ $$;
 
 
 
+-- ATOMIC RPC FOR RECORDING EMI PAYMENT
+CREATE OR REPLACE FUNCTION public.record_emi_payment(
+    p_payment_id UUID,
+    p_liability_id BIGINT,
+    p_installment_id UUID,
+    p_payment_date DATE,
+    p_amount NUMERIC,
+    p_payment_method TEXT DEFAULT 'Cash',
+    p_notes TEXT DEFAULT '',
+    p_add_to_expense BOOLEAN DEFAULT true
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_user_id UUID;
+    v_creditor_name TEXT;
+    v_total_amount NUMERIC;
+    v_current_paid NUMERIC;
+    v_existing_payment RECORD;
+    v_expense_id BIGINT;
+    v_installment_expected NUMERIC;
+    v_installment_paid NUMERIC;
+    v_new_installment_paid NUMERIC;
+    v_new_installment_status TEXT;
+    v_new_paid NUMERIC;
+    v_new_remaining NUMERIC;
+    v_new_status TEXT;
+    v_result JSONB;
+BEGIN
+    v_user_id := auth.uid();
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required';
+    END IF;
+
+    IF p_amount IS NULL OR p_amount <= 0 THEN
+        RAISE EXCEPTION 'Payment amount must be greater than zero';
+    END IF;
+
+    IF p_payment_id IS NULL THEN
+        RAISE EXCEPTION 'Payment ID is required';
+    END IF;
+
+    -- Fetch Liability Details
+    SELECT creditor_name, COALESCE(total_amount, 0), COALESCE(paid_amount, 0)
+    INTO v_creditor_name, v_total_amount, v_current_paid
+    FROM public.liabilities
+    WHERE id = p_liability_id AND user_id = v_user_id;
+
+    IF v_creditor_name IS NULL THEN
+        RAISE EXCEPTION 'Liability not found or access denied';
+    END IF;
+
+    -- Fetch Installment Details
+    SELECT expected_amount, COALESCE(paid_amount, 0)
+    INTO v_installment_expected, v_installment_paid
+    FROM public.emi_installments
+    WHERE id = p_installment_id AND liability_id = p_liability_id AND user_id = v_user_id;
+
+    IF v_installment_expected IS NULL THEN
+        RAISE EXCEPTION 'EMI Installment not found or access denied';
+    END IF;
+
+    -- Validate payment amount does not exceed installment remaining
+    IF p_amount > (v_installment_expected - v_installment_paid) THEN
+        RAISE EXCEPTION 'Payment amount exceeds remaining amount for this installment';
+    END IF;
+
+    -- Idempotency check
+    SELECT * INTO v_existing_payment
+    FROM public.liability_payments
+    WHERE id = p_payment_id AND user_id = v_user_id;
+
+    IF v_existing_payment IS NOT NULL THEN
+        RETURN jsonb_build_object(
+            'success', true,
+            'idempotent_retry', true,
+            'payment_id', v_existing_payment.id,
+            'message', 'Payment already recorded safely.'
+        );
+    END IF;
+    
+    -- Insert Expense if requested
+    IF p_add_to_expense THEN
+        -- Generate a unique BIGINT ID using timestamp to avoid sequence desync issues
+        v_expense_id := (EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::BIGINT;
+        
+        INSERT INTO public.expenses (
+            id,
+            user_id,
+            date,
+            category,
+            description,
+            amount,
+            month,
+            notes
+        ) VALUES (
+            v_expense_id,
+            v_user_id,
+            p_payment_date,
+            'EMI Repayment',
+            'Repaid to: ' || v_creditor_name,
+            p_amount,
+            'Month 1',
+            COALESCE(p_notes, '')
+        );
+    END IF;
+
+    -- Insert Payment Record linked to EMI installment
+    INSERT INTO public.liability_payments (
+        id,
+        user_id,
+        liability_id,
+        emi_installment_id,
+        payment_date,
+        amount,
+        payment_method,
+        expense_id,
+        notes
+    ) VALUES (
+        p_payment_id,
+        v_user_id,
+        p_liability_id,
+        p_installment_id,
+        p_payment_date,
+        p_amount,
+        p_payment_method,
+        v_expense_id,
+        COALESCE(p_notes, '')
+    );
+
+    -- Update Installment summary
+    v_new_installment_paid := v_installment_paid + p_amount;
+    
+    IF v_new_installment_paid >= v_installment_expected THEN
+        v_new_installment_status := 'Paid';
+    ELSE
+        v_new_installment_status := 'Partial';
+    END IF;
+
+    UPDATE public.emi_installments
+    SET paid_amount = v_new_installment_paid,
+        status = v_new_installment_status,
+        payment_date = COALESCE(payment_date, p_payment_date),
+        updated_at = NOW()
+    WHERE id = p_installment_id AND user_id = v_user_id;
+
+    -- Update Liability summary
+    v_new_paid := v_current_paid + p_amount;
+    v_new_remaining := GREATEST(0, v_total_amount - v_new_paid);
+    
+    IF v_new_paid >= v_total_amount THEN
+        v_new_status := 'Paid Off';
+    ELSE
+        v_new_status := 'Active';
+    END IF;
+
+    UPDATE public.liabilities
+    SET paid_amount = v_new_paid,
+        remaining_amount = v_new_remaining,
+        status = v_new_status,
+        updated_at = NOW()
+    WHERE id = p_liability_id AND user_id = v_user_id;
+
+    SELECT jsonb_build_object(
+        'success', true,
+        'payment_id', p_payment_id,
+        'expense_id', v_expense_id,
+        'installment_status', v_new_installment_status,
+        'new_paid', v_new_paid,
+        'new_remaining', v_new_remaining,
+        'status', v_new_status
+    ) INTO v_result;
+
+    RETURN v_result;
+END;
+$$;
