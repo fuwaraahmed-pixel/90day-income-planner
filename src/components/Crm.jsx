@@ -22,6 +22,7 @@ import Button from './ui/Button';
 import Badge from './ui/Badge';
 import Input from './ui/Input';
 import Modal from './ui/Modal';
+import UniversalPaymentModal from './ui/UniversalPaymentModal';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 
@@ -151,11 +152,10 @@ export default function Crm({
     setPaymentError(null);
   };
 
-  const handleRecordPaymentSubmit = async (e) => {
-    e.preventDefault();
+  const handleRecordPaymentSubmit = async (paymentData) => {
     if (!paymentModalLead) return;
 
-    const amountNum = Number(paymentForm.amount);
+    const amountNum = Number(paymentData.amount);
     if (!amountNum || amountNum <= 0) {
       setPaymentError('পেমেন্টের পরিমাণ শূন্যের চেয়ে বেশি হতে হবে।');
       return;
@@ -176,12 +176,12 @@ export default function Crm({
 
     try {
       const res = await onRecordPayment({
-        paymentId: paymentForm.paymentId,
+        paymentId: paymentData.paymentId,
         crmClientId: lead.id,
-        paymentDate: paymentForm.paymentDate,
+        paymentDate: paymentData.paymentDate,
         amount: amountNum,
-        paymentMethod: paymentForm.paymentMethod,
-        notes: paymentForm.notes
+        paymentMethod: paymentData.paymentMethod,
+        notes: paymentData.notes
       });
 
       if (res && res.success !== false) {
@@ -798,16 +798,19 @@ export default function Crm({
       )}
 
       {/* Record Payment Modal */}
-      <Modal
+      <UniversalPaymentModal
         isOpen={Boolean(paymentModalLead)}
         onClose={() => setPaymentModalLead(null)}
+        onSubmit={handleRecordPaymentSubmit}
         title="CRM ডিল পেমেন্ট গ্রহণ করুন"
         description="পেমেন্ট রেকর্ড করলে তা সরাসরি ইনকাম ট্র্যাকার-এ যুক্ত হবে"
-        maxWidth="md"
-      >
-        {paymentModalLead && (
-          <form onSubmit={handleRecordPaymentSubmit} className="space-y-4 text-left">
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+        isSubmitting={isSubmittingPayment}
+        submitLabel="পেমেন্ট ও ইনকাম নিশ্চিত করুন"
+        paymentId={paymentForm.paymentId}
+        error={paymentError}
+        headerContent={
+          paymentModalLead ? (
+            <>
               <div className="flex justify-between text-xs text-slate-600">
                 <span>ক্লায়েন্ট: <strong>{paymentModalLead.clientName}</strong></span>
                 <span>প্রতিষ্ঠান: <strong>{paymentModalLead.businessName}</strong></span>
@@ -830,97 +833,10 @@ export default function Crm({
                   </div>
                 </div>
               </div>
-            </div>
-
-            {paymentError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-700 flex items-center gap-2">
-                <span>⚠️ {paymentError}</span>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">পেমেন্ট আইডি (Payment UUID - Auto Generated)</label>
-              <input
-                type="text"
-                readOnly
-                value={paymentForm.paymentId}
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-100 text-slate-500 text-xs font-mono select-all cursor-not-allowed"
-              />
-              <span className="text-[10px] text-slate-400">এই ইউনিক আইডির মাধ্যমে ডুপ্লিকেট পেমেন্ট ও ইনকাম এন্ট্রি প্রতিরোধ করা হয়।</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">পেমেন্টের পরিমাণ (Amount ৳) *</label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  placeholder="যেমন: 5000"
-                  value={paymentForm.amount}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">পেমেন্ট মেথড (Payment Method)</label>
-                <select
-                  value={paymentForm.paymentMethod}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="bKash">bKash (বিকাশ)</option>
-                  <option value="Nagad">Nagad (নগদ)</option>
-                  <option value="Bank Transfer">Bank Transfer (ব্যাংক ডিরেক্ট)</option>
-                  <option value="Cash">Cash (নগদ টাকা)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">পেমেন্টের তারিখ (Date)</label>
-                <input
-                  type="date"
-                  value={paymentForm.paymentDate}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">নোটস / রেফারেন্স (Notes)</label>
-                <input
-                  type="text"
-                  placeholder="যেমন: ১ম কিস্তি বা ট্রানজ্যাকশন আইডি"
-                  value={paymentForm.notes}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-3 border-t">
-              <button
-                type="button"
-                onClick={() => setPaymentModalLead(null)}
-                className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-200 transition-colors"
-                disabled={isSubmittingPayment}
-              >
-                বাতিল
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmittingPayment}
-                className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
-              >
-                <span>পেমেন্ট ও ইনকাম নিশ্চিত করুন</span>
-              </button>
-            </div>
-          </form>
-        )}
-      </Modal>
+            </>
+          ) : null
+        }
+      />
 
       {/* CUSTOMER FINANCIAL PROFILE & DUES SUMMARY MODAL */}
       {selectedCustomerProfile && (

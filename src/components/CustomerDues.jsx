@@ -28,6 +28,7 @@ import Button from './ui/Button';
 import Badge from './ui/Badge';
 import Input from './ui/Input';
 import Modal from './ui/Modal';
+import UniversalPaymentModal from './ui/UniversalPaymentModal';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 
@@ -255,11 +256,10 @@ export default function CustomerDues({
     setPaymentError(null);
   };
 
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault();
+  const handlePaymentSubmit = async (paymentData) => {
     if (!paymentModalDue) return;
 
-    const amountNum = Number(paymentForm.amount);
+    const amountNum = Number(paymentData.amount);
     if (!amountNum || amountNum <= 0) {
       setPaymentError('পরিশোধিত টাকার পরিমাণ ০-এর বেশি হতে হবে।');
       return;
@@ -276,12 +276,12 @@ export default function CustomerDues({
 
     try {
       const res = await onRecordPayment({
-        paymentId: paymentForm.paymentId,
+        paymentId: paymentData.paymentId || paymentForm.paymentId,
         dueId: paymentModalDue.id,
-        paymentDate: paymentForm.paymentDate,
+        paymentDate: paymentData.paymentDate,
         amount: amountNum,
-        paymentMethod: paymentForm.paymentMethod,
-        note: paymentForm.note
+        paymentMethod: paymentData.paymentMethod,
+        note: paymentData.notes
       });
 
       if (res && res.success === false) {
@@ -787,123 +787,32 @@ export default function CustomerDues({
       {/* ========================================================================= */}
       {/* 6. PAYMENT RECEIVED MODAL */}
       {/* ========================================================================= */}
-      {paymentModalDue && (
-        <Modal
-          isOpen={Boolean(paymentModalDue)}
-          onClose={() => setPaymentModalDue(null)}
-          title="💳 কাস্টমার পেমেন্ট গ্রহণ (Payment Received)"
-        >
-          <form onSubmit={handlePaymentSubmit} className="space-y-4 pt-1">
-            
-            {/* Customer Info Card */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white space-y-1">
-              <div className="text-[11px] text-slate-300 font-medium">কাস্টমার ও কাজ:</div>
-              <div className="font-bold text-sm text-white">{paymentModalDue.customerName}</div>
-              <div className="text-xs text-emerald-300 font-medium">{paymentModalDue.description}</div>
-              <div className="flex justify-between items-center pt-2 border-t border-slate-700/80 text-xs">
-                <span className="text-slate-300">বর্তমান বাকি পাওনা:</span>
-                <span className="font-extrabold text-rose-400 text-sm">
+      <UniversalPaymentModal
+        isOpen={Boolean(paymentModalDue)}
+        onClose={() => setPaymentModalDue(null)}
+        onSubmit={handlePaymentSubmit}
+        title="💳 কাস্টমার পেমেন্ট গ্রহণ (Payment Received)"
+        description="পেমেন্ট রেকর্ড করলে তা সরাসরি ইনকাম ট্র্যাকার-এ যুক্ত হবে"
+        isSubmitting={isSubmittingPayment}
+        submitLabel="পেমেন্ট ও ইনকাম নিশ্চিত করুন"
+        paymentId={paymentForm.paymentId}
+        error={paymentError}
+        headerContent={
+          paymentModalDue ? (
+            <>
+              <div className="text-[11px] text-slate-500 font-medium">কাস্টমার ও কাজ:</div>
+              <div className="font-bold text-sm text-slate-800">{paymentModalDue.customerName}</div>
+              <div className="text-xs text-emerald-600 font-medium">{paymentModalDue.description}</div>
+              <div className="flex justify-between items-center pt-2 border-t border-slate-200 text-xs">
+                <span className="text-slate-600">বর্তমান বাকি পাওনা:</span>
+                <span className="font-extrabold text-rose-500 text-sm">
                   ৳{Math.max(0, (Number(paymentModalDue.totalAmount) || 0) - (Number(paymentModalDue.paidAmount) || 0)).toLocaleString()}
                 </span>
               </div>
-            </div>
-
-            {paymentError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>{paymentError}</span>
-              </div>
-            )}
-
-            {/* Payment Amount */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                পরিশোধকৃত টাকার পরিমাণ (৳) <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="number"
-                required
-                min="1"
-                placeholder="যেমন: ৳৩০০০"
-                value={paymentForm.amount}
-                onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                className="w-full px-3 py-2 text-sm font-bold border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
-              />
-            </div>
-
-            {/* Payment Date & Method */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  পেমেন্টের তারিখ
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={paymentForm.paymentDate}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  পেমেন্ট মেথড
-                </label>
-                <select
-                  value={paymentForm.paymentMethod}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none font-medium"
-                >
-                  <option value="bKash">bKash (বিকাশ)</option>
-                  <option value="Nagad">Nagad (নগদ)</option>
-                  <option value="Bank Transfer">Bank Transfer (ব্যাংক)</option>
-                  <option value="Cash">Cash (নগদ ক্যাশ)</option>
-                  <option value="Rocket">Rocket (রকেট)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Note */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                পেমেন্ট নোট / রেফারেন্স (ঐচ্ছিক)
-              </label>
-              <input
-                type="text"
-                placeholder="যেমন: ৩য় কিস্তি / ট্রানজেকশন আইডি"
-                value={paymentForm.note}
-                onChange={(e) => setPaymentForm({ ...paymentForm, note: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
-              />
-            </div>
-
-            {/* Automatic Income Tracker Sync Notice */}
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200/80 text-[11px] text-emerald-800 font-medium flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>এই পেমেন্টটি স্বয়ংক্রিয়ভাবে ইনকাম ট্র্যাকার (Income Tracker)-এ আয় হিসেবে যুক্ত হবে।</span>
-            </div>
-
-            <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setPaymentModalDue(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-                disabled={isSubmittingPayment}
-              >
-                বাতিল
-              </button>
-              <button
-                type="submit"
-                className="px-5 py-2 text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-500 rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
-                disabled={isSubmittingPayment}
-              >
-                {isSubmittingPayment ? 'প্রসেস হচ্ছে...' : 'পেমেন্ট জমা নিশ্চিত করুন'}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
+            </>
+          ) : null
+        }
+      />
 
       {/* ========================================================================= */}
       {/* 7. VIEW DUE DETAILS & PAYMENT HISTORY MODAL */}

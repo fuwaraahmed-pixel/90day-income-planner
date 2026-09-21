@@ -14,6 +14,8 @@ import Badge from './ui/Badge';
 import Input from './ui/Input';
 import Modal from './ui/Modal';
 import EmptyState from './ui/EmptyState';
+import Toast from './ui/Toast';
+import UniversalPaymentModal from './ui/UniversalPaymentModal';
 import ConfirmModal from './ui/ConfirmModal';
 
 export default function Liabilities({ 
@@ -125,11 +127,10 @@ export default function Liabilities({
     setPaymentError(null);
   };
 
-  const handleRecordPaymentSubmit = async (e) => {
-    e.preventDefault();
+  const handleRecordPaymentSubmit = async (paymentData) => {
     if (!paymentModalLiability) return;
 
-    const amountNum = Number(paymentForm.amount);
+    const amountNum = Number(paymentData.amount);
     if (!amountNum || amountNum <= 0) {
       setPaymentError('Payment amount must be greater than zero.');
       return;
@@ -145,12 +146,12 @@ export default function Liabilities({
 
     try {
       const res = await onRecordPayment({
-        paymentId: paymentForm.paymentId,
+        paymentId: paymentData.paymentId || paymentForm.paymentId,
         liabilityId: paymentModalLiability.id,
-        paymentDate: paymentForm.paymentDate,
+        paymentDate: paymentData.paymentDate,
         amount: amountNum,
-        paymentMethod: paymentForm.paymentMethod,
-        notes: paymentForm.notes,
+        paymentMethod: paymentData.paymentMethod,
+        notes: paymentData.notes,
         addToExpense: paymentForm.addToExpense
       });
 
@@ -507,89 +508,38 @@ export default function Liabilities({
       </Modal>
 
       {/* Record Payment Modal */}
-      <Modal 
-        isOpen={!!paymentModalLiability} 
-        onClose={() => setPaymentModalLiability(null)} 
+      <UniversalPaymentModal
+        isOpen={Boolean(paymentModalLiability)}
+        onClose={() => setPaymentModalLiability(null)}
+        onSubmit={handleRecordPaymentSubmit}
         title="Record Repayment"
+        description="পেমেন্ট রেকর্ড করলে তা সরাসরি খরচ (Expense)-এ যুক্ত করা যাবে।"
+        isSubmitting={isSubmittingPayment}
+        submitLabel="Confirm Payment"
+        paymentId={paymentForm.paymentId}
+        error={paymentError}
+        headerContent={
+          paymentModalLiability ? (
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-slate-500">Creditor: <span className="font-medium text-slate-800">{paymentModalLiability.creditorName}</span></span>
+              <span className="text-slate-500">Remaining: <span className="font-bold text-rose-600">৳{Number(paymentModalLiability.remainingAmount).toLocaleString()}</span></span>
+            </div>
+          ) : null
+        }
       >
-        {paymentModalLiability && (
-          <form onSubmit={handleRecordPaymentSubmit} className="space-y-4">
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-500">Creditor: <span className="font-medium text-slate-800">{paymentModalLiability.creditorName}</span></span>
-                <span className="text-slate-500">Remaining: <span className="font-bold text-rose-600">৳{Number(paymentModalLiability.remainingAmount).toLocaleString()}</span></span>
-              </div>
-            </div>
-
-            {paymentError && (
-              <div className="p-3 bg-rose-50 text-rose-600 text-sm rounded-lg border border-rose-100 flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{paymentError}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input 
-                label="Payment Amount (৳) *" 
-                type="number" 
-                max={paymentModalLiability.remainingAmount}
-                value={paymentForm.amount}
-                onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
-                required
-              />
-              <Input 
-                label="Date *" 
-                type="date" 
-                value={paymentForm.paymentDate}
-                onChange={(e) => setPaymentForm({...paymentForm, paymentDate: e.target.value})}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
-              <select
-                value={paymentForm.paymentMethod}
-                onChange={(e) => setPaymentForm({...paymentForm, paymentMethod: e.target.value})}
-                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
-              >
-                {paymentMethods.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-
-            <Input 
-              label="Notes" 
-              placeholder="e.g. 1st installment" 
-              value={paymentForm.notes}
-              onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
-            />
-
-            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 mt-2">
-              <input 
-                type="checkbox" 
-                id="addToExpense" 
-                checked={paymentForm.addToExpense}
-                onChange={(e) => setPaymentForm({...paymentForm, addToExpense: e.target.checked})}
-                className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
-              />
-              <label htmlFor="addToExpense" className="text-sm font-medium text-slate-700 cursor-pointer">
-                Add this payment to Expense Tracker (খরচ হিসেবে যুক্ত করুন)
-              </label>
-            </div>
-
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
-              <Button variant="secondary" type="button" onClick={() => setPaymentModalLiability(null)} disabled={isSubmittingPayment} className="w-full sm:w-auto">
-                Cancel
-              </Button>
-              <Button type="submit" isLoading={isSubmittingPayment} disabled={isSubmittingPayment} className="w-full sm:w-auto">
-                Confirm Payment
-              </Button>
-            </div>
-          </form>
-        )}
-      </Modal>
+        <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 mt-2">
+          <input 
+            type="checkbox" 
+            id="addToExpense" 
+            checked={paymentForm.addToExpense}
+            onChange={(e) => setPaymentForm({...paymentForm, addToExpense: e.target.checked})}
+            className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+          />
+          <label htmlFor="addToExpense" className="text-sm font-medium text-slate-700 cursor-pointer">
+            Add this payment to Expense Tracker (খরচ হিসেবে যুক্ত করুন)
+          </label>
+        </div>
+      </UniversalPaymentModal>
 
       <ConfirmModal
         isOpen={!!deleteConfirmId}

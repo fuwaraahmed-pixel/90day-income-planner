@@ -18,6 +18,7 @@ import Input from './ui/Input';
 import Modal from './ui/Modal';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
+import UniversalPaymentModal from './ui/UniversalPaymentModal';
 
 export default function ExpenseTracker({ expenses, setExpenses, totalIncome, appData }) {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -25,6 +26,7 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome, app
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
+  const [showQuickInstallmentModal, setShowQuickInstallmentModal] = useState(false);
 
   const categories = [
     'Liability Payment (দেনা/কিস্তি পরিশোধ)',
@@ -101,18 +103,7 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome, app
 
         <div className="flex flex-wrap gap-2 self-start sm:self-auto">
           <button
-            onClick={() => {
-              const created = {
-                id: Date.now(),
-                date: new Date().toISOString().split('T')[0],
-                category: installmentCategory,
-                description: 'মাসিক কিস্তি পরিশোধ',
-                amount: installmentAmount,
-                month: 'Month 1',
-                notes: 'Quick Add'
-              };
-              setExpenses([created, ...expenses]);
-            }}
+            onClick={() => setShowQuickInstallmentModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm"
           >
             <DollarSign className="w-4 h-4" />
@@ -457,6 +448,29 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome, app
         }}
         title="খরচ এন্ট্রি মুছে ফেলতে চান?"
         description="এই খরচের রেকর্ডটি তালিকা থেকে স্থায়ীভাবে মুছে যাবে।"
+      />
+      <UniversalPaymentModal
+        isOpen={showQuickInstallmentModal}
+        onClose={() => setShowQuickInstallmentModal(false)}
+        onSubmit={(paymentData) => {
+          const amount = Number(paymentData.amount);
+          if (!amount || amount <= 0) return;
+
+          const created = {
+            id: Date.now(),
+            date: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+            category: 'Liability Payment (দেনা/কিস্তি পরিশোধ)',
+            description: 'মাসিক কিস্তি পরিশোধ',
+            amount: amount,
+            month: 'Month 1',
+            notes: paymentData.notes || 'Quick Add'
+          };
+          setExpenses([created, ...expenses]);
+          setShowQuickInstallmentModal(false);
+        }}
+        title="এক ক্লিকে কিস্তি যোগ করুন"
+        description="আপনার কিস্তির পরিমাণ দিন, যা সরাসরি খরচের খাতায় যুক্ত হবে।"
+        submitLabel="খরচ এন্ট্রি করুন"
       />
     </div>
   );

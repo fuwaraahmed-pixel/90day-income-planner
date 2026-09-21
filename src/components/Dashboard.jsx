@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import IncomeProgressChart from './charts/IncomeProgressChart';
 import IncomeSourceChart from './charts/IncomeSourceChart';
+import UniversalPaymentModal from './ui/UniversalPaymentModal';
 
 export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment }) {
   const [activeSubView, setActiveSubView] = useState('overview'); // 'overview' | 'tuition'
@@ -43,22 +44,27 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
     return !liabilityPayments.some(p => p.liabilityId === emi.id && p.paymentDate?.startsWith(currentMonthPrefix));
   });
 
-  const handleQuickPayEmi = async (emi) => {
-    const amountStr = window.prompt(`Please enter the EMI amount you paid for ${emi.creditorName}:`, emi.remainingAmount > 0 ? emi.remainingAmount : '');
-    const amount = Number(amountStr);
+  const [dashboardPaymentModalEmi, setDashboardPaymentModalEmi] = useState(null);
+
+  const handleQuickPayEmi = (emi) => {
+    setDashboardPaymentModalEmi(emi);
+  };
+
+  const submitDashboardEmiPayment = async (paymentData) => {
+    const amount = Number(paymentData.amount);
     if (!amount || amount <= 0) return;
     
-    setPayingEmiId(emi.id);
-    const uniquePaymentId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `pay_${Date.now()}`;
+    setPayingEmiId(dashboardPaymentModalEmi.id);
+    const uniquePaymentId = paymentData.paymentId || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `pay_${Date.now()}`);
     
     if (onRecordLiabilityPayment) {
       const res = await onRecordLiabilityPayment({
         paymentId: uniquePaymentId,
-        liabilityId: emi.id,
-        paymentDate: new Date().toISOString().split('T')[0],
+        liabilityId: dashboardPaymentModalEmi.id,
+        paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
         amount: amount,
-        paymentMethod: 'Cash',
-        notes: 'Quick EMI Payment from Dashboard',
+        paymentMethod: paymentData.paymentMethod || 'Cash',
+        notes: paymentData.notes || 'Quick EMI Payment from Dashboard',
         addToExpense: true
       });
       if (res && res.success === false) {
@@ -66,6 +72,7 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
       }
     }
     setPayingEmiId(null);
+    setDashboardPaymentModalEmi(null);
   };
 
   // Expenses & Net Position calculations
@@ -721,6 +728,25 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
         </section>
       )}
 
+      {/* Add UniversalPaymentModal at the bottom */}
+      <UniversalPaymentModal
+        isOpen={Boolean(dashboardPaymentModalEmi)}
+        onClose={() => setDashboardPaymentModalEmi(null)}
+        onSubmit={submitDashboardEmiPayment}
+        title="কিস্তি (EMI) পরিশোধ করুন"
+        description="পেমেন্ট রেকর্ড করলে তা স্বয়ংক্রিয়ভাবে খরচ (Expense)-এ যুক্ত হবে।"
+        isSubmitting={payingEmiId === dashboardPaymentModalEmi?.id}
+        submitLabel="পেমেন্ট নিশ্চিত করুন"
+        defaultAmount={dashboardPaymentModalEmi?.remainingAmount > 0 ? dashboardPaymentModalEmi.remainingAmount : ''}
+        headerContent={
+          dashboardPaymentModalEmi ? (
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-slate-500">Creditor: <span className="font-medium text-slate-800">{dashboardPaymentModalEmi.creditorName}</span></span>
+              <span className="text-slate-500">Remaining: <span className="font-bold text-rose-600">৳{Number(dashboardPaymentModalEmi.remainingAmount).toLocaleString()}</span></span>
+            </div>
+          ) : null
+        }
+      />
     </div>
   );
 }
