@@ -141,7 +141,7 @@ export default function Liabilities({
     let targetInstallmentId = '';
     
     if (liability.liabilityType === 'EMI') {
-      const activeInstallment = emiInstallments.find(i => i.liabilityId === liability.id && ['Upcoming', 'Due', 'Partial', 'Overdue'].includes(i.status));
+      const activeInstallment = emiInstallments.find(i => String(i.liabilityId) === String(liability.id) && ['Upcoming', 'Due', 'Partial', 'Overdue'].includes(i.status));
       if (activeInstallment) {
         defaultAmount = activeInstallment.expectedAmount - activeInstallment.paidAmount;
         targetInstallmentId = activeInstallment.id;
@@ -631,6 +631,8 @@ export default function Liabilities({
         isSubmitting={isSubmittingPayment}
         submitLabel="Confirm Payment"
         paymentId={paymentForm.paymentId}
+        defaultAmount={paymentForm.amount}
+        defaultDate={paymentForm.paymentDate}
         error={paymentError}
         headerContent={
           paymentModalLiability ? (

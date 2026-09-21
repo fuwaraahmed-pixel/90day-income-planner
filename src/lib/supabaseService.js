@@ -1417,7 +1417,7 @@ export const rpcRecordEmiPayment = async (paymentData) => {
   const { data, error } = await supabase.rpc('record_emi_payment', {
     p_payment_id: paymentData.paymentId,
     p_liability_id: Number(paymentData.liabilityId),
-    p_installment_id: paymentData.installmentId,
+    p_installment_id: paymentData.installmentId || null,
     p_payment_date: paymentData.paymentDate || new Date().toISOString().split('T')[0],
     p_amount: Number(paymentData.amount),
     p_payment_method: paymentData.paymentMethod || 'Cash',
