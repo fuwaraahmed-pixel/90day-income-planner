@@ -83,11 +83,42 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
   const remainingTarget = Math.max(0, targetIncome - totalIncome);
 
   // Filter & Search
-  const filteredIncomes = incomes.filter(inc => {
+  const baseFilteredIncomes = incomes.filter(inc => {
     const q = searchQuery.toLowerCase();
     const matchQ = inc.clientDetails.toLowerCase().includes(q) || inc.notes.toLowerCase().includes(q);
     const matchS = filterSource === 'All' || inc.source === filterSource;
     return matchQ && matchS;
+  });
+
+  // Helper to format YYYY-MM to month name
+  const formatMonthName = (monthStr) => {
+    if (!monthStr || !monthStr.match(/^\d{4}-\d{2}$/)) return monthStr;
+    try {
+      return new Date(monthStr + '-01').toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    } catch {
+      return monthStr;
+    }
+  };
+
+  // Visually group identical Tuition incomes that have same date, client, and payment type
+  const filteredIncomes = [];
+  baseFilteredIncomes.forEach(inc => {
+    if (inc.source === 'Tuition' || inc.source.includes('Tuition')) {
+      const existingGroup = filteredIncomes.find(g => 
+        g.isGroup && g.date === inc.date && g.clientDetails === inc.clientDetails && g.source === inc.source && g.paymentType === inc.paymentType
+      );
+      if (existingGroup) {
+        existingGroup.amount += Number(inc.amount);
+        const currentMonthExtracted = inc.month.includes('(') ? inc.month.split('(')[1].replace(')', '') : inc.month;
+        existingGroup.month = existingGroup.month + ', ' + formatMonthName(currentMonthExtracted);
+        existingGroup.originalIds.push(inc.id);
+      } else {
+        const initialMonthExtracted = inc.month?.includes('(') ? inc.month.split('(')[1].replace(')', '') : (inc.month || '');
+        filteredIncomes.push({ ...inc, amount: Number(inc.amount), month: formatMonthName(initialMonthExtracted), originalIds: [inc.id], isGroup: true });
+      }
+    } else {
+      filteredIncomes.push({ ...inc, originalIds: [inc.id], isGroup: false });
+    }
   });
 
   return (
@@ -310,20 +341,26 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
                   <div className="text-[11px] text-slate-400">প্রাপ্তি জমা</div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setEditingIncome({ ...inc })}
-                    className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                    title="সম্পাদনা করুন (Edit)"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirmId(inc.id)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                    title="মুছে ফেলুন"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {(inc.isGroup && inc.originalIds?.length > 1) ? (
+                    <span className="text-[10px] text-slate-400 italic px-2">Bulk (Manage in Tuition)</span>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setEditingIncome({ ...inc })}
+                        className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                        title="সম্পাদনা করুন (Edit)"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirmId(inc.id)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                        title="মুছে ফেলুন (Delete)"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

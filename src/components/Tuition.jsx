@@ -56,6 +56,37 @@ export const isStudentEligibleForMonth = (student, monthStr) => {
   return true;
 };
 
+// Helper: Get all unpaid months up to current selected month
+export const getUnpaidMonths = (student, currentMonthStr, payments) => {
+  if (!student || !student.joiningDate) return [];
+  
+  const startMonth = student.billingStartMonth || student.joiningDate.slice(0, 7);
+  const unpaidMonths = [];
+  
+  // Iterate from startMonth up to currentMonthStr
+  let current = new Date(`${startMonth}-01`);
+  const end = new Date(`${currentMonthStr}-01`);
+  
+  while (current <= end) {
+    const iterMonthStr = current.toISOString().slice(0, 7);
+    
+    // Check if eligible
+    if (isStudentEligibleForMonth(student, iterMonthStr)) {
+      // Check if paid
+      const hasPaid = payments.some(
+        p => String(p.studentId) === String(student.id) && p.paymentMonth === iterMonthStr
+      );
+      if (!hasPaid) {
+        unpaidMonths.push(iterMonthStr);
+      }
+    }
+    // move to next month
+    current.setMonth(current.getMonth() + 1);
+  }
+  
+  return unpaidMonths;
+};
+
 export default function Tuition({
   students = [],
   payments = [],
@@ -517,6 +548,18 @@ export default function Tuition({
                         {/* Monthly Fee */}
                         <td className="py-3.5 px-4 font-bold text-slate-900 text-sm">
                           {currency}{Number(student.monthlyFee || 0).toLocaleString()}
+                          {(() => {
+                            const unpaidMonths = getUnpaidMonths(student, selectedMonth, payments);
+                            if (unpaidMonths.length > 0) {
+                              const totalDue = unpaidMonths.length * Number(student.monthlyFee || 0);
+                              return (
+                                <div className="text-[11px] text-rose-600 font-bold mt-0.5">
+                                  Due: {currency}{totalDue.toLocaleString()} ({unpaidMonths.length} {unpaidMonths.length === 1 ? 'month' : 'months'})
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
                         </td>
 
                         {/* Current Month Payment Status Badge */}
@@ -641,6 +684,18 @@ export default function Tuition({
                       <div>
                         <span className="text-slate-400">Fee: </span>
                         <strong className="text-slate-900 font-bold">{currency}{Number(student.monthlyFee || 0).toLocaleString()}</strong>
+                        {(() => {
+                          const unpaidMonths = getUnpaidMonths(student, selectedMonth, payments);
+                          if (unpaidMonths.length > 0) {
+                            const totalDue = unpaidMonths.length * Number(student.monthlyFee || 0);
+                            return (
+                              <div className="text-[10px] text-rose-600 font-bold mt-0.5 block">
+                                Due: {currency}{totalDue.toLocaleString()} ({unpaidMonths.length} {unpaidMonths.length === 1 ? 'm' : 'm'})
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                       {hasPaid && paymentRecord?.paymentDate && (
                         <div className="text-[11px] text-slate-500">

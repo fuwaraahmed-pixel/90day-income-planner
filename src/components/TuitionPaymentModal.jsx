@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { X, DollarSign, Calendar, AlertCircle, CheckCircle2, CreditCard, FileText } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, DollarSign, Calendar, AlertCircle, CheckCircle2, CreditCard, FileText, CheckSquare } from 'lucide-react';
+import { getUnpaidMonths } from './Tuition';
 
 export default function TuitionPaymentModal({
   isOpen,
@@ -20,6 +21,10 @@ export default function TuitionPaymentModal({
   const [error, setError] = useState('');
   const [warning, setWarning] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // New state for bulk payment
+  const [unpaidMonths, setUnpaidMonths] = useState([]);
+  const [isBulkMode, setIsBulkMode] = useState(false);
 
   // Initialize or reset form state
   useEffect(() => {
@@ -44,16 +49,32 @@ export default function TuitionPaymentModal({
     }
   }, [isOpen, selectedStudentId, selectedMonth, students]);
 
-  // When studentId changes, update default amount & check existing payment warning
+  // When studentId changes, calculate unpaid months
   useEffect(() => {
-    if (!studentId) return;
-    const s = students.find(st => String(st.id) === String(studentId));
-    if (s && (!amount || amount === '0')) {
-      setAmount(String(s.monthlyFee || ''));
+    if (!studentId) {
+      setUnpaidMonths([]);
+      setIsBulkMode(false);
+      return;
     }
-
-    checkDuplicate(studentId, paymentMonth);
-  }, [studentId, paymentMonth, students, existingPayments]);
+    const s = students.find(st => String(st.id) === String(studentId));
+    if (s) {
+      const currentMonthStr = selectedMonth || new Date().toISOString().slice(0, 7);
+      const dues = getUnpaidMonths(s, currentMonthStr, existingPayments);
+      setUnpaidMonths(dues);
+      
+      if (dues.length > 0) {
+        setIsBulkMode(true);
+        setAmount(String(dues.length * Number(s.monthlyFee || 0)));
+        setWarning('');
+      } else {
+        setIsBulkMode(false);
+        if (!amount || amount === '0') {
+          setAmount(String(s.monthlyFee || ''));
+        }
+        checkDuplicate(studentId, paymentMonth);
+      }
+    }
+  }, [studentId, paymentMonth, students, existingPayments, selectedMonth]);
 
   const checkDuplicate = (stId, monthStr) => {
     if (!stId || !monthStr) {
@@ -103,26 +124,72 @@ export default function TuitionPaymentModal({
       return;
     }
 
-    if (!paymentMonth || !/^\d{4}-\d{2}$/.test(paymentMonth)) {
+    if (!isBulkMode && (!paymentMonth || !/^\d{4}-\d{2}$/.test(paymentMonth))) {
       setError('মাসের ফরম্যাট সঠিকভাবে সিলেক্ট করুন (YYYY-MM)');
       return;
     }
 
     try {
       setSubmitting(true);
-      const res = await onSave({
-        studentId: Number(studentId),
-        amount: Number(amount),
-        paymentDate,
-        paymentMonth,
-        paymentMethod,
-        note
-      });
-
-      if (res && res.success === false) {
-        setError(res.message || 'পেমেন্ট রেকর্ড করা সম্ভব হয়নি');
+      
+      const s = students.find(st => String(st.id) === String(studentId));
+      const monthlyFee = Number(s?.monthlyFee || 0);
+      let remainingAmount = Number(amount);
+      
+      if (isBulkMode && unpaidMonths.length > 0) {
+        // Bulk mode: Distribute amount starting from oldest month
+        const paymentsArray = [];
+        
+        for (let i = 0; i < unpaidMonths.length; i++) {
+          const monthStr = unpaidMonths[i];
+          if (remainingAmount <= 0) break;
+          
+          let allocatedAmount = 0;
+          
+          // If it's the last due month and there's still remainder (overpayment)
+          // Or if remaining is less than monthly fee (partial payment)
+          if (i === unpaidMonths.length - 1) {
+            allocatedAmount = remainingAmount; // Take all remaining
+          } else {
+            allocatedAmount = Math.min(remainingAmount, monthlyFee);
+          }
+          
+          paymentsArray.push({
+            studentId: Number(studentId),
+            amount: allocatedAmount,
+            paymentDate,
+            paymentMonth: monthStr,
+            paymentMethod,
+            note: note || (allocatedAmount < monthlyFee ? 'Partial payment' : '')
+          });
+          
+          remainingAmount -= allocatedAmount;
+        }
+        
+        // Save bulk payments array
+        const res = await onSave(paymentsArray);
+        if (res && res.success === false) {
+          setError(res.message || 'পেমেন্ট রেকর্ড করা সম্ভব হয়নি');
+        } else {
+          onClose();
+        }
+        
       } else {
-        onClose();
+        // Normal single month mode
+        const res = await onSave({
+          studentId: Number(studentId),
+          amount: Number(amount),
+          paymentDate,
+          paymentMonth,
+          paymentMethod,
+          note
+        });
+
+        if (res && res.success === false) {
+          setError(res.message || 'পেমেন্ট রেকর্ড করা সম্ভব হয়নি');
+        } else {
+          onClose();
+        }
       }
     } catch (err) {
       setError(err.message || 'পেমেন্ট জমা দিতে সমস্যা হয়েছে');
@@ -206,11 +273,33 @@ export default function TuitionPaymentModal({
             </select>
           </div>
 
+          {/* Due Months List (Bulk Mode) */}
+          {isBulkMode && unpaidMonths.length > 0 && (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700">Due Months</label>
+                <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">Oldest cleared first</span>
+              </div>
+              <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                {unpaidMonths.map(monthStr => {
+                  const s = students.find(st => String(st.id) === String(studentId));
+                  return (
+                    <div key={monthStr} className="flex items-center gap-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 px-3 py-2 rounded-lg">
+                      <CheckSquare className="w-4 h-4 text-emerald-500" />
+                      <span className="flex-1">{new Date(monthStr + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                      <span className="text-rose-600">৳{s?.monthlyFee || 0}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Amount & For Month */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Amount (৳) <span className="text-rose-500 font-bold">*</span>
+                {isBulkMode ? 'Total Amount Received (৳)' : 'Amount (৳)'} <span className="text-rose-500 font-bold">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-sm font-bold text-slate-400">৳</span>
@@ -226,18 +315,20 @@ export default function TuitionPaymentModal({
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                For Month <span className="text-rose-500 font-bold">*</span>
-              </label>
-              <input
-                type="month"
-                value={paymentMonth}
-                onChange={(e) => setPaymentMonth(e.target.value)}
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 min-h-[44px]"
-                required
-              />
-            </div>
+            {!isBulkMode && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  For Month <span className="text-rose-500 font-bold">*</span>
+                </label>
+                <input
+                  type="month"
+                  value={paymentMonth}
+                  onChange={(e) => setPaymentMonth(e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 min-h-[44px]"
+                  required
+                />
+              </div>
+            )}
           </div>
 
           {/* Payment Date & Method */}

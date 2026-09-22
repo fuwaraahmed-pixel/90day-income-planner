@@ -620,6 +620,33 @@ export default function App() {
   };
 
   const handleRecordTuitionPayment = async (paymentData) => {
+    if (Array.isArray(paymentData)) {
+      if (session?.user?.id) {
+        let hasSuccess = false;
+        let lastRes = null;
+        for (const pData of paymentData) {
+          const res = await api.recordTuitionPayment(pData);
+          if (res && res.success !== false) {
+             hasSuccess = true;
+          }
+          lastRes = res;
+        }
+        if (hasSuccess) {
+          const [paysRes, incsRes] = await Promise.all([
+            api.getTuitionPayments(session.user.id),
+            api.getIncome(session.user.id)
+          ]);
+          if (paysRes) setTuitionPayments(paysRes);
+          if (incsRes) setIncomesState(incsRes);
+        }
+        return lastRes || { success: true };
+      } else {
+        const mockPays = paymentData.map(pData => ({ id: Date.now() + Math.random(), ...pData }));
+        setTuitionPayments(prev => [...mockPays, ...prev]);
+        return { success: true };
+      }
+    }
+
     if (session?.user?.id) {
       const res = await api.recordTuitionPayment(paymentData);
       if (res && res.success !== false) {

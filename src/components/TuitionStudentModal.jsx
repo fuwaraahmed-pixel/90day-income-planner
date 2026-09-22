@@ -76,7 +76,7 @@ export default function TuitionStudentModal({ isOpen, onClose, onSave, student =
       setFormData(prev => ({
         ...prev,
         joiningDate: value,
-        billingStartMonth: prev.billingStartMonth || newJoinMonth
+        billingStartMonth: newJoinMonth
       }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
