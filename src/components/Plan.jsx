@@ -318,48 +318,48 @@ export default function Plan({ planData, setPlanData }) {
     <div className="space-y-4 pb-12 max-w-5xl mx-auto">
 
       {/* ══ HEADER BANNER ══ */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 rounded-2xl p-4 sm:p-6 text-white shadow-lg relative overflow-hidden">
-        <div className="absolute -right-10 -bottom-10 w-40 sm:w-56 h-40 sm:h-56 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="bg-white border border-slate-200/60 rounded-2xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
 
           {/* Left: Title */}
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] sm:text-xs font-semibold mb-2">
+          <div className="min-w-0 flex-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] sm:text-xs font-semibold mb-2">
               <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
               <span>৯০-দিনের অ্যাকশন প্ল্যান</span>
             </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold leading-tight break-words">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900 leading-tight break-words mt-1">
               🎯 আমার ৯০ দিনের রোডম্যাপ
             </h1>
-            <p className="text-slate-300 text-xs sm:text-sm mt-1.5 leading-relaxed max-w-md">
+            <p className="text-slate-500 text-xs sm:text-sm mt-1.5 leading-relaxed max-w-md">
               প্রতিটি সপ্তাহের কাজ ট্র্যাক করুন ও স্ট্যাটাস আপডেট করুন।
             </p>
           </div>
 
           {/* Right: Progress Widget */}
-          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-3 sm:p-4 w-full sm:w-56 sm:shrink-0">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[11px] sm:text-xs text-slate-300 font-medium flex items-center gap-1">
-                <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+          <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 sm:p-5 w-full sm:w-64 sm:shrink-0 shadow-sm">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-[11px] sm:text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />
                 <span>সামগ্রিক অগ্রগতি</span>
               </span>
-              <span className="text-base sm:text-lg font-bold text-emerald-400">{stats.percent}%</span>
+              <span className="text-base sm:text-lg font-bold text-emerald-600">{stats.percent}%</span>
             </div>
-            <div className="w-full bg-slate-700/60 rounded-full h-2 overflow-hidden mb-3">
-              <div className="bg-gradient-to-r from-emerald-400 to-teal-300 h-full rounded-full transition-all duration-500" style={{ width: `${stats.percent}%` }} />
+            <div className="w-full bg-slate-200/80 rounded-full h-2 overflow-hidden mb-4">
+              <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${stats.percent}%` }} />
             </div>
-            <div className="grid grid-cols-3 gap-1 text-center">
-              <div className="bg-white/5 rounded-lg py-1.5">
-                <div className="text-[10px] text-slate-400">সম্পন্ন</div>
-                <div className="text-xs sm:text-sm font-bold text-white">{stats.done}</div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-white rounded-lg py-1.5 border border-slate-200/60 shadow-xs">
+                <div className="text-[10px] text-slate-500">সম্পন্ন</div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900">{stats.done}</div>
               </div>
-              <div className="bg-white/5 rounded-lg py-1.5">
-                <div className="text-[10px] text-slate-400">চলছে</div>
-                <div className="text-xs sm:text-sm font-bold text-blue-300">{stats.inProgress}</div>
+              <div className="bg-white rounded-lg py-1.5 border border-slate-200/60 shadow-xs">
+                <div className="text-[10px] text-slate-500">চলছে</div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900">{stats.inProgress}</div>
               </div>
-              <div className="bg-white/5 rounded-lg py-1.5">
-                <div className="text-[10px] text-slate-400">বাকি</div>
-                <div className="text-xs sm:text-sm font-bold text-slate-300">{stats.notStarted}</div>
+              <div className="bg-white rounded-lg py-1.5 border border-slate-200/60 shadow-xs">
+                <div className="text-[10px] text-slate-500">বাকি</div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900">{stats.notStarted}</div>
               </div>
             </div>
           </div>

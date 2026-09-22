@@ -389,23 +389,25 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
             </div>
 
             {/* Breakdown Chips & Action */}
-            <div className="flex items-center gap-2 flex-wrap shrink-0">
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
-                <span className="text-amber-300">Overdue:</span>
-                <span>৳{overdueDuesAmount.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
-                <span className="text-blue-300">Due Soon:</span>
-                <span>৳{dueSoonDuesAmount.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
-                <span className="text-emerald-300">Upcoming:</span>
-                <span>৳{upcomingDuesAmount.toLocaleString()}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto shrink-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
+                  <span className="text-amber-300">Overdue:</span>
+                  <span>৳{overdueDuesAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
+                  <span className="text-blue-300">Due Soon:</span>
+                  <span>৳{dueSoonDuesAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
+                  <span className="text-emerald-300">Upcoming:</span>
+                  <span>৳{upcomingDuesAmount.toLocaleString()}</span>
+                </div>
               </div>
 
               <button
                 onClick={() => setActiveTab('dues')}
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-xs ml-auto sm:ml-0"
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs w-full sm:w-auto"
               >
                 <span>পাওনা তালিকা</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -437,7 +439,7 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
         <section className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/20 border border-indigo-100/80 rounded-[20px] p-6 sm:p-7 shadow-float space-y-6 relative overflow-hidden">
           
           {/* Section Header */}
-          <div className="bg-gradient-to-r from-indigo-100 via-sky-100/70 to-slate-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 mb-5 rounded-t-[20px] border-b border-indigo-200/90 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-indigo-100 via-sky-100/70 to-slate-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 mb-5 rounded-t-[20px] border-b border-indigo-200/90 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white flex items-center justify-center shadow-xs ring-2 ring-indigo-300/60 shrink-0">
                 <CheckSquare className="w-5 h-5" />
@@ -532,7 +534,7 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
           {/* CRM & Sales Opportunities Compact Panel */}
           <div className="bg-gradient-to-br from-white via-slate-50/60 to-emerald-50/30 border border-emerald-100/90 rounded-[20px] p-6 sm:p-7 shadow-float-subtle space-y-5 flex flex-col justify-between overflow-hidden">
             <div>
-              <div className="bg-gradient-to-r from-teal-100 via-emerald-100/70 to-slate-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 mb-5 rounded-t-[20px] border-b border-teal-200/90 flex items-center justify-between">
+              <div className="bg-gradient-to-r from-teal-100 via-emerald-100/70 to-slate-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 mb-5 rounded-t-[20px] border-b border-teal-200/90 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-700 text-white flex items-center justify-center shadow-xs ring-2 ring-teal-300/60 shrink-0">
                     <Users className="w-5 h-5" />
@@ -599,7 +601,7 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
           {/* Business & Tuition Operations Overview Panel */}
           <div className="bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/30 border border-indigo-100/90 rounded-[20px] p-6 sm:p-7 shadow-float-subtle space-y-5 flex flex-col justify-between overflow-hidden">
             <div>
-              <div className="bg-gradient-to-r from-purple-100 via-indigo-100/70 to-slate-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 mb-5 rounded-t-[20px] border-b border-purple-200/90 flex items-center justify-between">
+              <div className="bg-gradient-to-r from-purple-100 via-indigo-100/70 to-slate-50/40 -mx-6 -mt-6 sm:-mx-7 sm:-mt-7 px-6 py-5 sm:px-7 sm:py-5.5 mb-5 rounded-t-[20px] border-b border-purple-200/90 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center shadow-xs ring-2 ring-purple-300/60 shrink-0">
                     <GraduationCap className="w-5 h-5" />

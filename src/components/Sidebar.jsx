@@ -22,21 +22,50 @@ import {
 export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdmin = false }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-
-  const menuItems = [
-    { id: 'dashboard', label: 'ড্যাশবোর্ড (Dashboard)', icon: LayoutDashboard },
-    { id: 'plan', label: '৯০ দিনের প্ল্যান (90-Day Plan)', icon: Target },
-    { id: 'tasks', label: 'আজকের কাজ (Today Tasks)', icon: CheckSquare },
-    { id: 'tuition', label: 'টিউশন (Tuition)', icon: GraduationCap },
-    { id: 'dues', label: 'পাওনা ম্যানেজমেন্ট (Dues)', icon: Wallet },
-    { id: 'liabilities', label: 'দেনা ও কিস্তি (Liabilities)', icon: Landmark },
-    { id: 'crm', label: 'ক্লায়েন্ট CRM (Pipeline)', icon: Users },
-    { id: 'income', label: 'ইনকাম ট্র্যাকার (Income)', icon: TrendingUp },
-    { id: 'expense', label: 'খরচের ট্র্যাকার (Expense)', icon: Receipt },
-    { id: 'weekly', label: 'সাপ্তাহিক রিভিউ (Weekly)', icon: CalendarCheck },
-    { id: 'services', label: 'সার্ভিস ও প্রাইসিং (Services)', icon: Tag },
-    { id: 'settings', label: 'সেটিংস (Settings)', icon: SettingsIcon },
-    ...(isAdmin ? [{ id: 'admin', label: 'এডমিন প্যানেল (Admin Panel)', icon: ShieldCheck }] : [])
+  const navigationGroups = [
+    {
+      title: 'WORKSPACE',
+      items: [
+        { id: 'dashboard', label: 'ড্যাশবোর্ড (Dashboard)', icon: LayoutDashboard },
+        { id: 'tasks', label: 'আজকের কাজ (Today Tasks)', icon: CheckSquare },
+      ]
+    },
+    {
+      title: 'PLANNING',
+      items: [
+        { id: 'plan', label: '৯০ দিনের প্ল্যান (90-Day Plan)', icon: Target },
+        { id: 'weekly', label: 'সাপ্তাহিক রিভিউ (Weekly)', icon: CalendarCheck },
+      ]
+    },
+    {
+      title: 'BUSINESS',
+      items: [
+        { id: 'crm', label: 'ক্লায়েন্ট CRM (Pipeline)', icon: Users },
+        { id: 'dues', label: 'পাওনা ম্যানেজমেন্ট (Dues)', icon: Wallet },
+        { id: 'tuition', label: 'টিউশন (Tuition)', icon: GraduationCap },
+      ]
+    },
+    {
+      title: 'FINANCE',
+      items: [
+        { id: 'income', label: 'ইনকাম ট্র্যাকার (Income)', icon: TrendingUp },
+        { id: 'expense', label: 'খরচের ট্র্যাকার (Expense)', icon: Receipt },
+        { id: 'liabilities', label: 'দেনা ও কিস্তি (Liabilities)', icon: Landmark },
+      ]
+    },
+    {
+      title: 'MANAGEMENT',
+      items: [
+        { id: 'services', label: 'সার্ভিস ও প্রাইসিং (Services)', icon: Tag },
+      ]
+    },
+    {
+      title: 'SYSTEM',
+      items: [
+        { id: 'settings', label: 'সেটিংস (Settings)', icon: SettingsIcon },
+        ...(isAdmin ? [{ id: 'admin', label: 'এডমিন প্যানেল (Admin Panel)', icon: ShieldCheck }] : [])
+      ]
+    }
   ];
 
   const handleTabClick = (tabId) => {
@@ -69,33 +98,44 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
 
       {/* Mobile Slide-down Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 p-4 sticky top-14 z-40 shadow-md space-y-1 max-h-[80vh] overflow-y-auto">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleTabClick(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left ${
-                  isActive
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
+        <div className="md:hidden bg-white border-b border-slate-200 p-4 sticky top-[56px] z-40 shadow-md max-h-[calc(100vh-56px)] overflow-y-auto">
+          <div className="space-y-5">
+            {navigationGroups.map((group, groupIdx) => (
+              <div key={groupIdx}>
+                <h3 className="px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase mb-2">
+                  {group.title}
+                </h3>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleTabClick(item.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] transition-all duration-150 text-left group ${
+                          isActive
+                            ? 'bg-emerald-50/70 text-emerald-950 font-semibold'
+                            : 'text-slate-600 font-medium hover:bg-slate-100/60 hover:text-slate-900'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
 
           {user && (
-            <div className="pt-3 mt-3 border-t border-slate-100">
+            <div className="pt-4 mt-6 border-t border-slate-100 px-3">
               <button
                 onClick={onLogout}
-                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left"
+                className="w-full flex items-center gap-3 py-2 rounded-lg text-[13px] font-medium text-rose-600 hover:text-rose-700 transition-colors text-left"
               >
-                <LogOut className="w-4 h-4 text-rose-500" />
+                <LogOut className="w-4 h-4 shrink-0" />
                 <span>লগআউট (Logout)</span>
               </button>
             </div>
@@ -104,44 +144,53 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
       )}
 
       {/* Desktop Fixed Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-slate-200/80 p-5 fixed h-screen top-0 left-0 z-40 flex-col justify-between overflow-y-auto">
-        <div>
+      <aside className="hidden md:flex w-64 bg-white border-r border-slate-200/80 fixed h-screen top-0 left-0 z-40 flex-col justify-between">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 no-scrollbar">
           {/* Brand Header */}
-          <div className="flex items-center gap-3 pb-5 mb-5 border-b border-slate-100">
-            <div className="w-9 h-9 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-base shadow-xs">
+          <div className="flex items-center gap-3 pb-6 mb-6 border-b border-slate-100">
+            <div className="w-9 h-9 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-base shadow-xs shrink-0">
               ৳
             </div>
-            <div>
-              <h1 className="text-sm font-bold text-slate-900 tracking-tight leading-tight">ইনকাম ম্যানেজার</h1>
-              <p className="text-[11px] text-slate-500 font-medium">৯০ দিনের বিজেনস কমান্ড</p>
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold text-slate-900 tracking-tight leading-tight truncate">ইনকাম ম্যানেজার</h1>
+              <p className="text-[11px] text-slate-500 font-medium truncate">৯০ দিনের বিজেনস কমান্ড</p>
             </div>
           </div>
 
           {/* Navigation List */}
-          <nav className="space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleTabClick(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 text-left ${
-                    isActive
-                      ? 'bg-slate-900 text-white font-semibold shadow-2xs'
-                      : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
-                  <span className="truncate">{item.label}</span>
-                </button>
-              );
-            })}
+          <nav className="space-y-5">
+            {navigationGroups.map((group, groupIdx) => (
+              <div key={groupIdx}>
+                <h3 className="px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase mb-2">
+                  {group.title}
+                </h3>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleTabClick(item.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 text-left group ${
+                          isActive
+                            ? 'bg-emerald-50/70 text-emerald-950 font-semibold'
+                            : 'text-slate-600 font-medium hover:bg-slate-100/60 hover:text-slate-900'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
         </div>
 
         {/* User Profile & Logout Box */}
-        <div className="pt-4 border-t border-slate-100 space-y-3">
+        <div className="p-4 border-t border-slate-100 bg-white">
           {user && (
             <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-3 flex items-center justify-between">
               <div className="flex items-center gap-2.5 overflow-hidden">
@@ -158,7 +207,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
               </div>
               <button
                 onClick={onLogout}
-                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
                 title="লগআউট করুন"
               >
                 <LogOut className="w-4 h-4" />

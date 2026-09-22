@@ -14,21 +14,21 @@
     text-rendering: optimizeLegibility;
   }
   body {
-    @apply bg-[#F3F5F7] text-slate-900 antialiased min-h-screen selection:bg-emerald-100 selection:text-emerald-900;
+    @apply bg-slate-50 text-slate-900 antialiased min-h-screen selection:bg-emerald-100 selection:text-emerald-900;
   }
 }
 
-/* Floating Shadow Utility Tokens */
+/* Floating Shadow Utility Tokens - Refined for SaaS look */
 .shadow-float-hero {
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
 }
 
 .shadow-float {
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
 }
 
 .shadow-float-subtle {
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 8px rgba(15, 23, 42, 0.02);
 }
 
 /* Custom Scrollbar */

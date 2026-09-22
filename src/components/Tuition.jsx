@@ -302,7 +302,7 @@ export default function Tuition({
       {/* 1 column on <380px, 2 columns on sm/md, 4 columns on lg */}
       <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* 1. Total Students */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Total Students</p>
             <div className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 sm:mt-1">{activeStudentsCount}</div>
@@ -314,7 +314,7 @@ export default function Tuition({
         </div>
 
         {/* 2. Paid This Month */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Paid This Month</p>
             <div className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 sm:mt-1">{paidStudents.length}</div>
@@ -326,7 +326,7 @@ export default function Tuition({
         </div>
 
         {/* 3. Due This Month */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Due This Month</p>
             <div className="text-xl sm:text-2xl font-black text-amber-600 mt-0.5 sm:mt-1">{dueStudents.length}</div>
@@ -338,7 +338,7 @@ export default function Tuition({
         </div>
 
         {/* 4. Total Collection */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Total Collection</p>
             <div className="text-xl sm:text-2xl font-black text-emerald-700 mt-0.5 sm:mt-1">{currency}{collectedThisMonth.toLocaleString()}</div>
@@ -351,7 +351,7 @@ export default function Tuition({
       </div>
 
       {/* Search & Filter Toolbar */}
-      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm space-y-3">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           {/* Search Input */}
           <div className="relative w-full md:w-72">
@@ -437,7 +437,7 @@ export default function Tuition({
       </div>
 
       {/* Main Student Roster Section */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
         <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-900">
             Student Roster ({filteredStudents.length})
@@ -476,7 +476,7 @@ export default function Tuition({
             {/* Desktop Table View (Hidden on mobile <768px) */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-600">
-                <thead className="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
+                <thead className="bg-transparent border-b border-slate-200/60 text-slate-500 font-medium uppercase tracking-wider text-[11px]">
                   <tr>
                     <th className="py-3.5 px-4">Student Name</th>
                     <th className="py-3.5 px-4">Class</th>
@@ -494,7 +494,7 @@ export default function Tuition({
                     const paymentRecord = paymentsForSelectedMonth.find(p => String(p.studentId) === String(student.id));
 
                     return (
-                      <tr key={student.id} className="hover:bg-slate-50/80 transition-colors">
+                      <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
                         {/* Student Name */}
                         <td className="py-3.5 px-4">
                           <div className="font-bold text-slate-900 text-sm">{student.studentName}</div>
@@ -650,7 +650,7 @@ export default function Tuition({
                     </div>
 
                     {/* Mobile Card Actions */}
-                    <div className="flex items-center justify-end gap-2 pt-1">
+                    <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
                       <button
                         onClick={() => setViewingStudent(student)}
                         className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1 min-h-[36px]"
