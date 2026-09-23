@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import Modal from './Modal';
 import Button from './Button';
@@ -14,6 +14,22 @@ export default function ConfirmModal({
   variant = 'danger',
   isLoading = false
 }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter' && isOpen && !isLoading) {
+        e.preventDefault();
+        onConfirm();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, isLoading, onConfirm]);
   return (
     <Modal
       isOpen={isOpen}
