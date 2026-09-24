@@ -141,7 +141,7 @@ export default function Crm({
     const previousStatus = leadToUpdate.status;
     
     // Optimistic Update
-    setLeads(leads.map(l => String(l.id) === String(leadId) ? { ...l, status: newStatus } : l));
+    setLeads(currentLeads => currentLeads.map(l => String(l.id) === String(leadId) ? { ...l, status: newStatus } : l));
     
     // Lock card
     setLockedCards(prev => {

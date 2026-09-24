@@ -647,8 +647,16 @@ export default function App() {
             api.getTuitionPayments(session.user.id),
             api.getIncome(session.user.id)
           ]);
-          if (paysRes) setTuitionPayments(paysRes);
-          if (incsRes) setIncomesState(incsRes);
+          if (paysRes !== null) {
+            setTuitionPayments(paysRes);
+          } else {
+            setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+          }
+          if (incsRes !== null) {
+            setIncomesState(incsRes);
+          } else {
+            setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+          }
         }
         
         if (failedCount === 0) {
@@ -678,8 +686,16 @@ export default function App() {
           api.getTuitionPayments(session.user.id),
           api.getIncome(session.user.id)
         ]);
-        if (paysRes) setTuitionPayments(paysRes);
-        if (incsRes) setIncomesState(incsRes);
+        if (paysRes !== null) {
+          setTuitionPayments(paysRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
+        if (incsRes !== null) {
+          setIncomesState(incsRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
       }
       return res;
     } else {
@@ -697,8 +713,16 @@ export default function App() {
           api.getTuitionPayments(session.user.id),
           api.getIncome(session.user.id)
         ]);
-        if (paysRes) setTuitionPayments(paysRes);
-        if (incsRes) setIncomesState(incsRes);
+        if (paysRes !== null) {
+          setTuitionPayments(paysRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
+        if (incsRes !== null) {
+          setIncomesState(incsRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
       }
       return res;
     } else {
@@ -717,9 +741,21 @@ export default function App() {
           api.getCRMClients(session.user.id),
           api.getIncome(session.user.id)
         ]);
-        if (crmPaysRes) setCrmPayments(crmPaysRes);
-        if (leadsRes) setLeadsState(leadsRes);
-        if (incsRes) setIncomesState(incsRes);
+        if (crmPaysRes !== null) {
+          setCrmPayments(crmPaysRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
+        if (leadsRes !== null) {
+          setLeadsState(leadsRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
+        if (incsRes !== null) {
+          setIncomesState(incsRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
       }
       return res;
     } else {
@@ -806,9 +842,21 @@ export default function App() {
           api.getCustomerDuePayments(session.user.id),
           api.getIncome(session.user.id)
         ]);
-        if (duesRes) setCustomerDuesState(duesRes);
-        if (paysRes) setDuePaymentsState(paysRes);
-        if (incsRes) setIncomesState(incsRes);
+        if (duesRes !== null) {
+          setCustomerDuesState(duesRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
+        if (paysRes !== null) {
+          setDuePaymentsState(paysRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
+        if (incsRes !== null) {
+          setIncomesState(incsRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
       }
       return created;
     } else {
@@ -864,7 +912,11 @@ export default function App() {
         throw new Error(res?.error || 'Supabase-এ পাওনা আপডেট করতে সমস্যা হয়েছে।');
       }
       const duesRes = await api.getCustomerDues(session.user.id);
-      if (duesRes) setCustomerDuesState(duesRes);
+      if (duesRes !== null) {
+        setCustomerDuesState(duesRes);
+      } else {
+        setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+      }
       return res.data;
     } else {
       handleSetCustomerDues(prev => prev.map(d => {
@@ -901,9 +953,21 @@ export default function App() {
           api.getCustomerDuePayments(session.user.id),
           api.getIncome(session.user.id)
         ]);
-        if (duesRes) setCustomerDuesState(duesRes);
-        if (paysRes) setDuePaymentsState(paysRes);
-        if (incsRes) setIncomesState(incsRes);
+        if (duesRes !== null) {
+          setCustomerDuesState(duesRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
+        if (paysRes !== null) {
+          setDuePaymentsState(paysRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
+        if (incsRes !== null) {
+          setIncomesState(incsRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
       }
       return res;
     } else {
@@ -1019,9 +1083,21 @@ export default function App() {
           api.getLiabilityPayments(session.user.id),
           api.getExpenses(session.user.id)
         ]);
-        if (liabRes) setLiabilitiesState(liabRes);
-        if (liabPaysRes) setLiabilityPaymentsState(liabPaysRes);
-        if (expRes) setExpensesState(expRes);
+        if (liabRes !== null) {
+          setLiabilitiesState(liabRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
+        if (liabPaysRes !== null) {
+          setLiabilityPaymentsState(liabPaysRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
+        if (expRes !== null) {
+          setExpensesState(expRes);
+        } else {
+          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+        }
       }
       return res;
     }
