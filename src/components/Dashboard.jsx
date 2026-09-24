@@ -61,10 +61,10 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
   ]);
 
   // Standardized Data Processing
-  const currentIncome = backendTotals ? Number(backendTotals.salarySum) : (data?.currentIncome ?? 0);
-  const newIncome = backendTotals ? Number(backendTotals.newIncomeSum) : (data?.newIncome ?? 0);
+  const currentIncome = backendTotals?.salarySum != null ? Number(backendTotals.salarySum) : (data?.currentIncome ?? 0);
+  const newIncome = backendTotals?.newIncomeSum != null ? Number(backendTotals.newIncomeSum) : (data?.newIncome ?? 0);
   const totalIncome = currentIncome + newIncome;
-  const targetIncome = backendTotals ? Number(backendTotals.targetIncome) : (data?.targetIncome || 100000);
+  const targetIncome = backendTotals?.targetIncome != null ? Number(backendTotals.targetIncome) : (data?.targetIncome || 100000);
   const remainingTarget = Math.max(0, targetIncome - totalIncome);
   
   // EMI Liabilities Quick Action
@@ -109,7 +109,7 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
 
   // Expenses & Net Position calculations
   const expensesList = data?.expenses || [];
-  const totalExpenses = backendTotals ? Number(backendTotals.totalExpenses) : expensesList.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const totalExpenses = backendTotals?.totalExpenses != null ? Number(backendTotals.totalExpenses) : expensesList.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const netPosition = totalIncome - totalExpenses;
 
   // Leads & Pipeline
@@ -125,26 +125,26 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
   const tuitionStudents = data?.tuitionStudents || [];
   const tuitionPayments = data?.tuitionPayments || [];
   const activeStudentsCount = tuitionStudents.filter(s => s.status === 'active').length;
-  const expectedTuitionCollection = backendTotals ? Number(backendTotals.expectedTuition) : tuitionStudents
+  const expectedTuitionCollection = backendTotals?.expectedTuition != null ? Number(backendTotals.expectedTuition) : tuitionStudents
     .filter(s => s.status === 'active')
     .reduce((sum, s) => sum + (Number(s.monthlyFee) || 0), 0);
-  const collectedTuitionThisMonth = backendTotals ? Number(backendTotals.collectedTuition) : tuitionPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const collectedTuitionThisMonth = backendTotals?.collectedTuition != null ? Number(backendTotals.collectedTuition) : tuitionPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const dueTuitionAmount = Math.max(0, expectedTuitionCollection - collectedTuitionThisMonth);
 
   // Customer Dues Data
   const customerDues = data?.customerDues || [];
-  const totalDuesAmount = backendTotals ? Number(backendTotals.totalDues) : customerDues.reduce((sum, item) => {
+  const totalDuesAmount = backendTotals?.totalDues != null ? Number(backendTotals.totalDues) : customerDues.reduce((sum, item) => {
     const due = Math.max(0, (Number(item.totalAmount) || 0) - (Number(item.paidAmount) || 0));
     return sum + due;
   }, 0);
 
-  const overdueDuesAmount = backendTotals ? Number(backendTotals.overdueDues) : customerDues.reduce((sum, item) => {
+  const overdueDuesAmount = backendTotals?.overdueDues != null ? Number(backendTotals.overdueDues) : customerDues.reduce((sum, item) => {
     const due = Math.max(0, (Number(item.totalAmount) || 0) - (Number(item.paidAmount) || 0));
     if (item.dueDate && item.dueDate < todayStr && due > 0) return sum + due;
     return sum;
   }, 0);
 
-  const dueSoonDuesAmount = backendTotals ? Number(backendTotals.dueSoonDues) : customerDues.reduce((sum, item) => {
+  const dueSoonDuesAmount = backendTotals?.dueSoonDues != null ? Number(backendTotals.dueSoonDues) : customerDues.reduce((sum, item) => {
     const due = Math.max(0, (Number(item.totalAmount) || 0) - (Number(item.paidAmount) || 0));
     if (item.dueDate && item.dueDate >= todayStr && item.dueDate <= next7DaysStr && due > 0) return sum + due;
     return sum;
