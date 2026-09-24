@@ -261,7 +261,9 @@ export default function Tuition({
   const handleSavePayment = async (paymentData) => {
     const res = await onRecordPayment(paymentData);
     if (res && res.success !== false) {
-      showSuccessNotification('Payment successfully recorded');
+      showSuccessNotification(res.message || 'Payment successfully recorded');
+    } else if (res && res.message) {
+      alert(res.message);
     }
     return res;
   };

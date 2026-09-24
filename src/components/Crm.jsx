@@ -25,6 +25,9 @@ import Modal from './ui/Modal';
 import UniversalPaymentModal from './ui/UniversalPaymentModal';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
+import { supabase } from '../lib/supabase';
+import * as api from '../lib/supabaseService';
+import Toast from './ui/Toast';
 
 export default function Crm({ 
   leads, 
@@ -44,6 +47,8 @@ export default function Crm({
   const [filterStatus, setFilterStatus] = useState('All');
   const [dragOverStatus, setDragOverStatus] = useState(null);
   const [draggedLeadId, setDraggedLeadId] = useState(null);
+  const [lockedCards, setLockedCards] = useState(new Set());
+  const [toastMessage, setToastMessage] = useState(null);
 
   // Record Payment Modal State with Payment UUID Idempotency
   const [paymentModalLead, setPaymentModalLead] = useState(null);
@@ -128,8 +133,46 @@ export default function Crm({
   };
 
   // Status changes strictly update status without creating Income
-  const handleStatusChange = (leadId, newStatus) => {
+  const handleStatusChange = async (leadId, newStatus) => {
+    const leadToUpdate = leads.find(l => String(l.id) === String(leadId));
+    if (!leadToUpdate || leadToUpdate.status === newStatus) return;
+    if (lockedCards.has(String(leadId))) return;
+
+    const previousStatus = leadToUpdate.status;
+    
+    // Optimistic Update
     setLeads(leads.map(l => String(l.id) === String(leadId) ? { ...l, status: newStatus } : l));
+    
+    // Lock card
+    setLockedCards(prev => {
+      const next = new Set(prev);
+      next.add(String(leadId));
+      return next;
+    });
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      
+      if (userId) {
+        const success = await api.updateCRMClientStatus(userId, leadId, newStatus);
+        if (!success) {
+          throw new Error('Database update failed');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      // Rollback
+      setLeads(currentLeads => currentLeads.map(l => String(l.id) === String(leadId) ? { ...l, status: previousStatus } : l));
+      setToastMessage('স্ট্যাটাস আপডেট সেভ হয়নি। দয়া করে আবার চেষ্টা করুন।');
+    } finally {
+      // Unlock card
+      setLockedCards(prev => {
+        const next = new Set(prev);
+        next.delete(String(leadId));
+        return next;
+      });
+    }
   };
 
   // Open Record Payment Modal with stable UUID
@@ -601,7 +644,8 @@ export default function Crm({
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${statusObj.badgeColor} focus:outline-none focus:ring-2 focus:ring-emerald-500 max-w-[180px] sm:max-w-none text-ellipsis`}
+                        disabled={lockedCards.has(String(lead.id))}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${statusObj.badgeColor} focus:outline-none focus:ring-2 focus:ring-emerald-500 max-w-[180px] sm:max-w-none text-ellipsis disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
@@ -707,12 +751,12 @@ export default function Crm({
                         return (
                           <div
                             key={lead.id}
-                            draggable
+                            draggable={!lockedCards.has(String(lead.id))}
                             onDragStart={(e) => handleDragStart(e, lead.id)}
                             onDragEnd={handleDragEnd}
                             className={`bg-white border border-slate-200 rounded-xl p-3 shadow-xs hover:shadow-md transition-all cursor-grab active:cursor-grabbing hover:border-emerald-300 group space-y-2 ${
                               isBeingDragged ? 'opacity-40 border-dashed border-emerald-400' : ''
-                            }`}
+                            } ${lockedCards.has(String(lead.id)) ? 'opacity-50 pointer-events-none' : ''}`}
                           >
                             {/* Card Top Header */}
                             <div className="flex items-start justify-between gap-1.5">
@@ -774,7 +818,8 @@ export default function Crm({
                               <select
                                 value={lead.status}
                                 onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                                className="text-[10px] font-semibold bg-transparent border-0 text-slate-500 focus:outline-none cursor-pointer hover:text-slate-900"
+                                disabled={lockedCards.has(String(lead.id))}
+                                className="text-[10px] font-semibold bg-transparent border-0 text-slate-500 focus:outline-none cursor-pointer hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {statuses.map(s => <option key={s.value} value={s.value}>{s.value}</option>)}
                               </select>
@@ -795,6 +840,14 @@ export default function Crm({
             })}
           </div>
         </div>
+      )}
+
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          type="error"
+          onClose={() => setToastMessage(null)}
+        />
       )}
 
       {/* Record Payment Modal */}

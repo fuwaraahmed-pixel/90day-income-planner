@@ -347,25 +347,35 @@ export default function App() {
 
         setIsAdmin(Boolean(adminRes));
         setSubscription(subRes);
-        setPaymentRequests(payReqRes || []);
+        if (payReqRes !== null) setPaymentRequests(payReqRes);
         setLoadingSub(false);
 
-        setAppDataState(settingsRes || defaultAppData);
-        setTasksState(tasksRes || []);
-        setLeadsState(leadsRes || []);
-        setIncomesState(incomesRes || []);
-        setExpensesState(expensesRes || []);
-        setReviewsState(reviewsRes || []);
-        setServicesState(servicesRes && servicesRes.length > 0 ? servicesRes : defaultServices);
-        setPlanDataState(planRes || null);
-        setTuitionStudents(tuitionStsRes || []);
-        setTuitionPayments(tuitionPaysRes || []);
-        setCrmPayments(crmPaysRes || []);
-        setCustomerDuesState(duesRes || []);
-        setDuePaymentsState(duePaysRes || []);
-        setLiabilitiesState(liabRes || []);
-        setLiabilityPaymentsState(liabPaysRes || []);
-        setEmiInstallments(emiInstallmentsRes || []);
+        if (settingsRes !== null) setAppDataState(settingsRes);
+        if (tasksRes !== null) setTasksState(tasksRes);
+        if (leadsRes !== null) setLeadsState(leadsRes);
+        if (incomesRes !== null) setIncomesState(incomesRes);
+        if (expensesRes !== null) setExpensesState(expensesRes);
+        if (reviewsRes !== null) setReviewsState(reviewsRes);
+        if (servicesRes !== null) setServicesState(servicesRes.length > 0 ? servicesRes : defaultServices);
+        if (planRes !== null) setPlanDataState(planRes);
+        if (tuitionStsRes !== null) setTuitionStudents(tuitionStsRes);
+        if (tuitionPaysRes !== null) setTuitionPayments(tuitionPaysRes);
+        if (crmPaysRes !== null) setCrmPayments(crmPaysRes);
+        if (duesRes !== null) setCustomerDuesState(duesRes);
+        if (duePaysRes !== null) setDuePaymentsState(duePaysRes);
+        if (liabRes !== null) setLiabilitiesState(liabRes);
+        if (liabPaysRes !== null) setLiabilityPaymentsState(liabPaysRes);
+        if (emiInstallmentsRes !== null) setEmiInstallments(emiInstallmentsRes);
+
+        const hasError = [
+          payReqRes, settingsRes, tasksRes, leadsRes, incomesRes, expensesRes, reviewsRes, 
+          servicesRes, planRes, tuitionStsRes, tuitionPaysRes, crmPaysRes, 
+          duesRes, duePaysRes, liabRes, liabPaysRes, emiInstallmentsRes
+        ].some(res => res === null);
+        
+        if (hasError) {
+          setGlobalError('নেটওয়ার্ক সমস্যার কারণে কিছু ডেটা লোড করা সম্ভব হয়নি — সর্বশেষ সেভ করা ডেটা দেখানো হচ্ছে।');
+        }
 
         setLoadingData(false);
       } catch (err) {
@@ -463,13 +473,6 @@ export default function App() {
         } else if (nextLeads.length < prev.length) {
           const deleted = prev.find(p => !nextLeads.some(l => l.id === p.id));
           if (deleted) api.deleteCRMClient(session.user.id, deleted.id);
-        } else {
-          nextLeads.forEach(l => {
-            const old = prev.find(p => p.id === l.id);
-            if (old && old.status !== l.status) {
-              api.updateCRMClientStatus(session.user.id, l.id, l.status);
-            }
-          });
         }
       }
       return nextLeads;
@@ -622,16 +625,24 @@ export default function App() {
   const handleRecordTuitionPayment = async (paymentData) => {
     if (Array.isArray(paymentData)) {
       if (session?.user?.id) {
-        let hasSuccess = false;
-        let lastRes = null;
+        const results = [];
         for (const pData of paymentData) {
-          const res = await api.recordTuitionPayment(pData);
-          if (res && res.success !== false) {
-             hasSuccess = true;
+          try {
+            const res = await api.recordTuitionPayment(pData);
+            if (res && res.success !== false) {
+               results.push({ studentId: pData.studentId, success: true });
+            } else {
+               results.push({ studentId: pData.studentId, success: false, error: res?.message });
+            }
+          } catch (err) {
+            results.push({ studentId: pData.studentId, success: false, error: err.message });
           }
-          lastRes = res;
         }
-        if (hasSuccess) {
+        
+        const successCount = results.filter(r => r.success).length;
+        const failedCount = results.length - successCount;
+        
+        if (successCount > 0) {
           const [paysRes, incsRes] = await Promise.all([
             api.getTuitionPayments(session.user.id),
             api.getIncome(session.user.id)
@@ -639,7 +650,19 @@ export default function App() {
           if (paysRes) setTuitionPayments(paysRes);
           if (incsRes) setIncomesState(incsRes);
         }
-        return lastRes || { success: true };
+        
+        if (failedCount === 0) {
+          return { success: true, message: 'All payments successfully recorded' };
+        } else if (successCount > 0) {
+          const failedIds = results.filter(r => !r.success).map(r => String(r.studentId));
+          const failedNames = tuitionStudents
+            .filter(s => failedIds.includes(String(s.id)))
+            .map(s => s.studentName);
+          const failedText = failedNames.length > 0 ? failedNames.join(', ') : failedIds.join(', ');
+          return { success: false, partial: true, message: `${successCount} of ${results.length} payments recorded. Failed: ${failedText} — please retry these.` };
+        } else {
+          return { success: false, message: 'All payments failed to record.' };
+        }
       } else {
         const mockPays = paymentData.map(pData => ({ id: Date.now() + Math.random(), ...pData }));
         setTuitionPayments(prev => [...mockPays, ...prev]);
@@ -946,14 +969,16 @@ export default function App() {
         const startDate = newLiability.startDate ? new Date(newLiability.startDate) : new Date();
         const dueDay = newLiability.dueDay || startDate.getDate();
         
+        const addMonthsSafely = (date, monthsToAdd, targetDay) => {
+          const result = new Date(date.getFullYear(), date.getMonth() + monthsToAdd, 1);
+          const daysInMonth = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+          result.setDate(Math.min(targetDay, daysInMonth));
+          return result;
+        };
+
         for (let i = 1; i <= newLiability.durationMonths; i++) {
-          // Calculate due date for this installment
-          const dueDate = new Date(startDate.getFullYear(), startDate.getMonth() + i, dueDay);
-          
-          // Handle month overflow (e.g. Feb 31 -> Feb 28)
-          if (dueDate.getMonth() !== (startDate.getMonth() + i) % 12) {
-            dueDate.setDate(0); // Move to last day of previous month
-          }
+          // Calculate due date for this installment using the safe helper
+          const dueDate = addMonthsSafely(startDate, i, dueDay);
 
           installments.push({
             liabilityId: newLiability.id,

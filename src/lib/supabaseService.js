@@ -42,7 +42,7 @@ export const getPaymentRequests = async (userId) => {
 
   if (error) {
     console.error('Error fetching payment requests:', error);
-    return [];
+    return null;
   }
   return data ? data.map(toCamel) : [];
 };
@@ -105,7 +105,7 @@ export const getPendingPaymentRequestsForAdmin = async () => {
 
   if (error) {
     console.error('Error fetching all payment requests for admin:', error);
-    return [];
+    return null;
   }
   return data ? data.map(toCamel) : [];
 };
@@ -119,7 +119,7 @@ export const getAllSubscriptionsForAdmin = async () => {
 
   if (error) {
     console.error('Error fetching all subscriptions for admin:', error);
-    return [];
+    return null;
   }
   return data ? data.map(toCamel) : [];
 };
@@ -865,7 +865,7 @@ export const getTuitionStudents = async (userId) => {
 
   if (error) {
     console.error('Error fetching tuition students:', error);
-    return [];
+    return null;
   }
   return data ? data.map(formatTuitionStudent) : [];
 };
@@ -986,7 +986,7 @@ export const getTuitionPayments = async (userId) => {
 
   if (error) {
     console.error('Error fetching tuition payments:', error);
-    return [];
+    return null;
   }
   return data ? data.map(toCamel) : [];
 };
@@ -1068,7 +1068,7 @@ export const getCrmPayments = async (userId) => {
     if (error.code !== '42P01') {
       console.error('Error fetching CRM payments:', error);
     }
-    return [];
+    return null;
   }
   return data ? data.map(toCamel) : [];
 };
@@ -1113,7 +1113,7 @@ export const getCustomerDues = async (userId) => {
     if (error.code !== '42P01' && error.code !== 'PGRST205') {
       console.error('Error fetching customer dues:', error);
     }
-    return [];
+    return null;
   }
   return data ? data.map(toCamel) : [];
 };
@@ -1228,7 +1228,7 @@ export const getCustomerDuePayments = async (userId) => {
     if (error.code !== '42P01' && error.code !== 'PGRST205') {
       console.error('Error fetching customer due payments:', error);
     }
-    return [];
+    return null;
   }
   return data ? data.map(toCamel) : [];
 };
@@ -1278,7 +1278,7 @@ export const getLiabilities = async (userId) => {
     if (error.code !== '42P01') {
       console.error('Error fetching liabilities:', error);
     }
-    return [];
+    return null;
   }
   return data ? data.map(toCamel) : [];
 };
@@ -1338,7 +1338,7 @@ export const getLiabilityPayments = async (userId) => {
     if (error.code !== '42P01') {
       console.error('Error fetching liability payments:', error);
     }
-    return [];
+    return null;
   }
   return data ? data.map(toCamel) : [];
 };
@@ -1381,7 +1381,7 @@ export const getEmiInstallments = async (userId) => {
     if (error.code !== '42P01') {
       console.error('Error fetching emi_installments:', error);
     }
-    return [];
+    return null;
   }
   return data ? data.map(toCamel) : [];
 };
@@ -1435,3 +1435,7 @@ export const rpcRecordEmiPayment = async (paymentData) => {
 
   return data;
 };
+
+export const getDashboardFinancialTotals = async (userId) => { const { data, error } = await supabase.rpc('get_dashboard_financial_totals', { p_user_id: userId }); if (error) { console.error('Error fetching financial totals:', error); return null; } return data; };
+
+export const getDashboardTuitionAndDuesTotals = async (userId, currentMonthStr, todayStr, next7DaysStr) => { const { data, error } = await supabase.rpc('get_dashboard_tuition_and_dues_totals', { p_user_id: userId, p_current_month_str: currentMonthStr, p_today_str: todayStr, p_next_7_days_str: next7DaysStr }); if (error) { console.error('Error fetching tuition totals:', error); return null; } return data; };
