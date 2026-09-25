@@ -1222,6 +1222,7 @@ export default function App() {
             onRecordPayment={handleRecordTuitionPayment}
             onDeletePayment={handleDeleteTuitionPayment}
             currency={appData.currency}
+            setActiveTab={setActiveTab}
           />
         )}
 

@@ -56,35 +56,111 @@ export const isStudentEligibleForMonth = (student, monthStr) => {
   return true;
 };
 
-// Helper: Get all unpaid months up to current selected month
-export const getUnpaidMonths = (student, currentMonthStr, payments) => {
-  if (!student || !student.joiningDate) return [];
+// Helper: Local date ISO string (avoids timezone skew bug)
+export function getLocalTodayISO() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const day = now.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function getLocalCurrentMonthStr() {
+  const now = new Date();
+  return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+}
+
+export function getCollectedCashFlow(payments, monthPrefix) {
+  return payments
+    .filter(p => p.paymentDate && p.paymentDate.startsWith(monthPrefix))
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+}
+
+export function getBillingStatus(billingMonth, todayISO) {
+  const [yearStr, monthStr] = billingMonth.split('-');
+  let year = parseInt(yearStr, 10);
+  let month = parseInt(monthStr, 10);
   
-  const startMonth = student.billingStartMonth || student.joiningDate.slice(0, 7);
-  const unpaidMonths = [];
+  let nextMonth = month + 1;
+  let nextYear = year;
   
-  // Iterate from startMonth up to currentMonthStr
-  let current = new Date(`${startMonth}-01`);
-  const end = new Date(`${currentMonthStr}-01`);
-  
-  while (current <= end) {
-    const iterMonthStr = current.toISOString().slice(0, 7);
-    
-    // Check if eligible
-    if (isStudentEligibleForMonth(student, iterMonthStr)) {
-      // Check if paid
-      const hasPaid = payments.some(
-        p => String(p.studentId) === String(student.id) && p.paymentMonth === iterMonthStr
-      );
-      if (!hasPaid) {
-        unpaidMonths.push(iterMonthStr);
-      }
-    }
-    // move to next month
-    current.setMonth(current.getMonth() + 1);
+  if (nextMonth > 12) {
+      nextMonth = 1;
+      nextYear = year + 1;
   }
   
-  return unpaidMonths;
+  const nextMonthStr = nextMonth.toString().padStart(2, '0');
+  const nextYearStr = nextYear.toString();
+  
+  const dueDateStr = `${nextYearStr}-${nextMonthStr}-15`;
+  const dueStartStr = `${nextYearStr}-${nextMonthStr}-01`;
+  
+  if (todayISO < dueStartStr) {
+      return { status: "Upcoming", dueDate: dueDateStr };
+  } else if (todayISO >= dueStartStr && todayISO <= dueDateStr) {
+      return { status: "Due", dueDate: dueDateStr };
+  } else {
+      return { status: "Overdue", dueDate: dueDateStr };
+  }
+}
+
+// Helper: Get all unpaid months up to current calendar month
+export const getUnpaidMonths = (student, todayISO, payments) => {
+  if (!student) return { unpaid: [], upcoming: null, invalidStartDate: false };
+  
+  const startMonth = student.billingStartMonth || (student.joiningDate ? student.joiningDate.slice(0, 7) : null);
+  
+  // Guard against invalid or missing start dates (fixes the year 1000 bug)
+  if (!startMonth || startMonth.length !== 7 || !startMonth.includes('-')) {
+      return { unpaid: [], upcoming: null, invalidStartDate: true };
+  }
+  
+  const currentMonthStr = todayISO.slice(0, 7);
+  
+  let unpaid = [];
+  let upcoming = null;
+  
+  let [iterYear, iterMonth] = startMonth.split('-').map(Number);
+  if (isNaN(iterYear) || isNaN(iterMonth)) return { unpaid: [], upcoming: null, invalidStartDate: true };
+
+  const [endYear, endMonth] = currentMonthStr.split('-').map(Number);
+  
+  // Safety bound: prevent infinite loops by capping iterYear to endYear + 1
+  let safeGuard = 0;
+  while ((iterYear < endYear || (iterYear === endYear && iterMonth <= endMonth)) && safeGuard < 1000) {
+      safeGuard++;
+      const iterMonthStr = `${iterYear}-${iterMonth.toString().padStart(2, '0')}`;
+      
+      if (isStudentEligibleForMonth(student, iterMonthStr)) {
+          const hasPaid = payments.some(
+              p => String(p.studentId) === String(student.id) && p.paymentMonth === iterMonthStr
+          );
+          
+          if (!hasPaid) {
+              const { status, dueDate } = getBillingStatus(iterMonthStr, todayISO);
+              
+              const monthRecord = {
+                  billingMonth: iterMonthStr,
+                  status: status,
+                  dueDate: dueDate
+              };
+              
+              if (status === "Upcoming") {
+                  upcoming = monthRecord;
+              } else {
+                  unpaid.push(monthRecord);
+              }
+          }
+      }
+      
+      iterMonth++;
+      if (iterMonth > 12) {
+          iterMonth = 1;
+          iterYear++;
+      }
+  }
+  
+  return { unpaid, upcoming };
 };
 
 export default function Tuition({
@@ -95,7 +171,8 @@ export default function Tuition({
   onRecordPayment,
   onDeletePayment,
   currency = '৳',
-  loading = false
+  loading = false,
+  setActiveTab
 }) {
   // Selected reporting month (Format: 'YYYY-MM')
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
@@ -305,25 +382,39 @@ export default function Tuition({
           </div>
         </div>
 
-        {/* Quick Actions & Month Picker */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        {/* Cash Flow Shortcut */}
+        <div 
+          onClick={() => setActiveTab && setActiveTab('dashboard')}
+          className="mt-3 sm:mt-0 bg-emerald-50 border border-emerald-100 hover:border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer px-3 py-2 rounded-xl flex items-center gap-2 flex-shrink-0"
+        >
+          <span className="text-xs font-bold text-emerald-700">💰 এই মাসে ক্যাশ সংগ্রহ: {currency}{getCollectedCashFlow(payments, getLocalCurrentMonthStr()).toLocaleString()}</span>
+          <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider opacity-80">[Dashboard-এ দেখুন →]</span>
+        </div>
+      </div>
+
+      {/* Toolbar & Month Picker */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {/* Month Selector */}
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl flex-1 sm:flex-none justify-between sm:justify-start">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-slate-500" />
-              <span className="text-xs font-bold text-slate-700">Month:</span>
+          <div className="flex flex-col gap-1 w-full sm:w-auto">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl justify-between sm:justify-start">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-slate-500" />
+                <span className="text-xs font-bold text-slate-700">Month:</span>
+              </div>
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer"
+              />
             </div>
-            <input
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer"
-            />
+            <p className="text-[10px] text-slate-500 font-medium pl-1">এই পেজের সব হিসাব বাছাই করা মাসের বিলিং অনুযায়ী — ক্যাশ ফ্লো দেখতে Dashboard দেখুন</p>
           </div>
 
           <button
             onClick={handleOpenAddStudent}
-            className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 min-h-[40px] touch-manipulation"
+            className="w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 min-h-[40px] touch-manipulation"
           >
             <Plus className="w-4 h-4" />
             <span>+ Add Student</span>
@@ -349,7 +440,7 @@ export default function Tuition({
         {/* 2. Paid This Month */}
         <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Paid This Month</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Paid for {formatMonthDisplay(selectedMonth)}</p>
             <div className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 sm:mt-1">{paidStudents.length}</div>
             <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Of {eligibleStudents.length} eligible</p>
           </div>
@@ -361,7 +452,7 @@ export default function Tuition({
         {/* 3. Due This Month */}
         <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Due This Month</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Due for {formatMonthDisplay(selectedMonth)}</p>
             <div className="text-xl sm:text-2xl font-black text-amber-600 mt-0.5 sm:mt-1">{dueStudents.length}</div>
             <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">{currency}{dueAmount.toLocaleString()} pending</p>
           </div>
@@ -373,7 +464,7 @@ export default function Tuition({
         {/* 4. Total Collection */}
         <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Total Collection</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">{formatMonthDisplay(selectedMonth)} Collection</p>
             <div className="text-xl sm:text-2xl font-black text-emerald-700 mt-0.5 sm:mt-1">{currency}{collectedThisMonth.toLocaleString()}</div>
             <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Exp: {currency}{expectedThisMonth.toLocaleString()}</p>
           </div>
@@ -551,12 +642,29 @@ export default function Tuition({
                         <td className="py-3.5 px-4 font-bold text-slate-900 text-sm">
                           {currency}{Number(student.monthlyFee || 0).toLocaleString()}
                           {(() => {
-                            const unpaidMonths = getUnpaidMonths(student, selectedMonth, payments);
-                            if (unpaidMonths.length > 0) {
-                              const totalDue = unpaidMonths.length * Number(student.monthlyFee || 0);
+                            const { unpaid, upcoming, invalidStartDate } = getUnpaidMonths(student, getLocalTodayISO(), payments);
+                            
+                            if (invalidStartDate) {
                               return (
-                                <div className="text-[11px] text-rose-600 font-bold mt-0.5">
-                                  Due: {currency}{totalDue.toLocaleString()} ({unpaidMonths.length} {unpaidMonths.length === 1 ? 'month' : 'months'})
+                                <div className="text-[10px] text-rose-600 font-bold mt-1">
+                                  ⚠️ Joining date missing — please update this student's record
+                                </div>
+                              );
+                            }
+
+                            if (unpaid.length > 0 || upcoming) {
+                              return (
+                                <div className="text-[10px] mt-1 space-y-0.5">
+                                  {unpaid.map(m => (
+                                    <div key={m.billingMonth} className={`font-bold ${m.status === 'Overdue' ? 'text-rose-600' : 'text-amber-600'}`}>
+                                      • {formatMonthDisplay(m.billingMonth)} fee — Due by: {m.dueDate} — [{m.status}]
+                                    </div>
+                                  ))}
+                                  {upcoming && (
+                                    <div className="font-semibold text-slate-500">
+                                      • {formatMonthDisplay(upcoming.billingMonth)} fee — [Upcoming]
+                                    </div>
+                                  )}
                                 </div>
                               );
                             }
@@ -687,12 +795,29 @@ export default function Tuition({
                         <span className="text-slate-400">Fee: </span>
                         <strong className="text-slate-900 font-bold">{currency}{Number(student.monthlyFee || 0).toLocaleString()}</strong>
                         {(() => {
-                          const unpaidMonths = getUnpaidMonths(student, selectedMonth, payments);
-                          if (unpaidMonths.length > 0) {
-                            const totalDue = unpaidMonths.length * Number(student.monthlyFee || 0);
+                          const { unpaid, upcoming, invalidStartDate } = getUnpaidMonths(student, getLocalTodayISO(), payments);
+                          
+                          if (invalidStartDate) {
                             return (
-                              <div className="text-[10px] text-rose-600 font-bold mt-0.5 block">
-                                Due: {currency}{totalDue.toLocaleString()} ({unpaidMonths.length} {unpaidMonths.length === 1 ? 'm' : 'm'})
+                              <div className="text-[10px] text-rose-600 font-bold mt-1 block">
+                                ⚠️ Joining date missing — please update this student's record
+                              </div>
+                            );
+                          }
+
+                          if (unpaid.length > 0 || upcoming) {
+                            return (
+                              <div className="text-[10px] mt-1 space-y-0.5 block">
+                                {unpaid.map(m => (
+                                  <div key={m.billingMonth} className={`font-bold ${m.status === 'Overdue' ? 'text-rose-600' : 'text-amber-600'}`}>
+                                    • {formatMonthDisplay(m.billingMonth)} fee — Due by: {m.dueDate} — [{m.status}]
+                                  </div>
+                                ))}
+                                {upcoming && (
+                                  <div className="font-semibold text-slate-500">
+                                    • {formatMonthDisplay(upcoming.billingMonth)} fee — [Upcoming]
+                                  </div>
+                                )}
                               </div>
                             );
                           }

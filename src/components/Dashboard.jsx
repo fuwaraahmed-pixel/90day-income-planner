@@ -23,6 +23,7 @@ import IncomeProgressChart from './charts/IncomeProgressChart';
 import IncomeSourceChart from './charts/IncomeSourceChart';
 import UniversalPaymentModal from './ui/UniversalPaymentModal';
 import * as api from '../lib/supabaseService';
+import { getUnpaidMonths, getLocalTodayISO, getLocalCurrentMonthStr, getCollectedCashFlow } from './Tuition';
 
 export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment }) {
   const [activeSubView, setActiveSubView] = useState('overview'); // 'overview' | 'tuition'
@@ -31,8 +32,10 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
   // Backend Totals State
   const [backendTotals, setBackendTotals] = useState(null);
 
-  const currentMonthPrefix = new Date().toISOString().substring(0, 7);
-  const todayStr = new Date().toISOString().split('T')[0];
+  const localTodayISO = getLocalTodayISO();
+
+  const currentMonthPrefix = getLocalCurrentMonthStr();
+  const todayStr = localTodayISO;
   const next7DaysStr = new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0];
 
   useEffect(() => {
@@ -124,12 +127,25 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
   // Tuition Data
   const tuitionStudents = data?.tuitionStudents || [];
   const tuitionPayments = data?.tuitionPayments || [];
-  const activeStudentsCount = tuitionStudents.filter(s => s.status === 'active').length;
-  const expectedTuitionCollection = backendTotals?.expectedTuition != null ? Number(backendTotals.expectedTuition) : tuitionStudents
-    .filter(s => s.status === 'active')
+  const activeStudentsCount = tuitionStudents.filter(s => s.status?.toLowerCase() === 'active').length;
+  
+  // Use source-of-truth postpaid logic to compute exact total historical dues
+  let calculatedDueTuitionAmount = 0;
+  
+  tuitionStudents.filter(s => s.status?.toLowerCase() === 'active').forEach(student => {
+    const { unpaid } = getUnpaidMonths(student, localTodayISO, tuitionPayments);
+    calculatedDueTuitionAmount += unpaid.length * (Number(student.monthlyFee) || 0);
+  });
+
+  const dueTuitionAmount = calculatedDueTuitionAmount;
+  
+  // "Cash Flow" semantic: Total cash actually received during this calendar month
+  const collectedTuitionThisMonth = getCollectedCashFlow(tuitionPayments, currentMonthPrefix);
+    
+  // "Run Rate" semantic: Total expected fees for 1 standard month
+  const expectedTuitionCollection = tuitionStudents
+    .filter(s => s.status?.toLowerCase() === 'active')
     .reduce((sum, s) => sum + (Number(s.monthlyFee) || 0), 0);
-  const collectedTuitionThisMonth = backendTotals?.collectedTuition != null ? Number(backendTotals.collectedTuition) : tuitionPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-  const dueTuitionAmount = Math.max(0, expectedTuitionCollection - collectedTuitionThisMonth);
 
   // Customer Dues Data
   const customerDues = data?.customerDues || [];
