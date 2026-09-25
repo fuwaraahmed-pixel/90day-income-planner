@@ -110,9 +110,9 @@ Additionally, drag-and-drop status changes in the CRM Kanban board never actuall
 * **Suggested change:** Add checkboxes to the left of table rows with a sticky "Bulk Actions" bar that appears at the bottom.
 
 ### Top 5 UX Priorities
-1. Fix Kanban drag-and-drop to actually save to the database.
+1. ✅ [FIXED] Fix Kanban drag-and-drop to actually save to the database.
 2. Force list-view on mobile for CRM to fix horizontal scrolling.
-3. Fix the "wiping" UI state on network errors to prevent user panic.
+3. ✅ [FIXED] Fix the "wiping" UI state on network errors to prevent user panic.
 4. Add a "This Month" filter to the Dashboard.
 5. Truncate long notes in tables to prevent layout breaking.
 
@@ -122,10 +122,10 @@ Additionally, drag-and-drop status changes in the CRM Kanban board never actuall
 
 | ID | Area | Finding | Evidence | Visible to user? | Severity | Recommended Action |
 | -- | ---- | ------- | -------- | ------------------ | -------- | ------------------- |
-| 1 | Data | Network drop wipes UI data | `App.jsx` L697 | Yes (upon error) | Critical | Return `null` on API catch blocks, check for `null` in UI. |
-| 2 | Data | Kanban drag doesn't save to DB | `Crm.jsx` L132 | Yes (upon reload) | Critical | Await `updateCRMClientStatus` inside `handleDrop`. |
-| 3 | Core | EMI month overflow bug | `App.jsx` L954 | Yes (rare dates) | High | Move EMI generation to a backend RPC. |
-| 4 | Core | Multi-payment loop silent fail | `App.jsx` L627 | Yes (rare errors) | High | Catch and display specific row errors in multi-select actions. |
+| 1 | Data | ✅ [FIXED] Network drop wipes UI data | `App.jsx` L697 | Yes (upon error) | Critical | Return `null` on API catch blocks, check for `null` in UI. |
+| 2 | Data | ✅ [FIXED] Kanban drag doesn't save to DB | `Crm.jsx` L132 | Yes (upon reload) | Critical | Await `updateCRMClientStatus` inside `handleDrop`. |
+| 3 | Core | ✅ [FIXED] EMI month overflow bug | `App.jsx` L954 | Yes (rare dates) | High | Move EMI generation to a backend RPC. |
+| 4 | Core | ✅ [FIXED] Multi-payment loop silent fail | `App.jsx` L627 | Yes (rare errors) | High | Catch and display specific row errors in multi-select actions. |
 | 5 | UX | 9-column Kanban unusable on mobile | UI Inspection | Yes (always) | Medium | Disable Kanban on mobile sizes. |
 | 6 | UX | Table layouts break on long text | UI Inspection | Yes (often) | Low | Add text truncation and tooltips. |
 

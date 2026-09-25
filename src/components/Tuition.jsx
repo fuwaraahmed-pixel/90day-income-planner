@@ -381,15 +381,6 @@ export default function Tuition({
             <p className="text-xs text-slate-500 font-medium mt-0.5">Manage students, monthly tuition fees, dues, and payments</p>
           </div>
         </div>
-
-        {/* Cash Flow Shortcut */}
-        <div 
-          onClick={() => setActiveTab && setActiveTab('dashboard')}
-          className="mt-3 sm:mt-0 bg-emerald-50 border border-emerald-100 hover:border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer px-3 py-2 rounded-xl flex items-center gap-2 flex-shrink-0"
-        >
-          <span className="text-xs font-bold text-emerald-700">💰 এই মাসে ক্যাশ সংগ্রহ: {currency}{getCollectedCashFlow(payments, getLocalCurrentMonthStr()).toLocaleString()}</span>
-          <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider opacity-80">[Dashboard-এ দেখুন →]</span>
-        </div>
       </div>
 
       {/* Toolbar & Month Picker */}
@@ -409,7 +400,7 @@ export default function Tuition({
                 className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none cursor-pointer"
               />
             </div>
-            <p className="text-[10px] text-slate-500 font-medium pl-1">এই পেজের সব হিসাব বাছাই করা মাসের বিলিং অনুযায়ী — ক্যাশ ফ্লো দেখতে Dashboard দেখুন</p>
+            <p className="text-[10px] text-slate-500 font-medium pl-1">Due ও Collection বাছাই করা মাসের বিলিং অনুযায়ী</p>
           </div>
 
           <button
@@ -440,9 +431,9 @@ export default function Tuition({
         {/* 2. Paid This Month */}
         <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Paid for {formatMonthDisplay(selectedMonth)}</p>
-            <div className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 sm:mt-1">{paidStudents.length}</div>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Of {eligibleStudents.length} eligible</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Total Paid This Month</p>
+            <div className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 sm:mt-1">{currency}{getCollectedCashFlow(payments, getLocalCurrentMonthStr()).toLocaleString()}</div>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">This calendar month</p>
           </div>
           <div className="w-9 h-9 sm:w-10 sm:h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
             <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />

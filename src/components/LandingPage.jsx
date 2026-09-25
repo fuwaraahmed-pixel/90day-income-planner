@@ -857,15 +857,14 @@ export default function LandingPage({ onNavigateToAuth }) {
           {/* Logo */}
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center gap-2.5 group focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none rounded-xl p-1 -ml-1 text-left"
+            className="flex items-center group outline-none text-left"
             aria-label="Dremoy হোম পেজে যান"
           >
-            <div className="w-10 h-10 bg-emerald-500 group-hover:bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm shadow-emerald-500/20 transition-colors">
-              D
-            </div>
-            <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
-              Dremoy
-            </span>
+            <img 
+              src="/dremoy.png" 
+              alt="Dremoy Logo" 
+              className="h-12 sm:h-20 w-auto object-contain transform scale-110 sm:scale-125 origin-left mix-blend-multiply transition-transform hover:scale-125 sm:hover:scale-[1.35]" 
+            />
           </button>
 
           {/* Nav Links (Desktop) */}
