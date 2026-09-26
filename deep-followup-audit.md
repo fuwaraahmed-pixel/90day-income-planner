@@ -135,3 +135,9 @@ Additionally, drag-and-drop status changes in the CRM Kanban board never actuall
 * **Files inspected this pass:** `src/components/Crm.jsx`, `src/App.jsx`, `src/lib/supabaseService.js`
 * **Data integrity confirmation:** Absolutely NO data was written, inserted, updated, or deleted. All findings were traced safely from the source code.
 * **Unverified items:** Production bundle size impacts (`npm run build` skipped for safety); Live DB records (Live DB read skipped for safety).
+
+---
+
+## 8. Recently Completed Enhancements
+* ✅ **Tuition UI Improvement:** Decoupled the "Total Paid This Month" card from the month dropdown selector. It now accurately reflects real-time current calendar month cash flow without being affected by the billing month selector. Removed redundant cash flow shortcut badges and updated hint texts for clarity.
+* ✅ **Repository Assets:** Added missing `dremoy.png`, `favicon.png`, and `logo.jpg` to Git tracking and pushed the latest Tuition UI changes to the `main` branch.

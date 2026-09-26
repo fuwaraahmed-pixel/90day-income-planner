@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   Plus, 
@@ -49,6 +49,28 @@ export default function Crm({
   const [draggedLeadId, setDraggedLeadId] = useState(null);
   const [lockedCards, setLockedCards] = useState(new Set());
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Mobile detection hook for forcing list view with debounce
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let timeoutId;
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsMobile(window.innerWidth < 768);
+      }, 150);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Record Payment Modal State with Payment UUID Idempotency
   const [paymentModalLead, setPaymentModalLead] = useState(null);
@@ -313,9 +335,9 @@ export default function Crm({
           </p>
         </div>
 
-        <div className="flex items-center gap-3 self-start sm:self-auto">
+        <div className="flex items-center gap-3 self-start md:self-auto">
           {/* Table / Kanban View Toggle */}
-          <div className="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+          <div className="hidden md:flex bg-slate-100 p-1 rounded-xl items-center border border-slate-200">
             <button
               onClick={() => setViewMode('table')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -587,7 +609,7 @@ export default function Crm({
       </div>
 
       {/* CRM Main Content Area: Table View OR Kanban View */}
-      {viewMode === 'table' ? (
+      {viewMode === 'table' || isMobile ? (
         /* TABLE VIEW */
         <div className="space-y-3">
           {filteredLeads.length > 0 ? (
@@ -645,7 +667,7 @@ export default function Crm({
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
                         disabled={lockedCards.has(String(lead.id))}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${statusObj.badgeColor} focus:outline-none focus:ring-2 focus:ring-emerald-500 max-w-[180px] sm:max-w-none text-ellipsis disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${statusObj.badgeColor} focus:outline-none focus:ring-2 focus:ring-emerald-500 flex-1 min-w-[150px] max-w-full sm:max-w-none text-ellipsis disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
