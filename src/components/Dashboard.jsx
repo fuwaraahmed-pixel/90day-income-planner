@@ -17,7 +17,8 @@ import {
   GraduationCap,
   ArrowUpRight,
   Clock,
-  Briefcase
+  Briefcase,
+  Infinity
 } from 'lucide-react';
 import IncomeProgressChart from './charts/IncomeProgressChart';
 import IncomeSourceChart from './charts/IncomeSourceChart';
@@ -27,6 +28,7 @@ import { getUnpaidMonths, getLocalTodayISO, getLocalCurrentMonthStr, getCollecte
 
 export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment }) {
   const [activeSubView, setActiveSubView] = useState('overview'); // 'overview' | 'tuition'
+  const [timeFilter, setTimeFilter] = useState('this_month'); // 'this_month' | 'all_time'
   const [payingEmiId, setPayingEmiId] = useState(null);
 
   // Backend Totals State
@@ -63,9 +65,34 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
     data?.tuitionStudents
   ]);
 
+  // Filter Data Client-Side Based on Selected Time Range
+  const isThisMonth = timeFilter === 'this_month';
+  const incomesList = data?.incomes || [];
+  const expensesList = data?.expenses || [];
+
+  const filteredIncomes = isThisMonth 
+    ? incomesList.filter(i => i.date?.startsWith(currentMonthPrefix))
+    : incomesList;
+
+  const filteredExpenses = isThisMonth
+    ? expensesList.filter(e => e.date?.startsWith(currentMonthPrefix))
+    : expensesList;
+
   // Standardized Data Processing
-  const currentIncome = backendTotals?.salarySum != null ? Number(backendTotals.salarySum) : (data?.currentIncome ?? 0);
-  const newIncome = backendTotals?.newIncomeSum != null ? Number(backendTotals.newIncomeSum) : (data?.newIncome ?? 0);
+  let currentIncome = 0;
+  let newIncome = 0;
+  let totalExpenses = 0;
+
+  if (isThisMonth) {
+    currentIncome = filteredIncomes.filter(i => i.source?.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    newIncome = filteredIncomes.filter(i => !i.source?.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    totalExpenses = filteredExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  } else {
+    currentIncome = backendTotals?.salarySum != null ? Number(backendTotals.salarySum) : incomesList.filter(i => i.source?.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    newIncome = backendTotals?.newIncomeSum != null ? Number(backendTotals.newIncomeSum) : incomesList.filter(i => !i.source?.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    totalExpenses = backendTotals?.totalExpenses != null ? Number(backendTotals.totalExpenses) : expensesList.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  }
+
   const totalIncome = currentIncome + newIncome;
   const targetIncome = backendTotals?.targetIncome != null ? Number(backendTotals.targetIncome) : (data?.targetIncome || 100000);
   const remainingTarget = Math.max(0, targetIncome - totalIncome);
@@ -111,8 +138,6 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
   };
 
   // Expenses & Net Position calculations
-  const expensesList = data?.expenses || [];
-  const totalExpenses = backendTotals?.totalExpenses != null ? Number(backendTotals.totalExpenses) : expensesList.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const netPosition = totalIncome - totalExpenses;
 
   // Leads & Pipeline
@@ -211,55 +236,91 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
               আপনার ৯০ দিনে <span className="font-bold text-emerald-300">৳১,০০,০০০ কন্টিনিউয়াস ইনকাম</span> লক্ষ্যের রিয়েল-টাইম স্টেটাস ও দৈনিক ফোকাস।
             </p>
 
-            {/* Sub-Navigation Tabs */}
-            <div className="flex items-center gap-2 pt-2 flex-wrap">
-              <button
-                onClick={() => setActiveSubView('overview')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  activeSubView === 'overview'
-                    ? 'bg-emerald-500 text-slate-950 shadow-sm font-extrabold'
-                    : 'bg-white/10 text-slate-300 border border-white/15 hover:bg-white/20'
-                }`}
-              >
-                📊 মূল বিজনেস ড্যাশবোর্ড
-              </button>
-              {(tuitionStudents.length > 0 || tuitionPayments.length > 0) && (
+            {/* Navigation & Premium Time Filter */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 mt-2 border-t border-white/10 w-full">
+              {/* Sub-Navigation Tabs */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
-                  onClick={() => setActiveSubView('tuition')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    activeSubView === 'tuition'
-                      ? 'bg-indigo-500 text-white shadow-sm font-extrabold'
-                      : 'bg-white/10 text-slate-300 border border-white/15 hover:bg-white/20'
+                  onClick={() => setActiveSubView('overview')}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
+                    activeSubView === 'overview'
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm font-extrabold'
+                      : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 hover:text-slate-200'
                   }`}
                 >
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  <span>টিউশন ট্র্যাকার সামারি</span>
+                  📊 মূল বিজনেস ড্যাশবোর্ড
                 </button>
-              )}
+                {(tuitionStudents.length > 0 || tuitionPayments.length > 0) && (
+                  <button
+                    onClick={() => setActiveSubView('tuition')}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-1.5 ${
+                      activeSubView === 'tuition'
+                        ? 'bg-indigo-500 text-white shadow-sm font-extrabold'
+                        : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 hover:text-slate-200'
+                    }`}
+                  >
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    <span>টিউশন ট্র্যাকার সামারি</span>
+                  </button>
+                )}
+              </div>
+              
+              {/* Premium Time Filter Toggle (Apple-style Segmented Control) */}
+              <div className="flex items-center bg-slate-900/60 backdrop-blur-xl rounded-full p-1 border border-slate-700/50 shadow-inner w-fit self-start sm:self-auto shrink-0">
+                <button
+                  onClick={() => setTimeFilter('this_month')}
+                  className={`px-5 py-1.5 rounded-full text-xs font-extrabold transition-all duration-300 ${
+                    timeFilter === 'this_month' 
+                      ? 'bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 shadow-[0_0_15px_rgba(52,211,153,0.3)]' 
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  এই মাস
+                </button>
+                <button
+                  onClick={() => setTimeFilter('all_time')}
+                  className={`px-5 py-1.5 rounded-full text-xs font-extrabold transition-all duration-300 ${
+                    timeFilter === 'all_time' 
+                      ? 'bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 shadow-[0_0_15px_rgba(52,211,153,0.3)]' 
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  সর্বমোট
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Right Action & Stat Widget Container */}
           <div className="flex flex-col sm:flex-row lg:flex-col gap-4 self-start lg:self-auto shrink-0 w-full lg:w-auto">
-            {/* Quick Goal Progress Glass Widget */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 min-w-[260px] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4 text-emerald-400" />
-                  মাসিক আয়ের লক্ষ্য
-                </span>
-                <span className="text-sm font-bold text-emerald-400">{monthlyProgressPercent}%</span>
-              </div>
-              <div className="w-full bg-slate-700/60 rounded-full h-2 overflow-hidden">
-                <div 
-                  className="bg-gradient-to-r from-emerald-400 to-teal-300 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${monthlyProgressPercent}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-[11px] text-slate-300 pt-0.5 font-medium">
-                <span>আয়: ৳{totalIncome.toLocaleString()}</span>
-                <span>টার্গেট: ৳{targetIncome.toLocaleString()}</span>
-              </div>
+            {/* Quick Goal Progress Glass Widget OR Disabled Note */}
+            <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 min-w-[260px] flex flex-col justify-center min-h-[90px]">
+              {isThisMonth ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                      <TrendingUp className="w-4 h-4 text-emerald-400" />
+                      মাসিক আয়ের লক্ষ্য
+                    </span>
+                    <span className="text-sm font-bold text-emerald-400">{monthlyProgressPercent}%</span>
+                  </div>
+                  <div className="w-full bg-slate-700/60 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-emerald-400 to-teal-300 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${monthlyProgressPercent}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[11px] text-slate-300 pt-0.5 font-medium">
+                    <span>আয়: ৳{totalIncome.toLocaleString()}</span>
+                    <span>টার্গেট: ৳{targetIncome.toLocaleString()}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-400/60 h-full gap-2 py-2">
+                  <Infinity className="w-7 h-7 opacity-50" />
+                  <span className="text-[9px] font-bold tracking-widest uppercase">All-Time Mode</span>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -298,7 +359,9 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200">
                   বর্তমান মোট আয়
                 </span>
-                <span className="text-xs text-slate-500 font-medium">চলতি মাসের পারফরম্যান্স</span>
+                <span className="text-xs text-slate-500 font-medium">
+                  {timeFilter === 'this_month' ? 'চলতি মাসের পারফরম্যান্স' : 'সর্বমোট পারফরম্যান্স'}
+                </span>
               </div>
               
               <div className="flex items-baseline gap-2">
@@ -306,39 +369,50 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
                 <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
                   {totalIncome.toLocaleString()}
                 </span>
-                <span className="text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg ml-2 shadow-2xs">
-                  {monthlyProgressPercent}% অর্জন
-                </span>
+                {isThisMonth && (
+                  <span className="text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg ml-2 shadow-2xs">
+                    {monthlyProgressPercent}% অর্জন
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* 90-Day Goal Progress Bar Simulator */}
-            <div className="lg:w-1/2 space-y-2.5 bg-white/90 p-4 rounded-xl border border-slate-200/80 shadow-2xs">
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="text-slate-700 flex items-center gap-1.5">
-                  <Target className="w-4 h-4 text-emerald-600" />
-                  ৯০ দিনের মাসিক টার্গেট: ৳{targetIncome.toLocaleString()}
-                </span>
-                <span className="text-rose-600 font-bold">
-                  বাকি ৳{remainingTarget.toLocaleString()}
-                </span>
-              </div>
+            {/* 90-Day Goal Progress Bar Simulator OR Disabled Note */}
+            <div className="lg:w-1/2 bg-white/90 p-4 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-center min-h-[90px]">
+              {isThisMonth ? (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-slate-700 flex items-center gap-1.5">
+                      <Target className="w-4 h-4 text-emerald-600" />
+                      ৯০ দিনের মাসিক টার্গেট: ৳{targetIncome.toLocaleString()}
+                    </span>
+                    <span className="text-rose-600 font-bold">
+                      বাকি ৳{remainingTarget.toLocaleString()}
+                    </span>
+                  </div>
 
-              {/* Progress Bar */}
-              <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200/70 p-0.5">
-                <div 
-                  className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 rounded-full transition-all duration-700 ease-out shadow-xs"
-                  style={{ width: `${monthlyProgressPercent}%` }}
-                ></div>
-              </div>
+                  {/* Progress Bar */}
+                  <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200/70 p-0.5">
+                    <div 
+                      className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 rounded-full transition-all duration-700 ease-out shadow-xs"
+                      style={{ width: `${monthlyProgressPercent}%` }}
+                    ></div>
+                  </div>
 
-              <div className="flex justify-between text-[10px] text-slate-500 font-medium pt-0.5">
-                <span>৳০</span>
-                <span>৳২৫,০০০</span>
-                <span>৳৫০,০০০</span>
-                <span>৳৭৫,০০০</span>
-                <span className="font-bold text-slate-900">৳১,০০,০০০+</span>
-              </div>
+                  <div className="flex justify-between text-[10px] text-slate-500 font-medium pt-0.5">
+                    <span>৳০</span>
+                    <span>৳২৫,০০০</span>
+                    <span>৳৫০,০০০</span>
+                    <span>৳৭৫,০০০</span>
+                    <span className="font-bold text-slate-900">৳১,০০,০০০+</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-400/50 gap-2.5 min-h-[100px]">
+                  <Infinity className="w-10 h-10 opacity-40" />
+                  <span className="text-[10px] font-bold tracking-[0.2em] uppercase">All-Time Performance</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -369,16 +443,24 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
               <p className="text-[10px] text-emerald-600/80">নতুন প্রজেক্ট ও ক্লায়েন্ট</p>
             </div>
 
-            {/* Stat 3: Target Gap */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-br from-rose-50/80 via-rose-50/40 to-pink-50/60 border border-rose-200/90 shadow-2xs space-y-1">
-              <div className="text-[11px] font-semibold text-rose-800 uppercase tracking-wider flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
-                লক্ষ্যে পৌঁছাতে বাকি
+            {/* Stat 3: Target Gap OR Disabled Placeholder */}
+            <div className={`p-3.5 rounded-xl border shadow-2xs space-y-1 ${
+              isThisMonth 
+                ? 'bg-gradient-to-br from-rose-50/80 via-rose-50/40 to-pink-50/60 border-rose-200/90' 
+                : 'bg-gradient-to-br from-slate-50/80 to-slate-100/50 border-slate-200/80'
+            }`}>
+              <div className={`text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 ${
+                isThisMonth ? 'text-rose-800' : 'text-slate-500'
+              }`}>
+                <AlertCircle className={`w-3.5 h-3.5 ${isThisMonth ? 'text-rose-500' : 'text-slate-400'}`} />
+                {isThisMonth ? 'লক্ষ্যে পৌঁছাতে বাকি' : 'মাসিক লক্ষ্যমাত্রা'}
               </div>
-              <div className="text-xl font-bold text-rose-600">
-                ৳{remainingTarget.toLocaleString()}
+              <div className={`text-xl font-bold ${isThisMonth ? 'text-rose-600' : 'text-slate-400 text-base mt-1'}`}>
+                {isThisMonth ? `৳${remainingTarget.toLocaleString()}` : 'প্রযোজ্য নয়'}
               </div>
-              <p className="text-[10px] text-rose-600/80">প্রয়োজনীয় অতিরিক্ত আয়</p>
+              <p className={`text-[10px] ${isThisMonth ? 'text-rose-600/80' : 'text-slate-400'}`}>
+                {isThisMonth ? 'প্রয়োজনীয় অতিরিক্ত আয়' : 'সর্বমোট মোডে প্রযোজ্য নয়'}
+              </p>
             </div>
 
             {/* Stat 4: Monthly Installment / EMI */}
@@ -469,10 +551,10 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
       {activeSubView === 'overview' && (
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <IncomeProgressChart incomes={data?.incomes || []} targetIncome={targetIncome} />
+            <IncomeProgressChart incomes={filteredIncomes} targetIncome={targetIncome} />
           </div>
           <div className="lg:col-span-1">
-            <IncomeSourceChart incomes={data?.incomes || []} />
+            <IncomeSourceChart incomes={filteredIncomes} />
           </div>
         </section>
       )}

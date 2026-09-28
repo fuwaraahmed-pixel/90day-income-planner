@@ -14,6 +14,7 @@ import {
 
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
+import TruncatedText from './ui/TruncatedText';
 
 export default function Tasks({ tasks, setTasks, planData }) {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -277,16 +278,21 @@ export default function Tasks({ tasks, setTasks, planData }) {
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-1.5">
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-1.5 w-full min-w-0">
                     {task.targetMetric && (
-                      <span className="flex items-center gap-1 font-medium text-emerald-700">
+                      <span className="flex items-center gap-1 font-medium text-emerald-700 shrink-0">
                         <Target className="w-3.5 h-3.5" /> {task.targetMetric}
                       </span>
                     )}
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 shrink-0">
                       <Calendar className="w-3.5 h-3.5" /> {task.date}
                     </span>
-                    {task.notes && <span>• {task.notes}</span>}
+                    {task.notes && (
+                      <div className="flex items-center gap-1 flex-1 min-w-0">
+                        <span className="shrink-0">•</span>
+                        <TruncatedText text={task.notes} className="flex-1" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

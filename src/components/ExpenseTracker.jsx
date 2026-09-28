@@ -19,6 +19,7 @@ import Modal from './ui/Modal';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 import UniversalPaymentModal from './ui/UniversalPaymentModal';
+import TruncatedText from './ui/TruncatedText';
 
 export default function ExpenseTracker({ expenses, setExpenses, totalIncome, appData }) {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -280,22 +281,27 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome, app
         {filteredExpenses.length > 0 ? (
           filteredExpenses.map((exp) => (
             <div key={exp.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:border-slate-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-start gap-3.5">
+              <div className="flex items-start gap-3.5 flex-1 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
                   ৳
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-base font-bold text-slate-900">{exp.description}</h3>
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                    <TruncatedText text={exp.description} className="text-base font-bold text-slate-900 !w-auto max-w-[150px] sm:max-w-[250px]" />
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
                       {exp.category}
                     </span>
                   </div>
                   <div className="text-xs text-slate-500 mt-1 flex items-center gap-3">
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 shrink-0">
                       <Calendar className="w-3.5 h-3.5 text-slate-400" /> {exp.date} ({exp.month})
                     </span>
-                    {exp.notes && <span>• {exp.notes}</span>}
+                    {exp.notes && (
+                      <div className="flex items-center gap-1 flex-1 min-w-0">
+                        <span className="shrink-0">•</span>
+                        <TruncatedText text={exp.notes} className="flex-1" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

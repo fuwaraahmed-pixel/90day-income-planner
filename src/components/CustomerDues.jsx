@@ -31,6 +31,7 @@ import Modal from './ui/Modal';
 import UniversalPaymentModal from './ui/UniversalPaymentModal';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
+import TruncatedText from './ui/TruncatedText';
 
 export default function CustomerDues({ 
   dues = [], 
@@ -511,15 +512,13 @@ export default function CustomerDues({
                       <td className="px-4 py-3.5">
                         <div className="font-bold text-slate-900">{item.customerName}</div>
                         {item.note && (
-                          <div className="text-[10px] text-slate-400 font-normal truncate max-w-[180px]">
-                            {item.note}
-                          </div>
+                          <TruncatedText text={item.note} className="text-[10px] text-slate-400 font-normal !w-auto max-w-[180px]" />
                         )}
                       </td>
 
                       {/* Work Description */}
-                      <td className="px-4 py-3.5 font-medium text-slate-700">
-                        {item.description}
+                      <td className="px-4 py-3.5 font-medium text-slate-700 w-1/4 min-w-[200px]">
+                        <TruncatedText text={item.description} className="!w-auto max-w-[250px]" />
                       </td>
 
                       {/* Total Amount */}

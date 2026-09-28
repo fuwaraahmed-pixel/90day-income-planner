@@ -28,6 +28,7 @@ import ConfirmModal from './ui/ConfirmModal';
 import { supabase } from '../lib/supabase';
 import * as api from '../lib/supabaseService';
 import Toast from './ui/Toast';
+import TruncatedText from './ui/TruncatedText';
 
 export default function Crm({ 
   leads, 
@@ -710,8 +711,9 @@ export default function Crm({
                   </div>
 
                   {lead.notes && (
-                    <div className="text-xs text-slate-500 italic pl-1">
-                      নোটস: {lead.notes}
+                    <div className="text-xs text-slate-500 italic pl-1 flex items-center gap-1 flex-1 min-w-0">
+                      <span className="shrink-0">নোটস:</span>
+                      <TruncatedText text={lead.notes} className="flex-1" />
                     </div>
                   )}
                 </div>
