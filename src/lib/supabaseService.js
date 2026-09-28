@@ -856,7 +856,7 @@ const formatTuitionStudent = (raw) => {
 };
 
 export const getTuitionStudents = async (userId) => {
-  if (!isSupabaseConfigured || !userId) return [];
+  if (!isSupabaseConfigured || !userId) return null;
   const { data, error } = await supabase
     .from('tuition_students')
     .select('*')
@@ -977,7 +977,7 @@ export const updateTuitionStudent = async (studentId, studentData) => {
 };
 
 export const getTuitionPayments = async (userId) => {
-  if (!isSupabaseConfigured || !userId) return [];
+  if (!isSupabaseConfigured || !userId) return null;
   const { data, error } = await supabase
     .from('tuition_payments')
     .select('*')
@@ -1057,7 +1057,7 @@ export const deleteTuitionPayment = async (paymentId, userId) => {
 // CRM PAYMENTS SERVICES
 // ====================================================================
 export const getCrmPayments = async (userId) => {
-  if (!isSupabaseConfigured || !userId) return [];
+  if (!isSupabaseConfigured || !userId) return null;
   const { data, error } = await supabase
     .from('crm_payments')
     .select('*')
@@ -1102,7 +1102,7 @@ export const rpcRecordCrmPayment = async (paymentData) => {
 // CUSTOMER DUES SERVICES
 // ====================================================================
 export const getCustomerDues = async (userId) => {
-  if (!isSupabaseConfigured || !userId) return [];
+  if (!isSupabaseConfigured || !userId) return null;
   const { data, error } = await supabase
     .from('customer_dues')
     .select('*')
@@ -1217,7 +1217,7 @@ export const deleteCustomerDue = async (userId, dueId) => {
 };
 
 export const getCustomerDuePayments = async (userId) => {
-  if (!isSupabaseConfigured || !userId) return [];
+  if (!isSupabaseConfigured || !userId) return null;
   const { data, error } = await supabase
     .from('customer_due_payments')
     .select('*')
@@ -1267,7 +1267,7 @@ export const rpcRecordCustomerDuePayment = async (paymentData) => {
 // LIABILITY MANAGEMENT SERVICES
 // ====================================================================
 export const getLiabilities = async (userId) => {
-  if (!isSupabaseConfigured || !userId) return [];
+  if (!isSupabaseConfigured || !userId) return null;
   const { data, error } = await supabase
     .from('liabilities')
     .select('*')
@@ -1327,7 +1327,7 @@ export const deleteLiability = async (userId, liabilityId) => {
 };
 
 export const getLiabilityPayments = async (userId) => {
-  if (!isSupabaseConfigured || !userId) return [];
+  if (!isSupabaseConfigured || !userId) return null;
   const { data, error } = await supabase
     .from('liability_payments')
     .select('*')
@@ -1370,7 +1370,7 @@ export const rpcRecordLiabilityPayment = async (paymentData) => {
 };
 
 export const getEmiInstallments = async (userId) => {
-  if (!isSupabaseConfigured || !userId) return [];
+  if (!isSupabaseConfigured || !userId) return null;
   const { data, error } = await supabase
     .from('emi_installments')
     .select('*')
