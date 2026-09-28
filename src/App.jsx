@@ -426,7 +426,7 @@ export default function App() {
         api.getPaymentRequests(session.user.id)
       ]);
       setSubscription(subRes);
-      setPaymentRequests(payReqRes || []);
+      if (payReqRes !== null) setPaymentRequests(payReqRes);
     }
     return res;
   };
@@ -630,12 +630,12 @@ export default function App() {
           try {
             const res = await api.recordTuitionPayment(pData);
             if (res && res.success !== false) {
-               results.push({ studentId: pData.studentId, success: true });
+               results.push({ studentId: pData.studentId, paymentMonth: pData.paymentMonth, success: true });
             } else {
-               results.push({ studentId: pData.studentId, success: false, error: res?.message });
+               results.push({ studentId: pData.studentId, paymentMonth: pData.paymentMonth, success: false, error: res?.message });
             }
           } catch (err) {
-            results.push({ studentId: pData.studentId, success: false, error: err.message });
+            results.push({ studentId: pData.studentId, paymentMonth: pData.paymentMonth, success: false, error: err.message });
           }
         }
         
@@ -663,11 +663,12 @@ export default function App() {
           return { success: true, message: 'All payments successfully recorded' };
         } else if (successCount > 0) {
           const failedIds = results.filter(r => !r.success).map(r => String(r.studentId));
+          const successfulMonths = results.filter(r => r.success).map(r => r.paymentMonth);
           const failedNames = tuitionStudents
             .filter(s => failedIds.includes(String(s.id)))
             .map(s => s.studentName);
           const failedText = failedNames.length > 0 ? failedNames.join(', ') : failedIds.join(', ');
-          return { success: false, partial: true, message: `${successCount} of ${results.length} payments recorded. Failed: ${failedText} — please retry these.` };
+          return { success: false, partial: true, message: `${successCount} of ${results.length} payments recorded. Failed: ${failedText} — please retry these.`, successfulMonths };
         } else {
           return { success: false, message: 'All payments failed to record.' };
         }
@@ -1043,11 +1044,14 @@ export default function App() {
         for (let i = 1; i <= newLiability.durationMonths; i++) {
           // Calculate due date for this installment using the safe helper
           const dueDate = addMonthsSafely(startDate, i, dueDay);
+          const yyyy = dueDate.getFullYear();
+          const mm = String(dueDate.getMonth() + 1).padStart(2, '0');
+          const dd = String(dueDate.getDate()).padStart(2, '0');
 
           installments.push({
             liabilityId: newLiability.id,
             installmentNumber: i,
-            dueDate: dueDate.toISOString().split('T')[0],
+            dueDate: `${yyyy}-${mm}-${dd}`,
             expectedAmount: newLiability.emiAmount
           });
         }
@@ -1056,7 +1060,7 @@ export default function App() {
         if (emiRes.success) {
           // Fetch updated EMI installments to ensure state is synchronized
           const freshEmis = await api.getEmiInstallments(session.user.id);
-          setEmiInstallments(freshEmis || []);
+          if (freshEmis !== null) setEmiInstallments(freshEmis);
         }
       }
 
@@ -1257,9 +1261,9 @@ export default function App() {
                   api.getLiabilityPayments(session.user.id),
                   api.getEmiInstallments(session.user.id)
                 ]);
-                setLiabilitiesState(liabRes || []);
-                setLiabilityPaymentsState(liabPaysRes || []);
-                setEmiInstallments(emiRes || []);
+                if (liabRes !== null) setLiabilitiesState(liabRes);
+                if (liabPaysRes !== null) setLiabilityPaymentsState(liabPaysRes);
+                if (emiRes !== null) setEmiInstallments(emiRes);
               }
               return res;
             }}

@@ -59,7 +59,8 @@ export default function TuitionPaymentModal({
     const s = students.find(st => String(st.id) === String(studentId));
     if (s) {
       const currentMonthStr = selectedMonth || new Date().toISOString().slice(0, 7);
-      const dues = getUnpaidMonths(s, currentMonthStr, existingPayments);
+      const { unpaid } = getUnpaidMonths(s, currentMonthStr, existingPayments);
+      const dues = unpaid ? unpaid.map(u => u.billingMonth) : [];
       setUnpaidMonths(dues);
       
       if (dues.length > 0) {
@@ -170,6 +171,10 @@ export default function TuitionPaymentModal({
         const res = await onSave(paymentsArray);
         if (res && res.success === false) {
           setError(res.message || 'পেমেন্ট রেকর্ড করা সম্ভব হয়নি');
+          if (res.partial && res.successfulMonths) {
+            setUnpaidMonths(prev => prev.filter(u => !res.successfulMonths.includes(u)));
+            setAmount(String((unpaidMonths.length - res.successfulMonths.length) * Number(s.monthlyFee || 0)));
+          }
         } else {
           onClose();
         }
