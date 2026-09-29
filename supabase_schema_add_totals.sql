@@ -1,7 +1,3 @@
--- ====================================================================
--- DASHBOARD TOTALS RPC (FIX 3)
--- ====================================================================
-
 CREATE OR REPLACE FUNCTION public.get_dashboard_financial_totals(p_user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -9,13 +5,21 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-    v_target_income NUMERIC := 100000;
+    v_target_income NUMERIC;
     v_total_salary NUMERIC := 0;
     v_total_new_income NUMERIC := 0;
     v_total_expenses NUMERIC := 0;
 BEGIN
-    SELECT COALESCE(target_income, 100000) INTO v_target_income
+    IF auth.uid() IS NULL THEN
+        RAISE EXCEPTION 'Authentication required';
+    END IF;
+    IF p_user_id IS DISTINCT FROM auth.uid() THEN
+        RAISE EXCEPTION 'Unauthorized';
+    END IF;
+
+    SELECT target_income INTO v_target_income
     FROM public.settings WHERE user_id = p_user_id LIMIT 1;
+    v_target_income := COALESCE(v_target_income, 100000);
 
     SELECT COALESCE(SUM(amount), 0) INTO v_total_salary
     FROM public.income WHERE user_id = p_user_id AND source ILIKE '%Salary%';
@@ -36,9 +40,9 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.get_dashboard_tuition_and_dues_totals(
-    p_user_id UUID, 
-    p_current_month_str TEXT, 
-    p_today_str DATE, 
+    p_user_id UUID,
+    p_current_month_str TEXT,
+    p_today_str DATE,
     p_next_7_days_str DATE
 )
 RETURNS JSONB
@@ -53,6 +57,13 @@ DECLARE
     v_overdue_dues NUMERIC := 0;
     v_due_soon_dues NUMERIC := 0;
 BEGIN
+    IF auth.uid() IS NULL THEN
+        RAISE EXCEPTION 'Authentication required';
+    END IF;
+    IF p_user_id IS DISTINCT FROM auth.uid() THEN
+        RAISE EXCEPTION 'Unauthorized';
+    END IF;
+
     SELECT COALESCE(SUM(monthly_fee), 0) INTO v_expected_tuition
     FROM public.tuition_students WHERE user_id = p_user_id AND status = 'Active';
 
@@ -63,11 +74,11 @@ BEGIN
     FROM public.customer_dues WHERE user_id = p_user_id;
 
     SELECT COALESCE(SUM(GREATEST(0, total_amount - paid_amount)), 0) INTO v_overdue_dues
-    FROM public.customer_dues 
+    FROM public.customer_dues
     WHERE user_id = p_user_id AND due_date < p_today_str AND (total_amount - paid_amount) > 0;
 
     SELECT COALESCE(SUM(GREATEST(0, total_amount - paid_amount)), 0) INTO v_due_soon_dues
-    FROM public.customer_dues 
+    FROM public.customer_dues
     WHERE user_id = p_user_id AND due_date >= p_today_str AND due_date <= p_next_7_days_str AND (total_amount - paid_amount) > 0;
 
     RETURN jsonb_build_object(
@@ -79,3 +90,11 @@ BEGIN
     );
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.get_dashboard_financial_totals(UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_dashboard_financial_totals(UUID) TO authenticated;
+
+REVOKE ALL ON FUNCTION public.get_dashboard_tuition_and_dues_totals(UUID, TEXT, DATE, DATE) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_dashboard_tuition_and_dues_totals(UUID, TEXT, DATE, DATE) TO authenticated;
+
+NOTIFY pgrst, 'reload schema';
