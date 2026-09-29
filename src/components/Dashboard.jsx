@@ -24,6 +24,7 @@ import IncomeProgressChart from './charts/IncomeProgressChart';
 import IncomeSourceChart from './charts/IncomeSourceChart';
 import UniversalPaymentModal from './ui/UniversalPaymentModal';
 import * as api from '../lib/supabaseService';
+import { withSync } from '../store/syncStore';
 import { getUnpaidMonths, getLocalTodayISO, getLocalCurrentMonthStr, getCollectedCashFlow } from './Tuition';
 
 export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment }) {
@@ -44,10 +45,10 @@ export default function Dashboard({ data, setActiveTab, onRecordLiabilityPayment
     let isMounted = true;
     const fetchTotals = async () => {
       if (!data?.user?.id) return;
-      const [t1, t2] = await Promise.all([
+      const [t1, t2] = await withSync(Promise.all([
         api.getDashboardFinancialTotals(data.user.id),
         api.getDashboardTuitionAndDuesTotals(data.user.id, currentMonthPrefix, todayStr, next7DaysStr)
-      ]);
+      ]));
       if (isMounted) {
         setBackendTotals({ ...(t1 || {}), ...(t2 || {}) });
       }

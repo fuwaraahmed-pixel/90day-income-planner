@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Plan from './components/Plan';
@@ -24,6 +24,8 @@ import { loadData, STORAGE_KEYS } from './utils/storage';
 import { RefreshCw, AlertCircle, CloudOff } from 'lucide-react';
 
 import Toast from './components/ui/Toast';
+import SyncStatusPill from './components/ui/SyncStatusPill';
+import { useSyncStore, withSync, resetSyncState, getSyncState } from './store/syncStore';
 import { isSubscribed } from './utils/subscriptionHelper';
 
 export default function App() {
@@ -34,6 +36,22 @@ export default function App() {
   const [loadingData, setLoadingData] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
   const [globalError, setGlobalError] = useState(null);
+
+  // Sync State
+  const syncStatus = useSyncStore();
+  const loadUserDataRef = useRef(null);
+  const prevUserIdRef = useRef(null);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (getSyncState().hasUnsavedFailure) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   // Subscription & Admin State
   const [subscription, setSubscription] = useState(null);
@@ -271,6 +289,9 @@ export default function App() {
   // 1. Session Setup & Auth Monitoring
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.id) {
+        prevUserIdRef.current = session.user.id;
+      }
       setSession(session);
       setAuthChecking(false);
     }).catch(err => {
@@ -279,6 +300,16 @@ export default function App() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'SIGNED_OUT') {
+        resetSyncState();
+        prevUserIdRef.current = null;
+      } else if (session?.user?.id && prevUserIdRef.current && session.user.id !== prevUserIdRef.current) {
+        resetSyncState();
+        prevUserIdRef.current = session.user.id;
+      } else if (session?.user?.id) {
+        prevUserIdRef.current = session.user.id;
+      }
+      
       setSession(session);
       setAuthChecking(false);
     });
@@ -301,27 +332,7 @@ export default function App() {
       const userId = session.user.id;
 
       try {
-        const [
-          adminRes,
-          subRes,
-          payReqRes,
-          settingsRes,
-          tasksRes,
-          leadsRes,
-          incomesRes,
-          expensesRes,
-          reviewsRes,
-          servicesRes,
-          planRes,
-          tuitionStsRes,
-          tuitionPaysRes,
-          crmPaysRes,
-          duesRes,
-          duePaysRes,
-          liabRes,
-          liabPaysRes,
-          emiInstallmentsRes
-        ] = await Promise.all([
+        const pAll = Promise.all([
           api.checkIsAdmin(userId, session.user.email),
           api.getSubscription(userId),
           api.getPaymentRequests(userId),
@@ -342,6 +353,41 @@ export default function App() {
           api.getLiabilityPayments(userId),
           api.getEmiInstallments(userId)
         ]);
+        const isFailure = (resList) => {
+            const [
+              adminRes, subRes, payReqRes, settingsRes, tasksRes, leadsRes, incomesRes,
+              expensesRes, reviewsRes, servicesRes, planRes, tuitionStsRes, tuitionPaysRes,
+              crmPaysRes, duesRes, duePaysRes, liabRes, liabPaysRes, emiInstallmentsRes
+            ] = resList;
+            const dataFetches = [
+              tasksRes, leadsRes, incomesRes, expensesRes, reviewsRes, servicesRes,
+              tuitionStsRes, tuitionPaysRes, crmPaysRes, duesRes, duePaysRes,
+              liabRes, liabPaysRes, emiInstallmentsRes
+            ];
+            return dataFetches.some(res => res === null || res === false);
+          };
+          const results = await withSync(pAll, { isLoadUserData: true, isFailure });
+        const [
+          adminRes,
+          subRes,
+          payReqRes,
+          settingsRes,
+          tasksRes,
+          leadsRes,
+          incomesRes,
+          expensesRes,
+          reviewsRes,
+          servicesRes,
+          planRes,
+          tuitionStsRes,
+          tuitionPaysRes,
+          crmPaysRes,
+          duesRes,
+          duePaysRes,
+          liabRes,
+          liabPaysRes,
+          emiInstallmentsRes
+        ] = results;
 
         if (!isMounted) return;
 
@@ -388,6 +434,7 @@ export default function App() {
       }
     };
 
+    loadUserDataRef.current = loadUserData;
     loadUserData();
 
     return () => { isMounted = false; };
@@ -419,12 +466,20 @@ export default function App() {
   // Submit Payment Request Handler
   const handleSubmitPayment = async (details) => {
     if (!session?.user?.id) return { success: false, message: 'ইউজার লগইন করা নেই' };
-    const res = await api.submitPaymentRequest(session.user.id, session.user.email, details);
+    const res = await withSync(api.submitPaymentRequest(session.user.id, session.user.email, details));
     if (res && res.success) {
-      const [subRes, payReqRes] = await Promise.all([
-        api.getSubscription(session.user.id),
-        api.getPaymentRequests(session.user.id)
-      ]);
+      const [subRes, payReqRes] = await withSync(
+        Promise.all([
+          api.getSubscription(session.user.id),
+          api.getPaymentRequests(session.user.id)
+        ]),
+        {
+          isFailure: (resList) => {
+            const [s, p] = resList;
+            return p === null || p === false;
+          }
+        }
+      );
       setSubscription(subRes);
       if (payReqRes !== null) setPaymentRequests(payReqRes);
     }
@@ -436,7 +491,7 @@ export default function App() {
   const handleSetAppData = (newSettings) => {
     setAppDataState(newSettings);
     if (session?.user?.id) {
-      api.updateSettings(session.user.id, newSettings);
+      withSync(api.updateSettings(session.user.id, newSettings), { isOptimistic: true });
     }
   };
 
@@ -446,15 +501,15 @@ export default function App() {
       if (session?.user?.id) {
         if (nextTasks.length > prev.length) {
           const added = nextTasks.find(t => !prev.some(p => p.id === t.id));
-          if (added) api.createTask(session.user.id, added);
+          if (added) withSync(api.createTask(session.user.id, added), { isOptimistic: true });
         } else if (nextTasks.length < prev.length) {
           const deleted = prev.find(p => !nextTasks.some(t => t.id === p.id));
-          if (deleted) api.deleteTask(session.user.id, deleted.id);
+          if (deleted) withSync(api.deleteTask(session.user.id, deleted.id), { isOptimistic: true });
         } else {
           nextTasks.forEach(t => {
             const old = prev.find(p => p.id === t.id);
             if (old && old.status !== t.status) {
-              api.updateTaskStatus(session.user.id, t.id, t.status);
+              withSync(api.updateTaskStatus(session.user.id, t.id, t.status), { isOptimistic: true });
             }
           });
         }
@@ -469,10 +524,10 @@ export default function App() {
       if (session?.user?.id) {
         if (nextLeads.length > prev.length) {
           const added = nextLeads.find(l => !prev.some(p => p.id === l.id));
-          if (added) api.createCRMClient(session.user.id, added);
+          if (added) withSync(api.createCRMClient(session.user.id, added), { isOptimistic: true });
         } else if (nextLeads.length < prev.length) {
           const deleted = prev.find(p => !nextLeads.some(l => l.id === p.id));
-          if (deleted) api.deleteCRMClient(session.user.id, deleted.id);
+          if (deleted) withSync(api.deleteCRMClient(session.user.id, deleted.id), { isOptimistic: true });
         }
       }
       return nextLeads;
@@ -485,15 +540,15 @@ export default function App() {
       if (session?.user?.id) {
         if (nextIncomes.length > prev.length) {
           const added = nextIncomes.find(i => !prev.some(p => p.id === i.id));
-          if (added) api.createIncome(session.user.id, added);
+          if (added) withSync(api.createIncome(session.user.id, added), { isOptimistic: true });
         } else if (nextIncomes.length < prev.length) {
           const deleted = prev.find(p => !nextIncomes.some(i => i.id === p.id));
-          if (deleted) api.deleteIncome(session.user.id, deleted.id);
+          if (deleted) withSync(api.deleteIncome(session.user.id, deleted.id), { isOptimistic: true });
         } else {
           nextIncomes.forEach(i => {
             const old = prev.find(p => p.id === i.id);
             if (old && (old.amount !== i.amount || old.source !== i.source || old.clientDetails !== i.clientDetails || old.date !== i.date || old.paymentType !== i.paymentType || old.notes !== i.notes || old.month !== i.month)) {
-              api.updateIncome(session.user.id, i.id, i);
+              withSync(api.updateIncome(session.user.id, i.id, i), { isOptimistic: true });
             }
           });
         }
@@ -508,15 +563,15 @@ export default function App() {
       if (session?.user?.id) {
         if (nextExpenses.length > prev.length) {
           const added = nextExpenses.find(e => !prev.some(p => p.id === e.id));
-          if (added) api.createExpense(session.user.id, added);
+          if (added) withSync(api.createExpense(session.user.id, added), { isOptimistic: true });
         } else if (nextExpenses.length < prev.length) {
           const deleted = prev.find(p => !nextExpenses.some(e => e.id === p.id));
-          if (deleted) api.deleteExpense(session.user.id, deleted.id);
+          if (deleted) withSync(api.deleteExpense(session.user.id, deleted.id), { isOptimistic: true });
         } else {
           nextExpenses.forEach(e => {
             const old = prev.find(p => p.id === e.id);
             if (old && (old.amount !== e.amount || old.category !== e.category || old.description !== e.description || old.date !== e.date || old.notes !== e.notes || old.month !== e.month)) {
-              api.updateExpense(session.user.id, e.id, e);
+              withSync(api.updateExpense(session.user.id, e.id, e), { isOptimistic: true });
             }
           });
         }
@@ -531,10 +586,10 @@ export default function App() {
       if (session?.user?.id) {
         if (nextReviews.length > prev.length) {
           const added = nextReviews.find(r => !prev.some(p => p.id === r.id));
-          if (added) api.createWeeklyReview(session.user.id, added);
+          if (added) withSync(api.createWeeklyReview(session.user.id, added), { isOptimistic: true });
         } else if (nextReviews.length < prev.length) {
           const deleted = prev.find(p => !nextReviews.some(r => r.id === p.id));
-          if (deleted) api.deleteWeeklyReview(session.user.id, deleted.id);
+          if (deleted) withSync(api.deleteWeeklyReview(session.user.id, deleted.id), { isOptimistic: true });
         }
       }
       return nextReviews;
@@ -547,10 +602,10 @@ export default function App() {
       if (session?.user?.id) {
         if (nextServices.length > prev.length) {
           const added = nextServices.find(s => !prev.some(p => p.id === s.id));
-          if (added) api.createService(session.user.id, added);
+          if (added) withSync(api.createService(session.user.id, added), { isOptimistic: true });
         } else if (nextServices.length < prev.length) {
           const deleted = prev.find(p => !nextServices.some(s => s.id === p.id));
-          if (deleted) api.deleteService(session.user.id, deleted.id);
+          if (deleted) withSync(api.deleteService(session.user.id, deleted.id), { isOptimistic: true });
         }
       }
       return nextServices;
@@ -561,7 +616,7 @@ export default function App() {
     setPlanDataState(prev => {
       const nextPlan = typeof newPlanOrFn === 'function' ? newPlanOrFn(prev) : newPlanOrFn;
       if (session?.user?.id && nextPlan) {
-        api.update90DayPlan(session.user.id, nextPlan);
+        withSync(api.update90DayPlan(session.user.id, nextPlan), { isOptimistic: true });
       }
       return nextPlan;
     });
@@ -574,8 +629,7 @@ export default function App() {
     const res = await api.migrateLocalStorageToSupabase(session.user.id);
     
     if (res.success) {
-      const [t, l, inc, exp, rev, srv, pl, setts] = await Promise.all([
-        api.getTasks(session.user.id),
+      const pAll = withSync(Promise.all([api.getTasks(session.user.id),
         api.getCRMClients(session.user.id),
         api.getIncome(session.user.id),
         api.getExpenses(session.user.id),
@@ -583,7 +637,8 @@ export default function App() {
         api.getServices(session.user.id),
         api.get90DayPlan(session.user.id),
         api.getSettings(session.user.id)
-      ]);
+      ]));
+      const [t, l, inc, exp, rev, srv, pl, setts] = await withSync(pAll, { isLoadUserData: true });
       if (t) setTasksState(t);
       if (l) setLeadsState(l);
       if (inc) setIncomesState(inc);
@@ -601,7 +656,7 @@ export default function App() {
   // Tuition Handlers
   const handleAddTuitionStudent = async (studentData) => {
     if (session?.user?.id) {
-      const added = await api.addTuitionStudent(session.user.id, studentData);
+      const added = await withSync(api.addTuitionStudent(session.user.id, studentData));
       if (added) {
         setTuitionStudents(prev => [added, ...prev]);
       }
@@ -613,7 +668,7 @@ export default function App() {
 
   const handleUpdateTuitionStudent = async (studentId, studentData) => {
     if (session?.user?.id) {
-      const updated = await api.updateTuitionStudent(studentId, studentData);
+      const updated = await withSync(api.updateTuitionStudent(studentId, studentData));
       if (updated) {
         setTuitionStudents(prev => prev.map(s => String(s.id) === String(studentId) ? updated : s));
       }
@@ -628,7 +683,7 @@ export default function App() {
         const results = [];
         for (const pData of paymentData) {
           try {
-            const res = await api.recordTuitionPayment(pData);
+            const res = await withSync(api.recordTuitionPayment(pData));
             if (res && res.success !== false) {
                results.push({ studentId: pData.studentId, paymentMonth: pData.paymentMonth, success: true });
             } else {
@@ -643,10 +698,10 @@ export default function App() {
         const failedCount = results.length - successCount;
         
         if (successCount > 0) {
-          const [paysRes, incsRes] = await Promise.all([
-            api.getTuitionPayments(session.user.id),
+          const pAll = withSync(Promise.all([api.getTuitionPayments(session.user.id),
             api.getIncome(session.user.id)
-          ]);
+          ]));
+          const [paysRes, incsRes] = await withSync(pAll);
           if (paysRes !== null) {
             setTuitionPayments(paysRes);
           } else {
@@ -680,13 +735,12 @@ export default function App() {
     }
 
     if (session?.user?.id) {
-      const res = await api.recordTuitionPayment(paymentData);
+      const res = await withSync(api.recordTuitionPayment(paymentData));
       if (res && res.success !== false) {
         // Refresh tuition payments & income list atomically
-        const [paysRes, incsRes] = await Promise.all([
-          api.getTuitionPayments(session.user.id),
+        const [paysRes, incsRes] = await withSync(Promise.all([api.getTuitionPayments(session.user.id),
           api.getIncome(session.user.id)
-        ]);
+        ]));
         if (paysRes !== null) {
           setTuitionPayments(paysRes);
         } else {
@@ -708,12 +762,11 @@ export default function App() {
 
   const handleDeleteTuitionPayment = async (paymentId) => {
     if (session?.user?.id) {
-      const res = await api.deleteTuitionPayment(paymentId, session.user.id);
+      const res = await withSync(api.deleteTuitionPayment(paymentId, session.user.id));
       if (res && res.success !== false) {
-        const [paysRes, incsRes] = await Promise.all([
-          api.getTuitionPayments(session.user.id),
+        const [paysRes, incsRes] = await withSync(Promise.all([api.getTuitionPayments(session.user.id),
           api.getIncome(session.user.id)
-        ]);
+        ]));
         if (paysRes !== null) {
           setTuitionPayments(paysRes);
         } else {
@@ -734,14 +787,13 @@ export default function App() {
 
   const handleRecordCrmPayment = async (paymentData) => {
     if (session?.user?.id) {
-      const res = await api.rpcRecordCrmPayment(paymentData);
+      const res = await withSync(api.rpcRecordCrmPayment(paymentData));
       if (res && res.success !== false) {
         // Refresh crmPayments, leads, and incomes atomically
-        const [crmPaysRes, leadsRes, incsRes] = await Promise.all([
-          api.getCrmPayments(session.user.id),
+        const [crmPaysRes, leadsRes, incsRes] = await withSync(Promise.all([api.getCrmPayments(session.user.id),
           api.getCRMClients(session.user.id),
           api.getIncome(session.user.id)
-        ]);
+        ]));
         if (crmPaysRes !== null) {
           setCrmPayments(crmPaysRes);
         } else {
@@ -816,7 +868,7 @@ export default function App() {
     const initialPaid = Number(dueData.paidAmount) || 0;
 
     if (session?.user?.id) {
-      const res = await api.createCustomerDue(session.user.id, dueData);
+      const res = await withSync(api.createCustomerDue(session.user.id, dueData));
       if (res?.error || !res?.data) {
         throw new Error(res?.error || 'Supabase-এ পাওনা সংরক্ষণ করা সম্ভব হয়নি।');
       }
@@ -827,22 +879,21 @@ export default function App() {
         const uniquePayId = typeof crypto !== 'undefined' && crypto.randomUUID 
           ? crypto.randomUUID() 
           : '00000000-0000-4000-8000-' + Date.now().toString(16).padStart(12, '0');
-        const payRes = await api.rpcRecordCustomerDuePayment({
+        const payRes = await withSync(api.rpcRecordCustomerDuePayment({
           paymentId: uniquePayId,
           dueId: created.id,
           paymentDate: new Date().toISOString().split('T')[0],
           amount: initialPaid,
           paymentMethod: 'bKash',
           note: 'প্রাথমিক পেমেন্ট প্রাপ্তি'
-        });
+        }));
         if (payRes?.success === false) {
           console.warn('Initial payment recording issue:', payRes.message);
         }
-        const [duesRes, paysRes, incsRes] = await Promise.all([
-          api.getCustomerDues(session.user.id),
+        const [duesRes, paysRes, incsRes] = await withSync(Promise.all([api.getCustomerDues(session.user.id),
           api.getCustomerDuePayments(session.user.id),
           api.getIncome(session.user.id)
-        ]);
+        ]));
         if (duesRes !== null) {
           setCustomerDuesState(duesRes);
         } else {
@@ -908,11 +959,11 @@ export default function App() {
 
   const handleUpdateCustomerDue = async (dueId, dueData) => {
     if (session?.user?.id) {
-      const res = await api.updateCustomerDue(session.user.id, dueId, dueData);
+      const res = await withSync(api.updateCustomerDue(session.user.id, dueId, dueData));
       if (res?.error || !res?.data) {
         throw new Error(res?.error || 'Supabase-এ পাওনা আপডেট করতে সমস্যা হয়েছে।');
       }
-      const duesRes = await api.getCustomerDues(session.user.id);
+      const duesRes = await withSync(api.getCustomerDues(session.user.id));
       if (duesRes !== null) {
         setCustomerDuesState(duesRes);
       } else {
@@ -935,7 +986,7 @@ export default function App() {
 
   const handleDeleteCustomerDue = async (dueId) => {
     if (session?.user?.id) {
-      const res = await api.deleteCustomerDue(session.user.id, dueId);
+      const res = await withSync(api.deleteCustomerDue(session.user.id, dueId));
       if (res?.error || res?.success === false) {
         throw new Error(res?.error || 'Supabase থেকে মুছে ফেলতে সমস্যা হয়েছে।');
       }
@@ -947,13 +998,12 @@ export default function App() {
 
   const handleRecordCustomerDuePayment = async (paymentData) => {
     if (session?.user?.id) {
-      const res = await api.rpcRecordCustomerDuePayment(paymentData);
+      const res = await withSync(api.rpcRecordCustomerDuePayment(paymentData));
       if (res && res.success !== false) {
-        const [duesRes, paysRes, incsRes] = await Promise.all([
-          api.getCustomerDues(session.user.id),
+        const [duesRes, paysRes, incsRes] = await withSync(Promise.all([api.getCustomerDues(session.user.id),
           api.getCustomerDuePayments(session.user.id),
           api.getIncome(session.user.id)
-        ]);
+        ]));
         if (duesRes !== null) {
           setCustomerDuesState(duesRes);
         } else {
@@ -1020,7 +1070,7 @@ export default function App() {
   // Liabilities Handlers
   const handleCreateLiability = async (liabilityData) => {
     if (session?.user?.id) {
-      const res = await api.createLiability(session.user.id, liabilityData);
+      const res = await withSync(api.createLiability(session.user.id, liabilityData));
       if (res?.error || !res?.data) {
         return { success: false, message: res?.error || 'Supabase-এ দেনা সংরক্ষণ করা সম্ভব হয়নি।' };
       }
@@ -1056,10 +1106,10 @@ export default function App() {
           });
         }
 
-        const emiRes = await api.createEmiInstallments(session.user.id, installments);
+        const emiRes = await withSync(api.createEmiInstallments(session.user.id, installments));
         if (emiRes.success) {
           // Fetch updated EMI installments to ensure state is synchronized
-          const freshEmis = await api.getEmiInstallments(session.user.id);
+          const freshEmis = await withSync(api.getEmiInstallments(session.user.id));
           if (freshEmis !== null) setEmiInstallments(freshEmis);
         }
       }
@@ -1071,7 +1121,7 @@ export default function App() {
 
   const handleDeleteLiability = async (liabilityId) => {
     if (session?.user?.id) {
-      const deleted = await api.deleteLiability(session.user.id, liabilityId);
+      const deleted = await withSync(api.deleteLiability(session.user.id, liabilityId));
       if (deleted) {
         setLiabilitiesState(prev => prev.filter(l => String(l.id) !== String(liabilityId)));
       }
@@ -1080,13 +1130,12 @@ export default function App() {
 
   const handleRecordLiabilityPayment = async (paymentData) => {
     if (session?.user?.id) {
-      const res = await api.rpcRecordLiabilityPayment(paymentData);
+      const res = await withSync(api.rpcRecordLiabilityPayment(paymentData));
       if (res && res.success !== false) {
-        const [liabRes, liabPaysRes, expRes] = await Promise.all([
-          api.getLiabilities(session.user.id),
+        const [liabRes, liabPaysRes, expRes] = await withSync(Promise.all([api.getLiabilities(session.user.id),
           api.getLiabilityPayments(session.user.id),
           api.getExpenses(session.user.id)
-        ]);
+        ]));
         if (liabRes !== null) {
           setLiabilitiesState(liabRes);
         } else {
@@ -1191,13 +1240,16 @@ export default function App() {
       )}
 
       <main className="flex-1 md:ml-64 p-4 sm:p-6 md:p-8 w-full min-w-0 max-w-[1600px] mx-auto">
-        {/* Sleek Floating Glass Cloud Sync Badge */}
-        {loadingData && (
-          <div className="mb-4 inline-flex items-center gap-2 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-xs transition-all">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <RefreshCw className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
-            <span className="text-slate-600">লাইভ ক্লাউড ডাটা সিঙ্ক চলছে...</span>
-          </div>
+        {session?.user && (
+          <SyncStatusPill 
+            status={syncStatus.status} 
+            lastSyncedAt={syncStatus.lastSyncedAt} 
+            onRetry={() => {
+              if (window.confirm("কিছু পরিবর্তন সার্ভারে সেভ হয়নি। রিলোড করলে সেগুলো হারিয়ে যেতে পারে। তবুও রিলোড করবেন?")) {
+                if (loadUserDataRef.current) loadUserDataRef.current();
+              }
+            }} 
+          />
         )}
 
         {/* Tab Content */}
@@ -1253,14 +1305,13 @@ export default function App() {
             onRecordPayment={handleRecordLiabilityPayment}
             onRecordEmiPayment={async (paymentData) => {
               if (!session?.user?.id) return { success: false, message: 'Not logged in' };
-              const res = await api.rpcRecordEmiPayment(paymentData);
+              const res = await withSync(api.rpcRecordEmiPayment(paymentData));
               if (res && res.success) {
                 // Refresh data
-                const [liabRes, liabPaysRes, emiRes] = await Promise.all([
-                  api.getLiabilities(session.user.id),
+                const [liabRes, liabPaysRes, emiRes] = await withSync(Promise.all([api.getLiabilities(session.user.id),
                   api.getLiabilityPayments(session.user.id),
                   api.getEmiInstallments(session.user.id)
-                ]);
+                ]));
                 if (liabRes !== null) setLiabilitiesState(liabRes);
                 if (liabPaysRes !== null) setLiabilityPaymentsState(liabPaysRes);
                 if (emiRes !== null) setEmiInstallments(emiRes);

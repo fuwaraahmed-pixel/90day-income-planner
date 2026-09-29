@@ -27,6 +27,7 @@ import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 import { supabase } from '../lib/supabase';
 import * as api from '../lib/supabaseService';
+import { withSync } from '../store/syncStore';
 import Toast from './ui/Toast';
 import TruncatedText from './ui/TruncatedText';
 
@@ -178,7 +179,7 @@ export default function Crm({
       const userId = session?.user?.id;
       
       if (userId) {
-        const success = await api.updateCRMClientStatus(userId, leadId, newStatus);
+        const success = await withSync(api.updateCRMClientStatus(userId, leadId, newStatus));
         if (!success) {
           throw new Error('Database update failed');
         }

@@ -1007,7 +1007,14 @@ export const recordTuitionPayment = async (paymentData) => {
 
   if (error) {
     console.error('RPC record_tuition_payment Error:', error);
-    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
+    if (error.code === 'P0001' || error.code === '23505') {
+        const msg = error.message || '';
+        if (msg.includes('Authentication') || msg.includes('Unauthorized')) {
+          return { success: false, message: error.message };
+        }
+        return { success: false, businessRejection: true, message: error.message };
+      }
+      if (error.code === '42883' || error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('function') || error.message?.includes('does not exist')) {
       return { success: false, message: 'Supabase-এ record_tuition_payment ফাংশনটি পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ SQL কোডটি Run করুন।' };
     }
     return { success: false, message: error.message };
@@ -1089,7 +1096,14 @@ export const rpcRecordCrmPayment = async (paymentData) => {
 
   if (error) {
     console.error('RPC record_crm_payment Error:', error);
-    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
+    if (error.code === 'P0001' || error.code === '23505') {
+        const msg = error.message || '';
+        if (msg.includes('Authentication') || msg.includes('Unauthorized')) {
+          return { success: false, message: error.message };
+        }
+        return { success: false, businessRejection: true, message: error.message };
+      }
+      if (error.code === '42883' || error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('function') || error.message?.includes('does not exist')) {
       return { success: false, message: 'Supabase-এ record_crm_payment ফাংশনটি পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ নতুন SQL কোডটি Run করুন।' };
     }
     return { success: false, message: error.message };
@@ -1254,7 +1268,14 @@ export const rpcRecordCustomerDuePayment = async (paymentData) => {
 
   if (error) {
     console.error('RPC record_customer_due_payment Error:', error);
-    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883' || error.code === '42P01' || error.code === 'PGRST205') {
+    if (error.code === 'P0001' || error.code === '23505') {
+        const msg = error.message || '';
+        if (msg.includes('Authentication') || msg.includes('Unauthorized')) {
+          return { success: false, message: error.message };
+        }
+        return { success: false, businessRejection: true, message: error.message };
+      }
+      if (error.code === '42883' || error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('function') || error.message?.includes('does not exist')) {
       return { success: false, message: 'Supabase-এ record_customer_due_payment ফাংশন বা টেবিল পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ supabase_schema.sql রান করুন।' };
     }
     return { success: false, message: error.message };
@@ -1360,7 +1381,14 @@ export const rpcRecordLiabilityPayment = async (paymentData) => {
 
   if (error) {
     console.error('RPC record_liability_payment Error:', error);
-    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
+    if (error.code === 'P0001' || error.code === '23505') {
+        const msg = error.message || '';
+        if (msg.includes('Authentication') || msg.includes('Unauthorized')) {
+          return { success: false, message: error.message };
+        }
+        return { success: false, businessRejection: true, message: error.message };
+      }
+      if (error.code === '42883' || error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('function') || error.message?.includes('does not exist')) {
       return { success: false, message: 'Supabase-এ record_liability_payment ফাংশনটি পাওয়া যায়নি। দয়া করে Supabase SQL Editor-এ নতুন SQL কোডটি Run করুন।' };
     }
     return { success: false, message: error.message };
@@ -1427,7 +1455,14 @@ export const rpcRecordEmiPayment = async (paymentData) => {
 
   if (error) {
     console.error('RPC record_emi_payment Error:', error);
-    if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
+    if (error.code === 'P0001' || error.code === '23505') {
+        const msg = error.message || '';
+        if (msg.includes('Authentication') || msg.includes('Unauthorized')) {
+          return { success: false, message: error.message };
+        }
+        return { success: false, businessRejection: true, message: error.message };
+      }
+      if (error.code === '42883' || error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('function') || error.message?.includes('does not exist')) {
       return { success: false, message: 'Supabase-à¦ record_emi_payment à¦«à¦¾à¦‚à¦¶à¦¨à¦Ÿà¦¿ à¦ªà¦¾à¦“à§Ÿà¦¾ à¦¯à¦¾à§Ÿà¦¨à¦¿à¥¤ à¦¦à§Ÿà¦¾ à¦•à¦°à§‡ Supabase SQL Editor-à¦ à¦¨à¦¤à§à¦¨ SQL à¦•à§‹à¦¡à¦Ÿà¦¿ Run à¦•à¦°à§à¦¨à¥¤' };
     }
     return { success: false, message: error.message };
