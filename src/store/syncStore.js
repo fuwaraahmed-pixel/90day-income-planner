@@ -40,6 +40,13 @@ if (typeof window !== 'undefined') {
   });
 }
 
+export const isFailedResult = (r) => {
+  if (r === null || r === false || r === undefined) return true;
+  if (r && typeof r === 'object' && r.error) return true;
+  if (r && typeof r === 'object' && r.success === false && !r.businessRejection) return true;
+  return false;
+};
+
 /**
  * Wraps a promise to track sync status.
  * @param {Promise} promise 
@@ -65,19 +72,12 @@ export const withSync = (promise, { isOptimistic = false, isLoadUserData = false
     .then(res => {
       let isFailed = false;
       
-      const checkFailure = (r) => {
-        if (r === null || r === false || r === undefined) return true;
-        if (r && typeof r === 'object' && r.error) return true;
-        if (r && typeof r === 'object' && r.success === false && !r.businessRejection) return true;
-        return false;
-      };
-
       if (customIsFailure) {
         isFailed = customIsFailure(res);
       } else if (Array.isArray(res)) {
-        isFailed = res.some(checkFailure);
+        isFailed = res.some(isFailedResult);
       } else {
-        isFailed = checkFailure(res);
+        isFailed = isFailedResult(res);
       }
 
       if (isFailed && import.meta.env.DEV) {

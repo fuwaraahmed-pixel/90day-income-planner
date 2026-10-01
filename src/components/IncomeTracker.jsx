@@ -21,12 +21,13 @@ import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 import TruncatedText from './ui/TruncatedText';
 
-export default function IncomeTracker({ incomes, setIncomes, targetIncome, currentSalary }) {
+export default function IncomeTracker({ incomes, setIncomes, incomeActions, targetIncome, currentSalary }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingIncome, setEditingIncome] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSource, setFilterSource] = useState('All');
+  const [isSaving, setIsSaving] = useState(false);
 
   const sources = [
     'Salary (স্থায়ী বেতন/আয়)',
@@ -50,7 +51,7 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
     notes: ''
   });
 
-  const handleAddIncome = (e) => {
+  const handleAddIncome = async (e) => {
     e.preventDefault();
     if (!newIncome.clientDetails.trim() || !newIncome.amount) return;
 
@@ -60,21 +61,30 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
       amount: Number(newIncome.amount) || 0
     };
 
-    setIncomes([created, ...incomes]);
-    setNewIncome({
-      date: new Date().toISOString().split('T')[0],
-      source: 'Website (ওয়েবসাইট প্রজেক্ট)',
-      clientDetails: '',
-      amount: '',
-      paymentType: 'bKash',
-      month: 'Month 1',
-      notes: ''
-    });
-    setShowAddForm(false);
+    setIsSaving(true);
+    let success = false;
+    try {
+      success = await incomeActions.add(created);
+    } finally {
+      setIsSaving(false);
+    }
+    
+    if (success) {
+      setNewIncome({
+        date: new Date().toISOString().split('T')[0],
+        source: 'Website (ওয়েবসাইট প্রজেক্ট)',
+        clientDetails: '',
+        amount: '',
+        paymentType: 'bKash',
+        month: 'Month 1',
+        notes: ''
+      });
+      setShowAddForm(false);
+    }
   };
 
-  const handleDeleteIncome = (id) => {
-    setIncomes(incomes.filter(i => i.id !== id));
+  const handleDeleteIncome = async (id) => {
+    await incomeActions.remove(id);
   };
 
   // Calculations
@@ -266,9 +276,10 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+              disabled={isSaving}
+              className={`px-5 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm ${isSaving ? 'bg-slate-400 text-white cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
             >
-              সংরক্ষণ করুন
+              {isSaving ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
             </button>
           </div>
         </form>
@@ -352,16 +363,18 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
                   ) : (
                     <>
                       <button
-                        onClick={() => setEditingIncome({ ...inc })}
-                        className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                        title="সম্পাদনা করুন (Edit)"
+                        onClick={() => !inc._pending && setEditingIncome({ ...inc })}
+                        disabled={inc._pending}
+                        className={`p-1.5 rounded-lg transition-colors ${inc._pending ? 'text-slate-300 cursor-not-allowed' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                        title={inc._pending ? 'সংরক্ষণ হচ্ছে...' : 'সম্পাদনা করুন (Edit)'}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => setDeleteConfirmId(inc.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                        title="মুছে ফেলুন (Delete)"
+                        onClick={() => !inc._pending && setDeleteConfirmId(inc.id)}
+                        disabled={inc._pending}
+                        className={`p-1.5 rounded-lg transition-colors ${inc._pending ? 'text-slate-300 cursor-not-allowed' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
+                        title={inc._pending ? 'সংরক্ষণ হচ্ছে...' : 'মুছে ফেলুন (Delete)'}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -393,7 +406,7 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
       >
         {editingIncome && (
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
               if (!editingIncome.clientDetails.trim() || !editingIncome.amount || Number(editingIncome.amount) <= 0) return;
 
@@ -402,8 +415,17 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
                 amount: Number(editingIncome.amount)
               };
 
-              setIncomes(incomes.map(i => i.id === editingIncome.id ? updated : i));
-              setEditingIncome(null);
+              setIsSaving(true);
+              let success = false;
+              try {
+                success = await incomeActions.update(updated);
+              } finally {
+                setIsSaving(false);
+              }
+              
+              if (success) {
+                setEditingIncome(null);
+              }
             }}
             className="space-y-4"
           >
@@ -485,8 +507,9 @@ export default function IncomeTracker({ incomes, setIncomes, targetIncome, curre
                 type="submit"
                 variant="primary"
                 size="sm"
+                disabled={isSaving}
               >
-                আপডেট করুন (Save Changes)
+                {isSaving ? 'আপডেট হচ্ছে...' : 'আপডেট করুন (Save Changes)'}
               </Button>
             </div>
           </form>

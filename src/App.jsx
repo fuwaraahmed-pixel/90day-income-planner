@@ -25,7 +25,7 @@ import { RefreshCw, AlertCircle, CloudOff } from 'lucide-react';
 
 import Toast from './components/ui/Toast';
 import SyncStatusPill from './components/ui/SyncStatusPill';
-import { useSyncStore, withSync, resetSyncState, getSyncState } from './store/syncStore';
+import { useSyncStore, withSync, resetSyncState, getSyncState, isFailedResult } from './store/syncStore';
 import { isSubscribed } from './utils/subscriptionHelper';
 
 export default function App() {
@@ -257,6 +257,8 @@ export default function App() {
   const [tasks, setTasksState] = useState([]);
   const [leads, setLeadsState] = useState([]);
   const [incomes, setIncomesState] = useState([]);
+  const incomesRef = useRef(incomes);
+  useEffect(() => { incomesRef.current = incomes; }, [incomes]);
   const [expenses, setExpensesState] = useState([]);
   const [reviews, setReviewsState] = useState([]);
   const [services, setServicesState] = useState(defaultServices);
@@ -555,6 +557,86 @@ export default function App() {
       }
       return nextIncomes;
     });
+  };
+
+  const incomeActions = {
+    add: async (payload) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const pendingItem = { ...payload, _pending: true };
+      setIncomesState(prev => [pendingItem, ...prev]);
+      
+      try {
+        const res = await withSync(api.createIncome(session.user.id, payload), { isOptimistic: false });
+        if (isFailedResult(res)) throw new Error();
+        
+        setIncomesState(prev => prev.map(i => i.id === payload.id ? { ...i, id: res.id, _pending: false } : i));
+        return true;
+      } catch (err) {
+        setIncomesState(prev => {
+          const exists = prev.some(i => i.id === payload.id);
+          if (!exists) return prev;
+          return prev.filter(i => i.id !== payload.id);
+        });
+        setGlobalError(`"${payload.clientDetails}" সেভ করা যায়নি।`);
+        return false;
+      }
+    },
+    update: async (payload) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const originalItem = incomesRef.current.find(i => i.id === payload.id);
+      
+      setIncomesState(prev => prev.map(i => i.id === payload.id ? payload : i));
+      
+      try {
+        const res = await withSync(api.updateIncome(session.user.id, payload.id, payload), { isOptimistic: false });
+        if (isFailedResult(res)) throw new Error();
+        return true;
+      } catch (err) {
+        if (originalItem) {
+          setIncomesState(prev => prev.map(i => i.id === payload.id ? originalItem : i));
+        }
+        setGlobalError('আপডেট ব্যর্থ হয়েছে।');
+        return false;
+      }
+    },
+    remove: async (id) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, মুছে ফেলা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const index = incomesRef.current.findIndex(i => i.id === id);
+      const originalItem = index !== -1 ? incomesRef.current[index] : null;
+      
+      setIncomesState(prev => prev.filter(i => i.id !== id));
+      
+      try {
+        const res = await withSync(api.deleteIncome(session.user.id, id), { isOptimistic: false });
+        if (isFailedResult(res)) throw new Error();
+        return true;
+      } catch (err) {
+        if (originalItem) {
+          setIncomesState(prev => {
+            const next = [...prev];
+            next.splice(index, 0, originalItem);
+            return next;
+          });
+        }
+        setGlobalError('মুছে ফেলা যায়নি।');
+        return false;
+      }
+    }
   };
 
   const handleSetExpenses = (newExpensesOrFn) => {
@@ -1340,6 +1422,7 @@ export default function App() {
           <IncomeTracker 
             incomes={incomes} 
             setIncomes={handleSetIncomes} 
+            incomeActions={incomeActions}
             targetIncome={appData.targetIncome}
             currentSalary={updatedAppData.currentIncome}
           />
