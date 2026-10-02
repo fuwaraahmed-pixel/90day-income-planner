@@ -16,9 +16,10 @@ import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 import TruncatedText from './ui/TruncatedText';
 
-export default function Tasks({ tasks, setTasks, planData }) {
+export default function Tasks({ tasks, setTasks, planData, taskActions }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterPriority, setFilterPriority] = useState('All');
 
@@ -53,34 +54,47 @@ export default function Tasks({ tasks, setTasks, planData }) {
     { value: 'Blocked', label: 'আটকে আছে', color: 'bg-rose-50 text-rose-700 border-rose-200' }
   ];
 
-  const handleAddTask = (e) => {
+  const handleAddTask = async (e) => {
     e.preventDefault();
-    if (!newTask.name.trim()) return;
+    if (!newTask.name.trim() || isSaving) return;
 
-    const created = {
-      ...newTask,
-      id: Date.now()
-    };
+    setIsSaving(true);
+    try {
+      const payload = {
+        name: newTask.name,
+        category: newTask.category,
+        priority: newTask.priority,
+        date: newTask.date,
+        targetMetric: newTask.targetMetric,
+        status: newTask.status,
+        notes: newTask.notes
+      };
 
-    setTasks([created, ...tasks]);
-    setNewTask({
-      name: '',
-      category: 'Sales',
-      priority: 'High',
-      date: new Date().toISOString().split('T')[0],
-      targetMetric: '',
-      status: 'NotStarted',
-      notes: ''
-    });
-    setShowAddForm(false);
+      const success = await taskActions.add(payload);
+      
+      if (success) {
+        setNewTask({
+          name: '',
+          category: 'Sales',
+          priority: 'High',
+          date: new Date().toISOString().split('T')[0],
+          targetMetric: '',
+          status: 'NotStarted',
+          notes: ''
+        });
+        setShowAddForm(false);
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleStatusChange = (taskId, newStatus) => {
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    taskActions.updateStatus(taskId, newStatus);
   };
 
-  const handleDeleteTask = (taskId) => {
-    setTasks(tasks.filter(t => t.id !== taskId));
+  const handleDeleteTask = async (taskId) => {
+    await taskActions.remove(taskId);
   };
 
   // Filtered Tasks
@@ -195,9 +209,10 @@ export default function Tasks({ tasks, setTasks, planData }) {
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+              disabled={isSaving}
+              className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
             >
-              সংরক্ষণ করুন
+              {isSaving ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
             </button>
           </div>
         </form>
@@ -256,7 +271,8 @@ export default function Tasks({ tasks, setTasks, planData }) {
                 {/* Status Toggle Circle */}
                 <button
                   onClick={() => handleStatusChange(task.id, task.status === 'Done' ? 'NotStarted' : 'Done')}
-                  className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                  disabled={task._pending}
+                  className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
                     task.status === 'Done' ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-300 hover:border-emerald-500'
                   }`}
                 >
@@ -302,7 +318,8 @@ export default function Tasks({ tasks, setTasks, planData }) {
                 <select
                   value={task.status}
                   onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                  className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  disabled={task._pending}
+                  className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {statuses.map(s => (
                     <option key={s.value} value={s.value}>{s.label}</option>
@@ -311,7 +328,8 @@ export default function Tasks({ tasks, setTasks, planData }) {
 
                 <button
                   onClick={() => setDeleteConfirmId(task.id)}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                  disabled={task._pending}
+                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   title="মুছে ফেলুন"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -337,8 +355,9 @@ export default function Tasks({ tasks, setTasks, planData }) {
         onClose={() => setDeleteConfirmId(null)}
         onConfirm={() => {
           if (deleteConfirmId) {
-            handleDeleteTask(deleteConfirmId);
+            const id = deleteConfirmId;
             setDeleteConfirmId(null);
+            handleDeleteTask(id);
           }
         }}
         title="কাজটি মুছে ফেলতে চান?"

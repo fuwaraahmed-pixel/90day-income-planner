@@ -255,6 +255,8 @@ export default function App() {
   // Persistent React States
   const [appData, setAppDataState] = useState(defaultAppData);
   const [tasks, setTasksState] = useState([]);
+  const tasksRef = useRef(tasks);
+  useEffect(() => { tasksRef.current = tasks; }, [tasks]);
   const [leads, setLeadsState] = useState([]);
   const [incomes, setIncomesState] = useState([]);
   const incomesRef = useRef(incomes);
@@ -731,6 +733,106 @@ export default function App() {
       } catch (err) {
         setExpensesState(prev => {
           if (prev.some(e => e.id === originalItem.id)) return prev;
+          const next = [...prev];
+          const insertIndex = Math.min(index, next.length);
+          next.splice(insertIndex, 0, originalItem);
+          return next;
+        });
+        setGlobalError('মুছে ফেলা যায়নি।');
+        return false;
+      }
+    }
+  };
+
+  const taskActions = {
+    add: async (task) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const tempId = Date.now();
+      const pendingItem = { ...task, id: tempId, _pending: true };
+      setTasksState(prev => [pendingItem, ...prev]);
+      
+      const { id, _pending, ...apiPayload } = task;
+      
+      try {
+        const res = await withSync(api.createTask(session.user.id, apiPayload), { isOptimistic: false });
+        if (isFailedResult(res) || !res.id) throw new Error();
+        
+        setTasksState(prev => prev.map(t => {
+          if (t.id === tempId) {
+            const { _pending: pendingFlag, ...rest } = t;
+            return { ...rest, id: res.id };
+          }
+          return t;
+        }));
+        return true;
+      } catch (err) {
+        setTasksState(prev => {
+          const exists = prev.some(t => t.id === tempId);
+          if (!exists) return prev;
+          return prev.filter(t => t.id !== tempId);
+        });
+        setGlobalError(`"${task.name}" সেভ করা যায়নি।`);
+        return false;
+      }
+    },
+    updateStatus: async (taskId, newStatus) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const originalItem = tasksRef.current.find(t => t.id === taskId);
+      if (!originalItem) return false;
+      if (originalItem._pending) return false;
+      
+      setTasksState(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus, _pending: true } : t));
+      
+      try {
+        const res = await withSync(api.updateTaskStatus(session.user.id, taskId, newStatus), { isOptimistic: false });
+        if (isFailedResult(res)) throw new Error();
+        
+        setTasksState(prev => prev.map(t => {
+          if (t.id === taskId) {
+            const { _pending: pendingFlag, ...rest } = t;
+            return rest;
+          }
+          return t;
+        }));
+        return true;
+      } catch (err) {
+        setTasksState(prev => prev.map(t => t.id === taskId ? originalItem : t));
+        setGlobalError('আপডেট ব্যর্থ হয়েছে।');
+        return false;
+      }
+    },
+    remove: async (taskId) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, মুছে ফেলা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const index = tasksRef.current.findIndex(t => t.id === taskId);
+      if (index === -1) return false;
+      
+      const originalItem = tasksRef.current[index];
+      if (originalItem._pending) return false;
+      
+      setTasksState(prev => prev.filter(t => t.id !== taskId));
+      
+      try {
+        const res = await withSync(api.deleteTask(session.user.id, taskId), { isOptimistic: false });
+        if (isFailedResult(res)) throw new Error();
+        return true;
+      } catch (err) {
+        setTasksState(prev => {
+          if (prev.some(t => t.id === originalItem.id)) return prev;
           const next = [...prev];
           const insertIndex = Math.min(index, next.length);
           next.splice(insertIndex, 0, originalItem);
@@ -1451,7 +1553,7 @@ export default function App() {
         )}
 
         {activeTab === 'tasks' && (
-          <Tasks tasks={tasks} setTasks={handleSetTasks} />
+          <Tasks tasks={tasks} setTasks={handleSetTasks} taskActions={taskActions} />
         )}
 
         {activeTab === 'tuition' && (
