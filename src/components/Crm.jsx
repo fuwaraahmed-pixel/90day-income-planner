@@ -34,6 +34,7 @@ import TruncatedText from './ui/TruncatedText';
 export default function Crm({ 
   leads, 
   setLeads, 
+  leadActions,
   services = [], 
   crmPayments = [], 
   customerDues = [],
@@ -51,6 +52,7 @@ export default function Crm({
   const [draggedLeadId, setDraggedLeadId] = useState(null);
   const [lockedCards, setLockedCards] = useState(new Set());
   const [toastMessage, setToastMessage] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Mobile detection hook for forcing list view with debounce
   const [isMobile, setIsMobile] = useState(
@@ -125,8 +127,9 @@ export default function Crm({
   ];
   const combinedServices = Array.from(new Set([...catalogServiceTitles, ...defaultServicesList]));
 
-  const handleAddLead = (e) => {
+  const handleAddLead = async (e) => {
     e.preventDefault();
+    if (isSaving) return;
     if (!newLead.clientName.trim() || !newLead.businessName.trim()) return;
 
     const selectedService = newLead.service === 'CUSTOM' ? newLead.customService.trim() : newLead.service;
@@ -134,32 +137,39 @@ export default function Crm({
     const created = {
       ...newLead,
       service: selectedService || 'Business Website',
-      id: Date.now(),
       quotedPrice: Number(newLead.quotedPrice) || 0,
       advance: Number(newLead.advance) || 0
     };
 
-    setLeads([created, ...leads]);
-    setNewLead({
-      date: new Date().toISOString().split('T')[0],
-      clientName: '',
-      businessName: '',
-      contact: '',
-      service: 'Business Website',
-      customService: '',
-      quotedPrice: '',
-      advance: '',
-      status: 'New',
-      nextFollowUp: '',
-      notes: ''
-    });
-    setShowAddModal(false);
+    setIsSaving(true);
+    try {
+      const success = await leadActions.add(created);
+      if (success) {
+        setNewLead({
+          date: new Date().toISOString().split('T')[0],
+          clientName: '',
+          businessName: '',
+          contact: '',
+          service: 'Business Website',
+          customService: '',
+          quotedPrice: '',
+          advance: '',
+          status: 'New',
+          nextFollowUp: '',
+          notes: ''
+        });
+        setShowAddModal(false);
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Status changes strictly update status without creating Income
   const handleStatusChange = async (leadId, newStatus) => {
     const leadToUpdate = leads.find(l => String(l.id) === String(leadId));
     if (!leadToUpdate || leadToUpdate.status === newStatus) return;
+    if (leadToUpdate._pending) return;
     if (lockedCards.has(String(leadId))) return;
 
     const previousStatus = leadToUpdate.status;
@@ -201,6 +211,7 @@ export default function Crm({
 
   // Open Record Payment Modal with stable UUID
   const handleOpenPaymentModal = (lead) => {
+    if (lead?._pending) return;
     const existingPaymentsForClient = crmPayments.filter(p => String(p.crmClientId) === String(lead.id));
     const currentReceived = existingPaymentsForClient.reduce((sum, p) => sum + (Number(p.amount) || 0), Number(lead.advance) || 0);
     const dueAmount = Math.max(0, (Number(lead.quotedPrice) || 0) - currentReceived);
@@ -263,8 +274,10 @@ export default function Crm({
     }
   };
 
-  const handleDeleteLead = (leadId) => {
-    setLeads(leads.filter(l => String(l.id) !== String(leadId)));
+  const handleDeleteLead = async (leadId) => {
+    const lead = leads.find(l => String(l.id) === String(leadId));
+    if (!lead) return;
+    await leadActions.remove(lead.id);
   };
 
   // Drag and Drop Handlers
@@ -565,9 +578,10 @@ export default function Crm({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+              disabled={isSaving}
+              className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              সংরক্ষণ করুন
+              {isSaving ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
             </button>
           </div>
         </form>
@@ -650,7 +664,8 @@ export default function Crm({
                     <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto w-full sm:w-auto">
                       <button
                         onClick={() => setSelectedCustomerProfile(lead)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all"
+                        disabled={lead._pending}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         title="কাস্টমার প্রোফাইল ও পাওনা দেখুন"
                       >
                         <Users className="w-3.5 h-3.5 text-slate-500" />
@@ -659,7 +674,8 @@ export default function Crm({
 
                       <button
                         onClick={() => handleOpenPaymentModal(lead)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all shadow-2xs"
+                        disabled={lead._pending}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                         <span>পেমেন্ট নিন</span>
@@ -668,7 +684,7 @@ export default function Crm({
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        disabled={lockedCards.has(String(lead.id))}
+                        disabled={lockedCards.has(String(lead.id)) || lead._pending}
                         className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${statusObj.badgeColor} focus:outline-none focus:ring-2 focus:ring-emerald-500 flex-1 min-w-[150px] max-w-full sm:max-w-none text-ellipsis disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -676,7 +692,8 @@ export default function Crm({
 
                       <button
                         onClick={() => setDeleteConfirmId(lead.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ml-auto sm:ml-0"
+                        disabled={lead._pending}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ml-auto sm:ml-0 disabled:opacity-60 disabled:cursor-not-allowed"
                         title="মুছে ফেলুন"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -776,7 +793,7 @@ export default function Crm({
                         return (
                           <div
                             key={lead.id}
-                            draggable={!lockedCards.has(String(lead.id))}
+                            draggable={!lockedCards.has(String(lead.id)) && !lead._pending}
                             onDragStart={(e) => handleDragStart(e, lead.id)}
                             onDragEnd={handleDragEnd}
                             className={`bg-white border border-slate-200 rounded-xl p-3 shadow-xs hover:shadow-md transition-all cursor-grab active:cursor-grabbing hover:border-emerald-300 group space-y-2 ${
@@ -796,7 +813,8 @@ export default function Crm({
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   onClick={() => handleOpenPaymentModal(lead)}
-                                  className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                                  disabled={lead._pending}
+                                  className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                                   title="পেমেন্ট গ্রহণ করুন"
                                 >
                                   <DollarSign className="w-3.5 h-3.5" />
@@ -804,7 +822,8 @@ export default function Crm({
                                 <GripVertical className="w-3.5 h-3.5 text-slate-300" />
                                 <button
                                   onClick={() => handleDeleteLead(lead.id)}
-                                  className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                                  disabled={lead._pending}
+                                  className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                                   title="মুছে ফেলুন"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -843,7 +862,7 @@ export default function Crm({
                               <select
                                 value={lead.status}
                                 onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                                disabled={lockedCards.has(String(lead.id))}
+                                disabled={lockedCards.has(String(lead.id)) || lead._pending}
                                 className="text-[10px] font-semibold bg-transparent border-0 text-slate-500 focus:outline-none cursor-pointer hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {statuses.map(s => <option key={s.value} value={s.value}>{s.value}</option>)}
@@ -1030,7 +1049,8 @@ export default function Crm({
                       setSelectedCustomerProfile(null);
                       handleOpenPaymentModal(leadToPay);
                     }}
-                    className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-2xs transition-colors flex items-center gap-1.5"
+                    disabled={client?._pending}
+                    className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-2xs transition-colors flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <DollarSign className="w-3.5 h-3.5" />
                     <span>+ পেমেন্ট জমা নিন</span>
@@ -1054,8 +1074,9 @@ export default function Crm({
         onClose={() => setDeleteConfirmId(null)}
         onConfirm={() => {
           if (deleteConfirmId) {
-            handleDeleteLead(deleteConfirmId);
+            const id = deleteConfirmId;
             setDeleteConfirmId(null);
+            handleDeleteLead(id);
           }
         }}
         title="লিডটি মুছে ফেলতে চান?"

@@ -258,6 +258,8 @@ export default function App() {
   const tasksRef = useRef(tasks);
   useEffect(() => { tasksRef.current = tasks; }, [tasks]);
   const [leads, setLeadsState] = useState([]);
+  const leadsRef = useRef(leads);
+  useEffect(() => { leadsRef.current = leads; }, [leads]);
   const [incomes, setIncomesState] = useState([]);
   const incomesRef = useRef(incomes);
   useEffect(() => { incomesRef.current = incomes; }, [incomes]);
@@ -844,6 +846,80 @@ export default function App() {
     }
   };
 
+  const leadActions = {
+    add: async (lead) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const tempId = Date.now();
+      const pendingItem = { ...lead, id: tempId, _pending: true };
+      setLeadsState(prev => [pendingItem, ...prev]);
+      
+      const { id, _pending, ...apiPayload } = lead;
+      
+      try {
+        const res = await withSync(api.createCRMClient(session.user.id, apiPayload), { isOptimistic: false });
+        if (isFailedResult(res) || !res.id) throw new Error();
+        
+        setLeadsState(prev => {
+          if (prev.some(l => l.id === res.id)) {
+            return prev.filter(l => l.id !== tempId);
+          }
+          return prev.map(l => {
+            if (l.id === tempId) {
+              const { _pending: pendingFlag, ...rest } = l;
+              return { ...rest, id: res.id };
+            }
+            return l;
+          });
+        });
+        return true;
+      } catch (err) {
+        setLeadsState(prev => {
+          const exists = prev.some(l => l.id === tempId);
+          if (!exists) return prev;
+          return prev.filter(l => l.id !== tempId);
+        });
+        setGlobalError(`"${lead.clientName}" সেভ করা যায়নি।`);
+        return false;
+      }
+    },
+    remove: async (leadId) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, মুছে ফেলা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const index = leadsRef.current.findIndex(l => l.id === leadId);
+      if (index === -1) return false;
+      
+      const originalItem = leadsRef.current[index];
+      if (originalItem._pending) return false;
+      
+      setLeadsState(prev => prev.filter(l => l.id !== leadId));
+      
+      try {
+        const res = await withSync(api.deleteCRMClient(session.user.id, leadId), { isOptimistic: false });
+        if (isFailedResult(res)) throw new Error();
+        return true;
+      } catch (err) {
+        setLeadsState(prev => {
+          if (prev.some(l => l.id === originalItem.id)) return prev;
+          const next = [...prev];
+          const insertIndex = Math.min(index, next.length);
+          next.splice(insertIndex, 0, originalItem);
+          return next;
+        });
+        setGlobalError('মুছে ফেলা যায়নি।');
+        return false;
+      }
+    }
+  };
+
   const handleSetExpenses = (newExpensesOrFn) => {
     setExpensesState(prev => {
       const nextExpenses = typeof newExpensesOrFn === 'function' ? newExpensesOrFn(prev) : newExpensesOrFn;
@@ -1087,7 +1163,10 @@ export default function App() {
           setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
         }
         if (leadsRes !== null) {
-          setLeadsState(leadsRes);
+          setLeadsState(prev => {
+            const pendingItems = prev.filter(l => l._pending);
+            return pendingItems.length ? [...pendingItems, ...leadsRes] : leadsRes;
+          });
         } else {
           setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
         }
@@ -1612,6 +1691,7 @@ export default function App() {
           <Crm 
             leads={leads} 
             setLeads={handleSetLeads} 
+            leadActions={leadActions} 
             crmPayments={crmPayments}
             customerDues={customerDues}
             duePayments={duePayments}
