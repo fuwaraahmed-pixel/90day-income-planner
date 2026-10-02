@@ -267,7 +267,11 @@ export default function App() {
   const expensesRef = useRef(expenses);
   useEffect(() => { expensesRef.current = expenses; }, [expenses]);
   const [reviews, setReviewsState] = useState([]);
+  const reviewsRef = useRef(reviews);
+  useEffect(() => { reviewsRef.current = reviews; }, [reviews]);
   const [services, setServicesState] = useState(defaultServices);
+  const servicesRef = useRef(services);
+  useEffect(() => { servicesRef.current = services; }, [services]);
   const [planData, setPlanDataState] = useState(null);
   const [tuitionStudents, setTuitionStudents] = useState([]);
   const [tuitionPayments, setTuitionPayments] = useState([]);
@@ -920,6 +924,154 @@ export default function App() {
     }
   };
 
+  const reviewActions = {
+    add: async (review) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const tempId = Date.now();
+      const pendingItem = { ...review, id: tempId, _pending: true };
+      setReviewsState(prev => [pendingItem, ...prev]);
+      
+      const { id, _pending, ...apiPayload } = review;
+      
+      try {
+        const res = await withSync(api.createWeeklyReview(session.user.id, apiPayload), { isOptimistic: false });
+        if (isFailedResult(res) || !res.id) throw new Error();
+        
+        setReviewsState(prev => {
+          if (prev.some(r => r.id === res.id)) {
+            return prev.filter(r => r.id !== tempId);
+          }
+          return prev.map(r => {
+            if (r.id === tempId) {
+              const { _pending: pendingFlag, ...rest } = r;
+              return { ...rest, id: res.id };
+            }
+            return r;
+          });
+        });
+        return true;
+      } catch (err) {
+        setReviewsState(prev => {
+          const exists = prev.some(r => r.id === tempId);
+          if (!exists) return prev;
+          return prev.filter(r => r.id !== tempId);
+        });
+        setGlobalError(`রিভিউ সেভ করা যায়নি।`);
+        return false;
+      }
+    },
+    remove: async (reviewId) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, মুছে ফেলা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const index = reviewsRef.current.findIndex(r => r.id === reviewId);
+      if (index === -1) return false;
+      
+      const originalItem = reviewsRef.current[index];
+      if (originalItem._pending) return false;
+      
+      setReviewsState(prev => prev.filter(r => r.id !== reviewId));
+      
+      try {
+        const res = await withSync(api.deleteWeeklyReview(session.user.id, reviewId), { isOptimistic: false });
+        if (isFailedResult(res) || res === false) throw new Error();
+        return true;
+      } catch (err) {
+        setReviewsState(prev => {
+          if (prev.some(r => r.id === originalItem.id)) return prev;
+          const next = [...prev];
+          const insertIndex = Math.min(index, next.length);
+          next.splice(insertIndex, 0, originalItem);
+          return next;
+        });
+        setGlobalError('মুছে ফেলা যায়নি।');
+        return false;
+      }
+    }
+  };
+
+  const serviceActions = {
+    add: async (service) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const tempId = Date.now();
+      const pendingItem = { ...service, id: tempId, _pending: true };
+      setServicesState(prev => [...prev, pendingItem]);
+      
+      const { id, _pending, ...apiPayload } = service;
+      
+      try {
+        const res = await withSync(api.createService(session.user.id, apiPayload), { isOptimistic: false });
+        if (isFailedResult(res) || !res.id) throw new Error();
+        
+        setServicesState(prev => {
+          if (prev.some(s => s.id === res.id)) {
+            return prev.filter(s => s.id !== tempId);
+          }
+          return prev.map(s => {
+            if (s.id === tempId) {
+              const { _pending: pendingFlag, ...rest } = s;
+              return { ...rest, id: res.id };
+            }
+            return s;
+          });
+        });
+        return true;
+      } catch (err) {
+        setServicesState(prev => {
+          const exists = prev.some(s => s.id === tempId);
+          if (!exists) return prev;
+          return prev.filter(s => s.id !== tempId);
+        });
+        setGlobalError(`সার্ভিস সেভ করা যায়নি।`);
+        return false;
+      }
+    },
+    remove: async (serviceId) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, মুছে ফেলা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const index = servicesRef.current.findIndex(s => s.id === serviceId);
+      if (index === -1) return false;
+      
+      const originalItem = servicesRef.current[index];
+      if (originalItem._pending) return false;
+      
+      setServicesState(prev => prev.filter(s => s.id !== serviceId));
+      
+      try {
+        const res = await withSync(api.deleteService(session.user.id, serviceId), { isOptimistic: false });
+        if (isFailedResult(res) || res === false) throw new Error();
+        return true;
+      } catch (err) {
+        setServicesState(prev => {
+          if (prev.some(s => s.id === originalItem.id)) return prev;
+          const next = [...prev];
+          const insertIndex = Math.min(index, next.length);
+          next.splice(insertIndex, 0, originalItem);
+          return next;
+        });
+        setGlobalError('মুছে ফেলা যায়নি।');
+        return false;
+      }
+    }
+  };
+
   const handleSetExpenses = (newExpensesOrFn) => {
     setExpensesState(prev => {
       const nextExpenses = typeof newExpensesOrFn === 'function' ? newExpensesOrFn(prev) : newExpensesOrFn;
@@ -940,38 +1092,6 @@ export default function App() {
         }
       }
       return nextExpenses;
-    });
-  };
-
-  const handleSetReviews = (newReviewsOrFn) => {
-    setReviewsState(prev => {
-      const nextReviews = typeof newReviewsOrFn === 'function' ? newReviewsOrFn(prev) : newReviewsOrFn;
-      if (session?.user?.id) {
-        if (nextReviews.length > prev.length) {
-          const added = nextReviews.find(r => !prev.some(p => p.id === r.id));
-          if (added) withSync(api.createWeeklyReview(session.user.id, added), { isOptimistic: true });
-        } else if (nextReviews.length < prev.length) {
-          const deleted = prev.find(p => !nextReviews.some(r => r.id === p.id));
-          if (deleted) withSync(api.deleteWeeklyReview(session.user.id, deleted.id), { isOptimistic: true });
-        }
-      }
-      return nextReviews;
-    });
-  };
-
-  const handleSetServices = (newServicesOrFn) => {
-    setServicesState(prev => {
-      const nextServices = typeof newServicesOrFn === 'function' ? newServicesOrFn(prev) : newServicesOrFn;
-      if (session?.user?.id) {
-        if (nextServices.length > prev.length) {
-          const added = nextServices.find(s => !prev.some(p => p.id === s.id));
-          if (added) withSync(api.createService(session.user.id, added), { isOptimistic: true });
-        } else if (nextServices.length < prev.length) {
-          const deleted = prev.find(p => !nextServices.some(s => s.id === p.id));
-          if (deleted) withSync(api.deleteService(session.user.id, deleted.id), { isOptimistic: true });
-        }
-      }
-      return nextServices;
     });
   };
 
@@ -1725,11 +1845,11 @@ export default function App() {
         )}
 
         {activeTab === 'weekly' && (
-          <WeeklyReview reviews={reviews} setReviews={handleSetReviews} />
+          <WeeklyReview reviews={reviews} reviewActions={reviewActions} />
         )}
 
         {activeTab === 'services' && (
-          <Services services={services} setServices={handleSetServices} />
+          <Services services={services} serviceActions={serviceActions} />
         )}
 
         {activeTab === 'settings' && (

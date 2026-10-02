@@ -15,9 +15,10 @@ import {
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
 
-export default function WeeklyReview({ reviews, setReviews }) {
+export default function WeeklyReview({ reviews, reviewActions }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [newReview, setNewReview] = useState({
     weekTitle: `Week ${reviews.length + 1} (সপ্তাহ ${reviews.length + 1})`,
@@ -32,13 +33,13 @@ export default function WeeklyReview({ reviews, setReviews }) {
     notes: ''
   });
 
-  const handleAddReview = (e) => {
+  const handleAddReview = async (e) => {
     e.preventDefault();
-    if (!newReview.weekTitle.trim()) return;
+    if (!newReview.weekTitle.trim() || isSaving) return;
 
+    setIsSaving(true);
     const created = {
       ...newReview,
-      id: Date.now(),
       outreachCount: Number(newReview.outreachCount) || 0,
       repliesCount: Number(newReview.repliesCount) || 0,
       interestedCount: Number(newReview.interestedCount) || 0,
@@ -46,24 +47,28 @@ export default function WeeklyReview({ reviews, setReviews }) {
       newIncome: Number(newReview.newIncome) || 0
     };
 
-    setReviews([created, ...reviews]);
-    setNewReview({
-      weekTitle: `Week ${reviews.length + 2} (সপ্তাহ ${reviews.length + 2})`,
-      outreachCount: '',
-      repliesCount: '',
-      interestedCount: '',
-      clientsWonCount: '',
-      newIncome: '',
-      mainAchievement: '',
-      mainProblem: '',
-      nextWeekPriority: '',
-      notes: ''
-    });
-    setShowAddForm(false);
+    const success = await reviewActions.add(created);
+    setIsSaving(false);
+
+    if (success) {
+      setNewReview({
+        weekTitle: `Week ${reviews.length + 2} (সপ্তাহ ${reviews.length + 2})`,
+        outreachCount: '',
+        repliesCount: '',
+        interestedCount: '',
+        clientsWonCount: '',
+        newIncome: '',
+        mainAchievement: '',
+        mainProblem: '',
+        nextWeekPriority: '',
+        notes: ''
+      });
+      setShowAddForm(false);
+    }
   };
 
-  const handleDeleteReview = (id) => {
-    setReviews(reviews.filter(r => r.id !== id));
+  const handleDeleteReview = async (id) => {
+    await reviewActions.remove(id);
   };
 
   // Calculations across all reviews
@@ -237,9 +242,10 @@ export default function WeeklyReview({ reviews, setReviews }) {
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+              disabled={isSaving}
+              className={`px-5 py-2 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors ${isSaving ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'}`}
             >
-              সংরক্ষণ করুন
+              {isSaving ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
             </button>
           </div>
         </form>
@@ -269,7 +275,8 @@ export default function WeeklyReview({ reviews, setReviews }) {
                   )}
                   <button
                     onClick={() => setDeleteConfirmId(rev.id)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                    disabled={rev._pending}
+                    className={`p-1.5 rounded-lg transition-colors ${rev._pending ? 'text-slate-300 cursor-not-allowed' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
                     title="মুছে ফেলুন"
                   >
                     <Trash2 className="w-4 h-4" />

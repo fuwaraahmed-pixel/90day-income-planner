@@ -23,11 +23,12 @@ import {
 
 import ConfirmModal from './ui/ConfirmModal';
 
-export default function Services({ services, setServices }) {
+export default function Services({ services, serviceActions }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [isSaving, setIsSaving] = useState(false);
 
   const [newService, setNewService] = useState({
     title: '',
@@ -38,32 +39,36 @@ export default function Services({ services, setServices }) {
     notes: ''
   });
 
-  const handleAddService = (e) => {
+  const handleAddService = async (e) => {
     e.preventDefault();
-    if (!newService.title.trim() || !newService.price) return;
+    if (!newService.title.trim() || !newService.price || isSaving) return;
 
+    setIsSaving(true);
     const created = {
       ...newService,
-      id: Date.now(),
       includes: typeof newService.includes === 'string' 
         ? newService.includes.split(',').map(item => item.trim()).filter(Boolean)
         : newService.includes
     };
 
-    setServices([...services, created]);
-    setNewService({
-      title: '',
-      price: '',
-      deliveryTime: '',
-      includes: '',
-      targetClient: '',
-      notes: ''
-    });
-    setShowAddForm(false);
+    const success = await serviceActions.add(created);
+    setIsSaving(false);
+
+    if (success) {
+      setNewService({
+        title: '',
+        price: '',
+        deliveryTime: '',
+        includes: '',
+        targetClient: '',
+        notes: ''
+      });
+      setShowAddForm(false);
+    }
   };
 
-  const handleDeleteService = (id) => {
-    setServices(services.filter(s => s.id !== id));
+  const handleDeleteService = async (id) => {
+    await serviceActions.remove(id);
   };
 
   const handleCopyQuote = (service) => {
@@ -274,9 +279,10 @@ export default function Services({ services, setServices }) {
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-xs"
+              disabled={isSaving}
+              className={`px-5 py-2 text-white rounded-xl text-xs font-bold shadow-xs transition-colors ${isSaving ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'}`}
             >
-              সংরক্ষণ করুন
+              {isSaving ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
             </button>
           </div>
         </form>
@@ -361,7 +367,8 @@ export default function Services({ services, setServices }) {
 
                   <button
                     onClick={() => setDeleteConfirmId(srv.id)}
-                    className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-slate-200 transition-colors"
+                    disabled={srv._pending}
+                    className={`p-3 rounded-xl border transition-colors ${srv._pending ? 'text-slate-300 bg-slate-50 border-transparent cursor-not-allowed' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 border-slate-200'}`}
                     title="মুছে ফেলুন"
                   >
                     <Trash2 className="w-4 h-4" />
