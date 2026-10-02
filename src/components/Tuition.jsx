@@ -22,7 +22,8 @@ import {
   History,
   Info,
   RotateCcw,
-  Trash2
+  Trash2,
+  MessageCircle
 } from 'lucide-react';
 import TuitionStudentModal from './TuitionStudentModal';
 import TuitionPaymentModal from './TuitionPaymentModal';
@@ -69,6 +70,21 @@ export function getLocalCurrentMonthStr() {
   const now = new Date();
   return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 }
+
+export const getWhatsAppLink = (mobile) => {
+  if (!mobile) return '#';
+  let cleaned = mobile.replace(/\D/g, '');
+  if (cleaned.startsWith('01') && cleaned.length === 11) {
+    cleaned = '88' + cleaned;
+  }
+  return `https://wa.me/${cleaned}`;
+};
+
+const WhatsAppIcon = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
+  </svg>
+);
 
 export function getCollectedCashFlow(payments, monthPrefix) {
   return payments
@@ -166,10 +182,8 @@ export const getUnpaidMonths = (student, todayISO, payments) => {
 export default function Tuition({
   students = [],
   payments = [],
-  onAddStudent,
-  onUpdateStudent,
-  onRecordPayment,
-  onDeletePayment,
+  tuitionStudentActions,
+  tuitionPaymentActions,
   currency = '৳',
   loading = false,
   setActiveTab
@@ -321,12 +335,16 @@ export default function Tuition({
   };
 
   const handleSaveStudent = async (formData) => {
+    let success = false;
     if (editingStudent) {
-      await onUpdateStudent(editingStudent.id, formData);
-      showSuccessNotification('Student updated successfully');
+      success = await tuitionStudentActions.update(editingStudent.id, formData);
+      if (success) showSuccessNotification('Student updated successfully');
     } else {
-      await onAddStudent(formData);
-      showSuccessNotification('Student added successfully');
+      success = await tuitionStudentActions.add(formData);
+      if (success) showSuccessNotification('Student added successfully');
+    }
+    if (!success) {
+      throw new Error('সংরক্ষণ করা সম্ভব হয়নি, অনুগ্রহ করে চেক করুন।');
     }
   };
 
@@ -336,21 +354,21 @@ export default function Tuition({
   };
 
   const handleSavePayment = async (paymentData) => {
-    const res = await onRecordPayment(paymentData);
-    if (res && res.success !== false) {
-      showSuccessNotification(res.message || 'Payment successfully recorded');
-    } else if (res && res.message) {
-      alert(res.message);
+    const success = await tuitionPaymentActions.add(paymentData);
+    if (success) {
+      showSuccessNotification('Payment successfully recorded');
+      return true;
+    } else {
+      throw new Error('পেমেন্ট রেকর্ড করা সম্ভব হয়নি।');
     }
-    return res;
   };
 
   const handleDeletePayment = async (paymentId) => {
     if (!paymentId) return;
     if (window.confirm('আপনি কি নিশ্চিত যে এই পেমেন্ট রেকর্ডটি বাতিল/ডিলেট করতে চান? (এটি বাতিল করলে স্ট্যাটাস আবার Due হয়ে যাবে)')) {
-      if (onDeletePayment) {
-        await onDeletePayment(paymentId);
-        showSuccessNotification('পেমেন্ট সফলভাবে বাতিল করা হয়েছে');
+      if (tuitionPaymentActions) {
+        const success = await tuitionPaymentActions.remove(paymentId);
+        if (success) showSuccessNotification('পেমেন্ট সফলভাবে বাতিল করা হয়েছে');
       }
     }
   };
@@ -609,13 +627,26 @@ export default function Tuition({
                     const paymentRecord = paymentsForSelectedMonth.find(p => String(p.studentId) === String(student.id));
 
                     return (
-                      <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={student.id} className={`hover:bg-slate-50/50 transition-colors ${student._pending ? 'opacity-50 pointer-events-none' : ''}`}>
                         {/* Student Name */}
                         <td className="py-3.5 px-4">
                           <div className="font-bold text-slate-900 text-sm">{student.studentName}</div>
-                          <div className="text-[11px] text-slate-400">
-                            {student.guardianName ? `Guardian: ${student.guardianName}` : ''} 
-                            {student.mobile ? ` • ${student.mobile}` : ''}
+                          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap mt-0.5">
+                            {student.guardianName && <span>Guardian: {student.guardianName}</span>}
+                            {student.guardianName && student.mobile && <span className="text-slate-300">•</span>}
+                            {student.mobile && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium text-slate-600">{student.mobile}</span>
+                                <div className="flex items-center gap-1">
+                                  <a href={`tel:${student.mobile}`} onClick={e => e.stopPropagation()} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors shadow-sm" title="Call">
+                                    <Phone className="w-3.5 h-3.5" />
+                                  </a>
+                                  <a href={getWhatsAppLink(student.mobile)} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="p-1.5 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 rounded-md transition-colors shadow-sm" title="WhatsApp">
+                                    <WhatsAppIcon className="w-3.5 h-3.5" />
+                                  </a>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </td>
 
@@ -697,7 +728,8 @@ export default function Tuition({
                             {isEligible && !hasPaid && student.status === 'Active' && (
                               <button
                                 onClick={() => handleOpenPayment(student.id)}
-                                className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors flex items-center gap-1"
+                                disabled={student._pending}
+                                className={`px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 rounded-xl shadow-sm transition-colors flex items-center gap-1 ${student._pending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-emerald-700'}`}
                               >
                                 <DollarSign className="w-3.5 h-3.5" />
                                 <span>Pay</span>
@@ -707,11 +739,12 @@ export default function Tuition({
                             {isEligible && hasPaid && paymentRecord && (
                               <button
                                 onClick={() => handleDeletePayment(paymentRecord.id)}
-                                className="px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors flex items-center gap-1"
+                                disabled={paymentRecord._pending}
+                                className={`px-2.5 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 rounded-xl transition-colors flex items-center gap-1 ${paymentRecord._pending ? 'opacity-50 cursor-not-allowed' : 'hover:text-rose-700 hover:bg-rose-100'}`}
                                 title="পেমেন্ট বাতিল/ডিলিট করুন (Undo Payment)"
                               >
                                 <RotateCcw className="w-3.5 h-3.5" />
-                                <span>Undo</span>
+                                <span>{paymentRecord._pending ? 'Undo...' : 'Undo'}</span>
                               </button>
                             )}
 
@@ -725,7 +758,8 @@ export default function Tuition({
 
                             <button
                               onClick={() => handleOpenEditStudent(student)}
-                              className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                              disabled={student._pending}
+                              className={`p-1.5 text-slate-600 rounded-lg transition-colors ${student._pending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100'}`}
                               title="Edit Student"
                             >
                               <Edit className="w-4 h-4" />
@@ -747,14 +781,29 @@ export default function Tuition({
                 const paymentRecord = paymentsForSelectedMonth.find(p => String(p.studentId) === String(student.id));
 
                 return (
-                  <div key={student.id} className="p-4 space-y-3 hover:bg-slate-50/80 transition-colors">
+                  <div key={student.id} className={`p-4 space-y-3 transition-colors ${student._pending ? 'opacity-50 pointer-events-none' : 'hover:bg-slate-50/80'}`}>
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <h4 className="font-bold text-slate-900 text-sm">{student.studentName}</h4>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {student.className || student.class || 'No Class'}
-                          {student.batch ? ` • ${student.batch}` : ''}
-                        </p>
+                        <div className="text-xs text-slate-500 mt-1 flex flex-col gap-1.5">
+                          <div>
+                            {student.className || student.class || 'No Class'}
+                            {student.batch ? ` • ${student.batch}` : ''}
+                          </div>
+                          {student.mobile && (
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="font-medium text-slate-600">{student.mobile}</span>
+                              <div className="flex items-center gap-1.5">
+                                <a href={`tel:${student.mobile}`} onClick={e => e.stopPropagation()} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors shadow-sm" title="Call">
+                                  <Phone className="w-3.5 h-3.5" />
+                                </a>
+                                <a href={getWhatsAppLink(student.mobile)} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="p-1.5 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 rounded-md transition-colors shadow-sm" title="WhatsApp">
+                                  <WhatsAppIcon className="w-3.5 h-3.5" />
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Status Badge */}
@@ -834,7 +883,8 @@ export default function Tuition({
 
                       <button
                         onClick={() => handleOpenEditStudent(student)}
-                        className="p-2 text-slate-600 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors min-h-[36px]"
+                        disabled={student._pending}
+                        className={`p-2 text-slate-600 rounded-xl border border-slate-200 transition-colors min-h-[36px] ${student._pending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100'}`}
                         title="Edit Student"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -843,7 +893,8 @@ export default function Tuition({
                       {isEligible && !hasPaid && student.status === 'Active' && (
                         <button
                           onClick={() => handleOpenPayment(student.id)}
-                          className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors flex items-center gap-1 min-h-[36px]"
+                          disabled={student._pending}
+                          className={`px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 rounded-xl shadow-sm transition-colors flex items-center gap-1 min-h-[36px] ${student._pending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-emerald-700'}`}
                         >
                           <DollarSign className="w-3.5 h-3.5" />
                           <span>Pay Now</span>
@@ -853,11 +904,12 @@ export default function Tuition({
                       {isEligible && hasPaid && paymentRecord && (
                         <button
                           onClick={() => handleDeletePayment(paymentRecord.id)}
-                          className="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors flex items-center gap-1 min-h-[36px]"
+                          disabled={paymentRecord._pending}
+                          className={`px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl transition-colors flex items-center gap-1 min-h-[36px] ${paymentRecord._pending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-rose-100'}`}
                           title="পেমেন্ট বাতিল/ডিলিট করুন (Undo Payment)"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Undo</span>
+                          <span>{paymentRecord._pending ? 'Undo...' : 'Undo'}</span>
                         </button>
                       )}
                     </div>
@@ -903,8 +955,22 @@ export default function Tuition({
                   <span className="text-xs font-semibold text-slate-900">{viewingStudent.guardianName || '-'}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase block">Mobile</span>
-                  <span className="text-xs font-semibold text-slate-900">{viewingStudent.mobile || '-'}</span>
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase block mb-0.5">Mobile</span>
+                  {viewingStudent.mobile ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-900">{viewingStudent.mobile}</span>
+                      <div className="flex items-center gap-1">
+                        <a href={`tel:${viewingStudent.mobile}`} onClick={e => e.stopPropagation()} className="p-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors" title="Call">
+                          <Phone className="w-3.5 h-3.5" />
+                        </a>
+                        <a href={getWhatsAppLink(viewingStudent.mobile)} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="p-1.5 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 rounded-md transition-colors shadow-sm" title="WhatsApp">
+                          <WhatsAppIcon className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-xs font-semibold text-slate-900">-</span>
+                  )}
                 </div>
                 <div>
                   <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase block">Monthly Fee</span>
@@ -954,7 +1020,8 @@ export default function Tuition({
                       setViewingStudent(null);
                       handleOpenPayment(stId);
                     }}
-                    className="px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors flex items-center gap-1 min-h-[36px]"
+                    disabled={viewingStudent._pending}
+                    className={`px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg transition-colors flex items-center gap-1 min-h-[36px] ${viewingStudent._pending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-emerald-100'}`}
                   >
                     <DollarSign className="w-3.5 h-3.5" />
                     <span>Pay Now</span>
@@ -1004,7 +1071,8 @@ export default function Tuition({
                                 <td className="py-2.5 px-3 text-right">
                                   <button
                                     onClick={() => handleDeletePayment(p.id)}
-                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                    disabled={p._pending}
+                                    className={`p-1.5 rounded-lg transition-colors ${p._pending ? 'opacity-50 cursor-not-allowed text-slate-300' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
                                     title="পেমেন্ট রিমুভ/বাতিল করুন"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />

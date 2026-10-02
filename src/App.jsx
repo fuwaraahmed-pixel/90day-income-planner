@@ -1167,6 +1167,361 @@ export default function App() {
     return res;
   };
 
+  // --- Tuition Optimistic UI Helpers & Actions ---
+  const activeTuitionTempIdsRef = useRef(new Set());
+  const tuitionLocksRef = useRef(new Set());
+  const tuitionRefetchSeqRef = useRef(0);
+  
+  const tuitionStudentsRef = useRef(tuitionStudents);
+  const tuitionPaymentsRef = useRef(tuitionPayments);
+  const tuitionIncomesStateRef = useRef(incomes);
+  const sessionRef = useRef(session);
+
+  useEffect(() => { tuitionStudentsRef.current = tuitionStudents; }, [tuitionStudents]);
+  useEffect(() => { tuitionPaymentsRef.current = tuitionPayments; }, [tuitionPayments]);
+  useEffect(() => { tuitionIncomesStateRef.current = incomes; }, [incomes]);
+  useEffect(() => { sessionRef.current = session; }, [session]);
+
+  const makeTuitionTempId = () => `temp-tuition-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const isTuitionTempId = (id) => typeof id === 'string' && id.startsWith('temp-tuition-');
+  const stripTuitionPending = (obj) => {
+    const { id, _pending, ...rest } = obj;
+    return isTuitionTempId(id) ? rest : { ...rest, id };
+  };
+
+  const acquireTuitionLock = (key) => {
+    if (tuitionLocksRef.current.has(key)) return false;
+    tuitionLocksRef.current.add(key);
+    return true;
+  };
+  const releaseTuitionLock = (key) => tuitionLocksRef.current.delete(key);
+
+  const performTuitionSafeMerge = (setState, serverData, isPaymentOrIncome) => {
+    setState(prev => {
+      const serverIds = new Set(serverData.map(s => String(s.id)));
+      const preservedPending = prev.filter(item => 
+        item._pending && (
+          !isPaymentOrIncome ||
+          !isTuitionTempId(item.id) || 
+          activeTuitionTempIdsRef.current.has(item.id)
+        )
+      );
+      const filteredPending = preservedPending.filter(item => !serverIds.has(String(item.id)));
+      return [...filteredPending, ...serverData];
+    });
+  };
+
+  const executeTuitionRefetch = async () => {
+    const seq = ++tuitionRefetchSeqRef.current;
+    try {
+      const [paysRes, incsRes] = await withSync(Promise.all([
+        api.getTuitionPayments(sessionRef.current.user.id),
+        api.getIncome(sessionRef.current.user.id)
+      ]));
+      if (seq !== tuitionRefetchSeqRef.current) return true;
+
+      if (paysRes !== null && paysRes !== false && incsRes !== null && incsRes !== false) {
+        performTuitionSafeMerge(setTuitionPayments, paysRes, true);
+        performTuitionSafeMerge(setIncomesState, incsRes, true);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const handleTuitionRefetchWithRetry = async (tempIdsToDeactivate) => {
+    tempIdsToDeactivate.forEach(id => activeTuitionTempIdsRef.current.delete(id));
+    
+    let success = await executeTuitionRefetch();
+    if (!success) {
+      await new Promise(r => setTimeout(r, 1500));
+      success = await executeTuitionRefetch();
+    }
+    return success;
+  };
+
+  const tuitionStudentActions = {
+    add: async (studentData) => {
+      if (!sessionRef.current?.user?.id) {
+        await handleAddTuitionStudent(studentData);
+        return true;
+      }
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+      const lockKey = 'student:add';
+      if (!acquireTuitionLock(lockKey)) return false;
+
+      const tempId = makeTuitionTempId();
+      try {
+        const pendingItem = { ...studentData, id: tempId, _pending: true };
+        setTuitionStudents(prev => [pendingItem, ...prev]);
+
+        const apiPayload = stripTuitionPending(pendingItem);
+        const res = await withSync(api.addTuitionStudent(sessionRef.current.user.id, apiPayload), { isOptimistic: false });
+        
+        if (isFailedResult(res) || !res?.id) throw new Error();
+
+        setTuitionStudents(prev => prev.map(s => {
+          if (String(s.id) === String(tempId)) {
+            const { _pending, ...rest } = res;
+            return rest;
+          }
+          return s;
+        }));
+        return true;
+      } catch (err) {
+        setTuitionStudents(prev => prev.filter(s => String(s.id) !== String(tempId)));
+        setGlobalError('সংরক্ষণ করা যায়নি।');
+        return false;
+      } finally {
+        releaseTuitionLock(lockKey);
+      }
+    },
+    update: async (studentId, changes) => {
+      if (!sessionRef.current?.user?.id) {
+        await handleUpdateTuitionStudent(studentId, changes);
+        return true;
+      }
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+      if (isTuitionTempId(studentId)) return false;
+
+      const lockKey = `student:update:${studentId}`;
+      if (!acquireTuitionLock(lockKey)) return false;
+
+      const prevRecord = tuitionStudentsRef.current.find(s => String(s.id) === String(studentId));
+      if (!prevRecord || prevRecord._pending) {
+        releaseTuitionLock(lockKey);
+        return false;
+      }
+
+      try {
+        setTuitionStudents(prev => prev.map(s => String(s.id) === String(studentId) ? { ...s, ...changes, _pending: true } : s));
+        const apiPayload = { ...changes };
+        delete apiPayload._pending;
+        const res = await withSync(api.updateTuitionStudent(studentId, apiPayload), { isOptimistic: false });
+        
+        if (isFailedResult(res)) throw new Error();
+        
+        setTuitionStudents(prev => prev.map(s => {
+          if (String(s.id) === String(studentId)) {
+            if (res?.id) {
+              const { _pending, ...rest } = res;
+              return rest;
+            } else {
+              const { _pending, ...rest } = { ...s, ...changes };
+              return rest;
+            }
+          }
+          return s;
+        }));
+        return true;
+      } catch (err) {
+        setTuitionStudents(prev => prev.map(s => String(s.id) === String(studentId) ? prevRecord : s));
+        setGlobalError('আপডেট ব্যর্থ হয়েছে।');
+        return false;
+      } finally {
+        releaseTuitionLock(lockKey);
+      }
+    }
+  };
+
+  const tuitionPaymentActions = {
+    add: async (paymentDataArray) => {
+      if (!sessionRef.current?.user?.id) {
+        const res = await handleRecordTuitionPayment(paymentDataArray);
+        return res?.success !== false;
+      }
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+
+      const pArr = Array.isArray(paymentDataArray) ? paymentDataArray : [paymentDataArray];
+      if (pArr.some(p => isTuitionTempId(p.studentId) || isNaN(Number(p.studentId)))) {
+        setGlobalError('স্টুডেন্ট ডাটা এখনো সেভ হচ্ছে, দয়া করে একটু পর আবার চেষ্টা করুন।');
+        return false;
+      }
+
+      const firstStudentId = pArr[0]?.studentId || 'unknown';
+      const lockKey = `payment:add:${firstStudentId}`;
+      if (!acquireTuitionLock(lockKey)) return false;
+
+      const tempRecords = [];
+      pArr.forEach(pData => {
+        const tempPayId = makeTuitionTempId();
+        const tempIncId = makeTuitionTempId();
+        tempRecords.push({ tempPayId, tempIncId, pData });
+      });
+
+      try {
+        tempRecords.forEach(r => {
+          activeTuitionTempIdsRef.current.add(r.tempPayId);
+          activeTuitionTempIdsRef.current.add(r.tempIncId);
+        });
+
+        setTuitionPayments(prev => {
+          const next = [...prev];
+          tempRecords.forEach(r => {
+            next.unshift({ ...r.pData, id: r.tempPayId, income_id: null, _pending: true });
+          });
+          return next;
+        });
+
+        setIncomesState(prev => {
+          const nextIncomes = [...prev];
+          tempRecords.forEach(r => {
+             nextIncomes.unshift({
+                id: r.tempIncId,
+                amount: Number(r.pData.amount),
+                date: r.pData.paymentDate || new Date().toISOString().split('T')[0],
+                category: 'Tuition',
+                description: 'Tuition Payment',
+                _pending: true
+             });
+          });
+          return nextIncomes;
+        });
+
+        const results = [];
+        let i = 0;
+        for (const pData of pArr) {
+          const r = tempRecords[i];
+          try {
+            const apiPayload = stripTuitionPending(pData);
+            const res = await withSync(api.recordTuitionPayment(apiPayload), { isOptimistic: false });
+            if (!isFailedResult(res)) {
+              results.push({ ...r, success: true });
+            } else {
+              results.push({ ...r, success: false });
+            }
+          } catch (err) {
+            results.push({ ...r, success: false });
+          }
+          i++;
+        }
+
+        const successRecords = results.filter(r => r.success);
+        const failedRecords = results.filter(r => !r.success);
+        const successCount = successRecords.length;
+        const failedCount = failedRecords.length;
+
+        // Immediately remove failed temp records
+        const failedTempIds = failedRecords.flatMap(r => [r.tempPayId, r.tempIncId]);
+        failedTempIds.forEach(id => activeTuitionTempIdsRef.current.delete(id));
+        if (failedCount > 0) {
+          setTuitionPayments(prev => prev.filter(p => !failedTempIds.includes(p.id)));
+          setIncomesState(prev => prev.filter(i => !failedTempIds.includes(i.id)));
+        }
+
+        const successTempIds = successRecords.flatMap(r => [r.tempPayId, r.tempIncId]);
+        
+        let refetchSuccess = true;
+        if (successCount > 0) {
+          refetchSuccess = await handleTuitionRefetchWithRetry(successTempIds);
+        }
+
+        if (failedCount > 0) {
+          if (!refetchSuccess && successCount > 0) {
+             setGlobalError(`${successCount} টি পেমেন্ট সেভ হয়েছে। বাকি ${failedCount} টি সেভ হয়নি এবং তালিকা রিফ্রেশ করা যায়নি। অনুগ্রহ করে পেজটি রিলোড করে তালিকা চেক করুন।`);
+          } else {
+             setGlobalError(`${successCount} টি পেমেন্ট সেভ হয়েছে। বাকি ${failedCount} টি সেভ হয়নি, চেক করে পুনরায় চেষ্টা করুন।`);
+          }
+          return false;
+        }
+
+        if (!refetchSuccess) {
+          setGlobalError('ডেটা সেভ হয়েছে, কিন্তু তালিকা রিফ্রেশ করা যায়নি। অনুগ্রহ করে পেজটি রিলোড করুন।');
+        }
+        return true;
+
+      } catch (err) {
+        const tempIdsToRemove = tempRecords.flatMap(r => [r.tempPayId, r.tempIncId]);
+        tempIdsToRemove.forEach(id => activeTuitionTempIdsRef.current.delete(id));
+        setTuitionPayments(prev => prev.filter(p => !tempIdsToRemove.includes(p.id)));
+        setIncomesState(prev => prev.filter(i => !tempIdsToRemove.includes(i.id)));
+        
+        const refetchSuccess = await handleTuitionRefetchWithRetry([]);
+        if (!refetchSuccess) {
+          setGlobalError('সংরক্ষণ করা যায়নি এবং তালিকা রিফ্রেশ করা যায়নি। অনুগ্রহ করে পেজটি রিলোড করে তালিকা চেক করুন।');
+        } else {
+          setGlobalError('সংরক্ষণ করা যায়নি। অনুগ্রহ করে তালিকাটি চেক করুন।');
+        }
+        return false;
+      } finally {
+        releaseTuitionLock(lockKey);
+      }
+    },
+    remove: async (paymentId) => {
+      if (!sessionRef.current?.user?.id) {
+        const res = await handleDeleteTuitionPayment(paymentId);
+        return res?.success !== false;
+      }
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, মুছে ফেলা যায়নি।');
+        return false;
+      }
+      if (isTuitionTempId(paymentId)) return false;
+
+      const lockKey = `payment:remove:${paymentId}`;
+      if (!acquireTuitionLock(lockKey)) return false;
+
+      const paymentRecord = tuitionPaymentsRef.current.find(p => String(p.id) === String(paymentId));
+      if (!paymentRecord || paymentRecord._pending) {
+        releaseTuitionLock(lockKey);
+        return false;
+      }
+      const incomeRecord = paymentRecord.income_id 
+        ? tuitionIncomesStateRef.current.find(i => String(i.id) === String(paymentRecord.income_id))
+        : null;
+
+      try {
+        setTuitionPayments(prev => prev.filter(p => String(p.id) !== String(paymentId)));
+        if (incomeRecord) {
+          setIncomesState(prev => prev.filter(i => String(i.id) !== String(incomeRecord.id)));
+        }
+
+        const res = await withSync(api.deleteTuitionPayment(paymentId, sessionRef.current.user.id), { isOptimistic: false });
+        if (!isFailedResult(res)) {
+          await handleTuitionRefetchWithRetry([]);
+          return true;
+        } else {
+          throw new Error();
+        }
+      } catch (err) {
+        setTuitionPayments(prev => {
+          if (prev.some(p => String(p.id) === String(paymentId))) return prev;
+          const next = [paymentRecord, ...prev];
+          next.sort((a, b) => new Date(b.paymentDate || 0) - new Date(a.paymentDate || 0));
+          return next;
+        });
+        if (incomeRecord) {
+          setIncomesState(prev => {
+            if (prev.some(i => String(i.id) === String(incomeRecord.id))) return prev;
+            const next = [incomeRecord, ...prev];
+            next.sort((a, b) => new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0));
+            return next;
+          });
+        }
+        const refetchSuccess = await handleTuitionRefetchWithRetry([]);
+        if (!refetchSuccess) {
+          setGlobalError('মুছে ফেলা যায়নি এবং তালিকা রিফ্রেশ করা যায়নি। অনুগ্রহ করে পেজটি রিলোড করুন।');
+        } else {
+          setGlobalError('মুছে ফেলা যায়নি।');
+        }
+        return false;
+      } finally {
+        releaseTuitionLock(lockKey);
+      }
+    }
+  };
+
   // Tuition Handlers
   const handleAddTuitionStudent = async (studentData) => {
     if (session?.user?.id) {
@@ -1794,6 +2149,8 @@ export default function App() {
             onUpdateStudent={handleUpdateTuitionStudent}
             onRecordPayment={handleRecordTuitionPayment}
             onDeletePayment={handleDeleteTuitionPayment}
+            tuitionStudentActions={tuitionStudentActions}
+            tuitionPaymentActions={tuitionPaymentActions}
             currency={appData.currency}
             setActiveTab={setActiveTab}
           />
