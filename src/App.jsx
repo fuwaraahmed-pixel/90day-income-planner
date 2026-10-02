@@ -260,6 +260,8 @@ export default function App() {
   const incomesRef = useRef(incomes);
   useEffect(() => { incomesRef.current = incomes; }, [incomes]);
   const [expenses, setExpensesState] = useState([]);
+  const expensesRef = useRef(expenses);
+  useEffect(() => { expensesRef.current = expenses; }, [expenses]);
   const [reviews, setReviewsState] = useState([]);
   const [services, setServicesState] = useState(defaultServices);
   const [planData, setPlanDataState] = useState(null);
@@ -633,6 +635,107 @@ export default function App() {
             return next;
           });
         }
+        setGlobalError('মুছে ফেলা যায়নি।');
+        return false;
+      }
+    }
+  };
+
+  const expenseActions = {
+    add: async (payload) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const tempId = Date.now();
+      const pendingItem = { ...payload, id: tempId, _pending: true };
+      setExpensesState(prev => [pendingItem, ...prev]);
+      
+      const { id, _pending, ...apiPayload } = payload;
+      
+      try {
+        const res = await withSync(api.createExpense(session.user.id, apiPayload), { isOptimistic: false });
+        if (isFailedResult(res) || !res.id) throw new Error();
+        
+        setExpensesState(prev => prev.map(e => {
+          if (e.id === tempId) {
+            const { _pending: pendingFlag, ...rest } = e;
+            return { ...rest, id: res.id };
+          }
+          return e;
+        }));
+        return true;
+      } catch (err) {
+        setExpensesState(prev => {
+          const exists = prev.some(e => e.id === tempId);
+          if (!exists) return prev;
+          return prev.filter(e => e.id !== tempId);
+        });
+        setGlobalError(`"${payload.description}" সেভ করা যায়নি।`);
+        return false;
+      }
+    },
+    update: async (payload) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const originalItem = expensesRef.current.find(e => e.id === payload.id);
+      if (!originalItem) return false;
+      if (originalItem._pending) return false;
+      
+      const { _pending, ...apiPayload } = payload;
+      setExpensesState(prev => prev.map(e => e.id === payload.id ? { ...payload, _pending: true } : e));
+      
+      try {
+        const res = await withSync(api.updateExpense(session.user.id, payload.id, apiPayload), { isOptimistic: false });
+        if (isFailedResult(res)) throw new Error();
+        
+        setExpensesState(prev => prev.map(e => {
+          if (e.id === payload.id) {
+            const { _pending: pendingFlag, ...rest } = e;
+            return rest;
+          }
+          return e;
+        }));
+        return true;
+      } catch (err) {
+        setExpensesState(prev => prev.map(e => e.id === payload.id ? originalItem : e));
+        setGlobalError('আপডেট ব্যর্থ হয়েছে।');
+        return false;
+      }
+    },
+    remove: async (id) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, মুছে ফেলা যায়নি।');
+        return false;
+      }
+      if (!session?.user?.id) return false;
+      
+      const index = expensesRef.current.findIndex(e => e.id === id);
+      if (index === -1) return false;
+      
+      const originalItem = expensesRef.current[index];
+      if (originalItem._pending) return false;
+      
+      setExpensesState(prev => prev.filter(e => e.id !== id));
+      
+      try {
+        const res = await withSync(api.deleteExpense(session.user.id, id), { isOptimistic: false });
+        if (isFailedResult(res)) throw new Error();
+        return true;
+      } catch (err) {
+        setExpensesState(prev => {
+          if (prev.some(e => e.id === originalItem.id)) return prev;
+          const next = [...prev];
+          const insertIndex = Math.min(index, next.length);
+          next.splice(insertIndex, 0, originalItem);
+          return next;
+        });
         setGlobalError('মুছে ফেলা যায়নি।');
         return false;
       }
@@ -1433,6 +1536,7 @@ export default function App() {
           <ExpenseTracker 
             expenses={expenses} 
             setExpenses={handleSetExpenses} 
+            expenseActions={expenseActions}
             totalIncome={salarySum + newIncomeSum}
             appData={appData}
           />

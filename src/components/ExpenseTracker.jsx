@@ -18,16 +18,17 @@ import Input from './ui/Input';
 import Modal from './ui/Modal';
 import EmptyState from './ui/EmptyState';
 import ConfirmModal from './ui/ConfirmModal';
-import UniversalPaymentModal from './ui/UniversalPaymentModal';
+
 import TruncatedText from './ui/TruncatedText';
 
-export default function ExpenseTracker({ expenses, setExpenses, totalIncome, appData }) {
+export default function ExpenseTracker({ expenses, setExpenses, expenseActions, totalIncome, appData }) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
-  const [showQuickInstallmentModal, setShowQuickInstallmentModal] = useState(false);
+
 
   const categories = [
     'Liability Payment (দেনা/কিস্তি পরিশোধ)',
@@ -49,30 +50,41 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome, app
     notes: ''
   });
 
-  const handleAddExpense = (e) => {
+  const handleAddExpense = async (e) => {
     e.preventDefault();
-    if (!newExpense.description.trim() || !newExpense.amount) return;
+    if (!newExpense.description.trim() || !newExpense.amount || isSaving) return;
 
-    const created = {
-      ...newExpense,
-      id: Date.now(),
-      amount: Number(newExpense.amount) || 0
-    };
+    setIsSaving(true);
+    try {
+      const payload = {
+        date: newExpense.date,
+        category: newExpense.category,
+        description: newExpense.description,
+        amount: Number(newExpense.amount) || 0,
+        month: newExpense.month,
+        notes: newExpense.notes
+      };
 
-    setExpenses([created, ...expenses]);
-    setNewExpense({
-      date: new Date().toISOString().split('T')[0],
-      category: 'Household (সংসার খরচ)',
-      description: '',
-      amount: '',
-      month: 'Month 1',
-      notes: ''
-    });
-    setShowAddForm(false);
+      const success = await expenseActions.add(payload);
+      
+      if (success) {
+        setNewExpense({
+          date: new Date().toISOString().split('T')[0],
+          category: 'Household (সংসার খরচ)',
+          description: '',
+          amount: '',
+          month: 'Month 1',
+          notes: ''
+        });
+        setShowAddForm(false);
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDeleteExpense = (id) => {
-    setExpenses(expenses.filter(e => e.id !== id));
+  const handleDeleteExpense = async (id) => {
+    await expenseActions.remove(id);
   };
 
   // Calculations
@@ -103,14 +115,6 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome, app
         </div>
 
         <div className="flex flex-wrap gap-2 self-start sm:self-auto">
-          <button
-            onClick={() => setShowQuickInstallmentModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm"
-          >
-            <DollarSign className="w-4 h-4" />
-            <span>এক ক্লিকে কিস্তি যোগ করুন</span>
-          </button>
-
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm"
@@ -234,9 +238,10 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome, app
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-rose-600 text-white rounded-xl text-sm font-semibold hover:bg-rose-700 transition-colors shadow-sm"
+              disabled={isSaving}
+              className="px-5 py-2 bg-rose-600 text-white rounded-xl text-sm font-semibold hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              সংরক্ষণ করুন
+              {isSaving ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
             </button>
           </div>
         </form>
@@ -352,17 +357,24 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome, app
       >
         {editingExpense && (
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              if (!editingExpense.description.trim() || !editingExpense.amount || Number(editingExpense.amount) <= 0) return;
+              if (!editingExpense.description.trim() || !editingExpense.amount || Number(editingExpense.amount) <= 0 || isSaving) return;
 
-              const updated = {
-                ...editingExpense,
-                amount: Number(editingExpense.amount)
-              };
+              setIsSaving(true);
+              try {
+                const payload = {
+                  ...editingExpense,
+                  amount: Number(editingExpense.amount) || 0
+                };
 
-              setExpenses(expenses.map(exp => exp.id === editingExpense.id ? updated : exp));
-              setEditingExpense(null);
+                const success = await expenseActions.update(payload);
+                if (success) {
+                  setEditingExpense(null);
+                }
+              } finally {
+                setIsSaving(false);
+              }
             }}
             className="space-y-4"
           >
@@ -434,8 +446,9 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome, app
                 type="submit"
                 variant="danger"
                 size="sm"
+                disabled={isSaving}
               >
-                আপডেট করুন (Save Changes)
+                {isSaving ? 'সংরক্ষণ হচ্ছে...' : 'আপডেট করুন (Save Changes)'}
               </Button>
             </div>
           </form>
@@ -448,36 +461,15 @@ export default function ExpenseTracker({ expenses, setExpenses, totalIncome, app
         onClose={() => setDeleteConfirmId(null)}
         onConfirm={() => {
           if (deleteConfirmId) {
-            handleDeleteExpense(deleteConfirmId);
+            const id = deleteConfirmId;
             setDeleteConfirmId(null);
+            handleDeleteExpense(id);
           }
         }}
         title="খরচ এন্ট্রি মুছে ফেলতে চান?"
         description="এই খরচের রেকর্ডটি তালিকা থেকে স্থায়ীভাবে মুছে যাবে।"
       />
-      <UniversalPaymentModal
-        isOpen={showQuickInstallmentModal}
-        onClose={() => setShowQuickInstallmentModal(false)}
-        onSubmit={(paymentData) => {
-          const amount = Number(paymentData.amount);
-          if (!amount || amount <= 0) return;
 
-          const created = {
-            id: Date.now(),
-            date: paymentData.paymentDate || new Date().toISOString().split('T')[0],
-            category: 'Liability Payment (দেনা/কিস্তি পরিশোধ)',
-            description: 'মাসিক কিস্তি পরিশোধ',
-            amount: amount,
-            month: 'Month 1',
-            notes: paymentData.notes || 'Quick Add'
-          };
-          setExpenses([created, ...expenses]);
-          setShowQuickInstallmentModal(false);
-        }}
-        title="এক ক্লিকে কিস্তি যোগ করুন"
-        description="আপনার কিস্তির পরিমাণ দিন, যা সরাসরি খরচের খাতায় যুক্ত হবে।"
-        submitLabel="খরচ এন্ট্রি করুন"
-      />
     </div>
   );
 }
