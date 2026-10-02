@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
-import Plan from './components/Plan';
+import Plan, { TEMPLATES } from './components/Plan';
 import Tasks from './components/Tasks';
 import Crm from './components/Crm';
 import IncomeTracker from './components/IncomeTracker';
@@ -1095,14 +1095,45 @@ export default function App() {
     });
   };
 
-  const handleSetPlanData = (newPlanOrFn) => {
-    setPlanDataState(prev => {
-      const nextPlan = typeof newPlanOrFn === 'function' ? newPlanOrFn(prev) : newPlanOrFn;
-      if (session?.user?.id && nextPlan) {
-        withSync(api.update90DayPlan(session.user.id, nextPlan), { isOptimistic: true });
+  const planDataRef = useRef(null);
+  const lastSavedPlanRef = useRef(null);
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
+
+  useEffect(() => {
+    planDataRef.current = planData;
+    // Initial sync of lastSavedPlanRef when data loads from server
+    if (planData !== null && lastSavedPlanRef.current === null) {
+      lastSavedPlanRef.current = planData;
+    }
+  }, [planData]);
+
+  const planActions = {
+    update: async (updater) => {
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ বিচ্ছিন্ন।');
+        return false;
       }
-      return nextPlan;
-    });
+      if (isSavingPlan) return false;
+
+      const prevPlan = planDataRef.current || TEMPLATES.freelancer.months;
+      const nextPlan = typeof updater === 'function' ? updater(prevPlan) : updater;
+
+      setPlanDataState(nextPlan);
+      setIsSavingPlan(true);
+
+      try {
+        const res = await withSync(api.update90DayPlan(session.user.id, nextPlan), { isOptimistic: false });
+        if (isFailedResult(res) || res === false) throw new Error();
+        lastSavedPlanRef.current = nextPlan;
+        return true;
+      } catch (err) {
+        setPlanDataState(lastSavedPlanRef.current);
+        setGlobalError('সেভ করা যায়নি।');
+        return false;
+      } finally {
+        setIsSavingPlan(false);
+      }
+    }
   };
 
   // Trigger Safe Migration Action
@@ -1748,7 +1779,7 @@ export default function App() {
         )}
 
         {activeTab === 'plan' && (
-          <Plan planData={planData} setPlanData={handleSetPlanData} />
+          <Plan planData={planData} planActions={planActions} isSavingPlan={isSavingPlan} />
         )}
 
         {activeTab === 'tasks' && (

@@ -16,13 +16,14 @@ import {
   ChevronDown,
   ChevronUp,
   LayoutTemplate,
+  RefreshCw,
 } from 'lucide-react';
 
 // Bengali numeral converter
 const toBengaliNum = (n) => String(n).replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[d]);
 
 // ─── Default Templates ───────────────────────────────────────────────
-const TEMPLATES = {
+export const TEMPLATES = {
   freelancer: {
     label: '💻 ফ্রিল্যান্সার / ওয়েব ডেভেলপার',
     months: [
@@ -213,7 +214,7 @@ const StatusBadge = ({ status }) => {
 };
 
 // ─── Main Component ───────────────────────────────────────────────────
-export default function Plan({ planData, setPlanData }) {
+export default function Plan({ planData, planActions, isSavingPlan }) {
   const months = planData || TEMPLATES.freelancer.months;
 
   const [activeMonthFilter, setActiveMonthFilter] = useState('all');
@@ -222,10 +223,10 @@ export default function Plan({ planData, setPlanData }) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [expandedMonths, setExpandedMonths] = useState({});
 
-  const save = (updated) => setPlanData(updated);
+  const save = (updater) => planActions.update(updater);
 
   const updateStatus = (monthId, weekId, newStatus) => {
-    save(months.map(m =>
+    save(prev => prev.map(m =>
       m.id === monthId
         ? { ...m, weeks: m.weeks.map(w => w.id === weekId ? { ...w, status: newStatus } : w) }
         : m
@@ -233,29 +234,31 @@ export default function Plan({ planData, setPlanData }) {
   };
 
   const updateMonthField = (monthId, field, value) => {
-    save(months.map(m => m.id === monthId ? { ...m, [field]: value } : m));
+    save(prev => prev.map(m => m.id === monthId ? { ...m, [field]: value } : m));
   };
 
   const addMonth = () => {
-    const n = months.length + 1;
-    const colors = ['emerald', 'blue', 'purple', 'teal', 'rose'];
-    save([...months, {
-      id: uid(), monthNumber: n,
-      monthTitle: `মাস-${toBengaliNum(n)}: নতুন মাসের লক্ষ্য`,
-      targetIncome: '৳০', newIncomeTarget: '৳০',
-      color: colors[(n - 1) % colors.length],
-      focus: 'এই মাসের প্রধান ফোকাস লিখুন।',
-      weeks: [{ id: uid(), week: `Week ${(n - 1) * 4 + 1}`, title: 'নতুন কাজ', status: 'NotStarted', notes: '' }],
-    }]);
+    save(prev => {
+      const n = prev.length + 1;
+      const colors = ['emerald', 'blue', 'purple', 'teal', 'rose'];
+      return [...prev, {
+        id: uid(), monthNumber: n,
+        monthTitle: `মাস-${toBengaliNum(n)}: নতুন মাসের লক্ষ্য`,
+        targetIncome: '৳০', newIncomeTarget: '৳০',
+        color: colors[(n - 1) % colors.length],
+        focus: 'এই মাসের প্রধান ফোকাস লিখুন।',
+        weeks: [{ id: uid(), week: `Week ${(n - 1) * 4 + 1}`, title: 'নতুন কাজ', status: 'NotStarted', notes: '' }],
+      }];
+    });
   };
 
   const deleteMonth = (monthId) => {
     if (months.length <= 1) return;
-    if (window.confirm('এই মাস মুছে ফেলবেন?')) save(months.filter(m => m.id !== monthId));
+    if (window.confirm('এই মাস মুছে ফেলবেন?')) save(prev => prev.filter(m => m.id !== monthId));
   };
 
   const addWeek = (monthId) => {
-    save(months.map(m => {
+    save(prev => prev.map(m => {
       if (m.id !== monthId) return m;
       const next = m.weeks.length + 1;
       return { ...m, weeks: [...m.weeks, { id: uid(), week: `Week ${next}`, title: 'নতুন কাজ লিখুন', status: 'NotStarted', notes: '' }] };
@@ -263,7 +266,7 @@ export default function Plan({ planData, setPlanData }) {
   };
 
   const updateWeekField = (monthId, weekId, field, value) => {
-    save(months.map(m =>
+    save(prev => prev.map(m =>
       m.id === monthId
         ? { ...m, weeks: m.weeks.map(w => w.id === weekId ? { ...w, [field]: value } : w) }
         : m
@@ -271,7 +274,7 @@ export default function Plan({ planData, setPlanData }) {
   };
 
   const deleteWeek = (monthId, weekId) => {
-    save(months.map(m => {
+    save(prev => prev.map(m => {
       if (m.id !== monthId) return m;
       if (m.weeks.length <= 1) return m;
       return { ...m, weeks: m.weeks.filter(w => w.id !== weekId) };
@@ -280,7 +283,7 @@ export default function Plan({ planData, setPlanData }) {
 
   const loadTemplate = (key) => {
     if (window.confirm('টেমপ্লেট লোড করলে বর্তমান প্ল্যান রিসেট হবে। নিশ্চিত?')) {
-      save(TEMPLATES[key].months);
+      save(() => TEMPLATES[key].months);
       setShowTemplates(false);
     }
   };
@@ -328,8 +331,13 @@ export default function Plan({ planData, setPlanData }) {
               <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
               <span>৯০-দিনের অ্যাকশন প্ল্যান</span>
             </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900 leading-tight break-words mt-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900 leading-tight break-words mt-1 flex items-center gap-2 flex-wrap">
               🎯 আমার ৯০ দিনের রোডম্যাপ
+              {isSavingPlan && (
+                <span className="text-xs font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full animate-pulse flex items-center gap-1.5 mt-1 sm:mt-0">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin"/> সেভ হচ্ছে...
+                </span>
+              )}
             </h1>
             <p className="text-slate-500 text-xs sm:text-sm mt-1.5 leading-relaxed max-w-md">
               প্রতিটি সপ্তাহের কাজ ট্র্যাক করুন ও স্ট্যাটাস আপডেট করুন।
