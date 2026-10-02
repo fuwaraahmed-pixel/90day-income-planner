@@ -717,6 +717,27 @@ export const update90DayPlan = async (userId, planMonths) => {
     console.error('Error updating 90-day plan:', error);
     return false;
   }
+
+  if (planMonths.length > 0) {
+    const hasMissingId = planMonths.some(m => !m.id);
+    if (hasMissingId) {
+      console.warn('Skipping deletion: one or more months in planMonths is missing an id.');
+    } else {
+      const keepIds = planMonths.map(m => m.id);
+      const inFilterStr = `(${keepIds.map(id => `"${String(id).replace(/"/g, '\\"')}"`).join(',')})`;
+      const { error: deleteError } = await supabase
+        .from('ninety_day_plan')
+        .delete()
+        .eq('user_id', userId)
+        .not('id', 'in', inFilterStr);
+
+      if (deleteError) {
+        console.error('Error deleting missing months from 90-day plan:', deleteError);
+        return false;
+      }
+    }
+  }
+
   return true;
 };
 
