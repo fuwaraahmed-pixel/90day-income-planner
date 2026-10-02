@@ -277,7 +277,13 @@ export default function App() {
   const [tuitionPayments, setTuitionPayments] = useState([]);
   const [crmPayments, setCrmPayments] = useState([]);
   const [customerDues, setCustomerDuesState] = useState(() => loadData(STORAGE_KEYS.CUSTOMER_DUES, defaultCustomerDues));
+  const customerDuesRef = useRef(customerDues);
+  useEffect(() => { customerDuesRef.current = customerDues; }, [customerDues]);
+
   const [duePayments, setDuePaymentsState] = useState(() => loadData(STORAGE_KEYS.DUE_PAYMENTS, defaultDuePayments));
+  const duePaymentsRef = useRef(duePayments);
+  useEffect(() => { duePaymentsRef.current = duePayments; }, [duePayments]);
+
   const [liabilities, setLiabilitiesState] = useState([]);
   const [liabilityPayments, setLiabilityPaymentsState] = useState([]);
   const [emiInstallments, setEmiInstallments] = useState([]);
@@ -1739,65 +1745,85 @@ export default function App() {
     const total = Number(dueData.totalAmount) || 0;
     const initialPaid = Number(dueData.paidAmount) || 0;
 
+    const tempId = Date.now();
+    const newDue = {
+      id: tempId,
+      customerId: dueData.customerId ? Number(dueData.customerId) : null,
+      customerName: dueData.customerName,
+      description: dueData.description || 'পাওনা বিবরণী',
+      totalAmount: total,
+      paidAmount: initialPaid,
+      dueAmount: Math.max(0, total - initialPaid),
+      dueDate: dueData.dueDate || null,
+      status: initialPaid >= total && total > 0 ? 'Paid' : initialPaid > 0 ? 'Partially Paid' : 'Unpaid',
+      note: dueData.note || '',
+      createdAt: new Date().toISOString(),
+      _pending: true
+    };
+
     if (session?.user?.id) {
-      const res = await withSync(api.createCustomerDue(session.user.id, dueData));
-      if (res?.error || !res?.data) {
-        throw new Error(res?.error || 'Supabase-এ পাওনা সংরক্ষণ করা সম্ভব হয়নি।');
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        throw new Error('No internet');
       }
-      const created = res.data;
-      setCustomerDuesState(prev => [created, ...prev]);
 
-      if (initialPaid > 0) {
-        const uniquePayId = typeof crypto !== 'undefined' && crypto.randomUUID 
-          ? crypto.randomUUID() 
-          : '00000000-0000-4000-8000-' + Date.now().toString(16).padStart(12, '0');
-        const payRes = await withSync(api.rpcRecordCustomerDuePayment({
-          paymentId: uniquePayId,
-          dueId: created.id,
-          paymentDate: new Date().toISOString().split('T')[0],
-          amount: initialPaid,
-          paymentMethod: 'bKash',
-          note: 'প্রাথমিক পেমেন্ট প্রাপ্তি'
-        }));
-        if (payRes?.success === false) {
-          console.warn('Initial payment recording issue:', payRes.message);
+      setCustomerDuesState(prev => [newDue, ...prev]);
+
+      try {
+        const res = await withSync(api.createCustomerDue(session.user.id, dueData), { isOptimistic: false });
+        if (isFailedResult(res) || !res.data) throw new Error(res?.error || 'Supabase-এ পাওনা সংরক্ষণ করা সম্ভব হয়নি।');
+        const created = res.data;
+        
+        setCustomerDuesState(prev => prev.map(d => d.id === tempId ? created : d));
+
+        if (initialPaid > 0) {
+          const uniquePayId = typeof crypto !== 'undefined' && crypto.randomUUID 
+            ? crypto.randomUUID() 
+            : '00000000-0000-4000-8000-' + Date.now().toString(16).padStart(12, '0');
+            
+          const pendingPayment = {
+             id: uniquePayId,
+             dueId: created.id,
+             customerId: created.customerId,
+             amount: initialPaid,
+             paymentDate: new Date().toISOString().split('T')[0],
+             paymentMethod: 'bKash',
+             note: 'প্রাথমিক পেমেন্ট প্রাপ্তি',
+             _pending: true
+          };
+          setDuePaymentsState(prev => [pendingPayment, ...prev]);
+
+          api.rpcRecordCustomerDuePayment({
+            paymentId: uniquePayId,
+            dueId: created.id,
+            paymentDate: new Date().toISOString().split('T')[0],
+            amount: initialPaid,
+            paymentMethod: 'bKash',
+            note: 'প্রাথমিক পেমেন্ট প্রাপ্তি'
+          }).then(payRes => {
+            if (payRes?.success !== false) {
+              Promise.all([
+                api.getCustomerDues(session.user.id),
+                api.getCustomerDuePayments(session.user.id),
+                api.getIncome(session.user.id)
+              ]).then(([duesRes, paysRes, incsRes]) => {
+                if (duesRes !== null) setCustomerDuesState(duesRes);
+                if (paysRes !== null) setDuePaymentsState(paysRes);
+                if (incsRes !== null) setIncomesState(incsRes);
+              });
+            }
+          }).catch(() => {
+            setGlobalError('প্রাথমিক পেমেন্ট সেভ করা যায়নি।');
+          });
         }
-        const [duesRes, paysRes, incsRes] = await withSync(Promise.all([api.getCustomerDues(session.user.id),
-          api.getCustomerDuePayments(session.user.id),
-          api.getIncome(session.user.id)
-        ]));
-        if (duesRes !== null) {
-          setCustomerDuesState(duesRes);
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
-        if (paysRes !== null) {
-          setDuePaymentsState(paysRes);
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
-        if (incsRes !== null) {
-          setIncomesState(incsRes);
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
+        return created;
+      } catch (err) {
+        setCustomerDuesState(prev => prev.filter(d => d.id !== tempId));
+        setGlobalError(`"${dueData.customerName}" এর পাওনা সেভ করা যায়নি।`);
+        throw err;
       }
-      return created;
     } else {
-      const newDue = {
-        id: Date.now(),
-        customerId: dueData.customerId ? Number(dueData.customerId) : null,
-        customerName: dueData.customerName,
-        description: dueData.description || 'পাওনা বিবরণী',
-        totalAmount: total,
-        paidAmount: initialPaid,
-        dueAmount: Math.max(0, total - initialPaid),
-        dueDate: dueData.dueDate || null,
-        status: initialPaid >= total && total > 0 ? 'Paid' : initialPaid > 0 ? 'Partially Paid' : 'Unpaid',
-        note: dueData.note || '',
-        createdAt: new Date().toISOString()
-      };
-
+      delete newDue._pending;
       handleSetCustomerDues(prev => [newDue, ...prev]);
 
       if (initialPaid > 0) {
@@ -1831,17 +1857,46 @@ export default function App() {
 
   const handleUpdateCustomerDue = async (dueId, dueData) => {
     if (session?.user?.id) {
-      const res = await withSync(api.updateCustomerDue(session.user.id, dueId, dueData));
-      if (res?.error || !res?.data) {
-        throw new Error(res?.error || 'Supabase-এ পাওনা আপডেট করতে সমস্যা হয়েছে।');
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।');
+        throw new Error('No internet');
       }
-      const duesRes = await withSync(api.getCustomerDues(session.user.id));
-      if (duesRes !== null) {
-        setCustomerDuesState(duesRes);
-      } else {
-        setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
+      
+      const originalItem = customerDuesRef.current.find(d => String(d.id) === String(dueId));
+      if (!originalItem) throw new Error('Not found');
+      
+      setCustomerDuesState(prev => prev.map(d => {
+        if (String(d.id) === String(dueId)) {
+          const total = Number(dueData.totalAmount) || d.totalAmount;
+          const paid = d.paidAmount;
+          const due = Math.max(0, total - paid);
+          const status = due <= 0 ? 'Paid' : paid > 0 ? 'Partially Paid' : 'Unpaid';
+          return { ...d, ...dueData, totalAmount: total, dueAmount: due, status, _pending: true };
+        }
+        return d;
+      }));
+
+      try {
+        const res = await withSync(api.updateCustomerDue(session.user.id, dueId, dueData), { isOptimistic: false });
+        if (isFailedResult(res) || !res.data) throw new Error(res?.error || 'Supabase-এ পাওনা আপডেট করতে সমস্যা হয়েছে।');
+        
+        setCustomerDuesState(prev => prev.map(d => {
+          if (String(d.id) === String(dueId)) {
+             const { _pending, ...rest } = d;
+             return rest;
+          }
+          return d;
+        }));
+        
+        api.getCustomerDues(session.user.id).then(duesRes => {
+          if (duesRes !== null) setCustomerDuesState(duesRes);
+        });
+        return res.data;
+      } catch (err) {
+        setCustomerDuesState(prev => prev.map(d => String(d.id) === String(dueId) ? originalItem : d));
+        setGlobalError('পাওনা আপডেট ব্যর্থ হয়েছে।');
+        throw err;
       }
-      return res.data;
     } else {
       handleSetCustomerDues(prev => prev.map(d => {
         if (String(d.id) === String(dueId)) {
@@ -1858,51 +1913,109 @@ export default function App() {
 
   const handleDeleteCustomerDue = async (dueId) => {
     if (session?.user?.id) {
-      const res = await withSync(api.deleteCustomerDue(session.user.id, dueId));
-      if (res?.error || res?.success === false) {
-        throw new Error(res?.error || 'Supabase থেকে মুছে ফেলতে সমস্যা হয়েছে।');
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, মুছে ফেলা যায়নি।');
+        throw new Error('No internet');
       }
+      const originalItem = customerDuesRef.current.find(d => String(d.id) === String(dueId));
+      if (!originalItem) return;
+
       setCustomerDuesState(prev => prev.filter(d => String(d.id) !== String(dueId)));
+
+      try {
+        const res = await withSync(api.deleteCustomerDue(session.user.id, dueId), { isOptimistic: false });
+        if (isFailedResult(res) || res?.success === false) {
+          throw new Error(res?.error || 'Supabase থেকে মুছে ফেলতে সমস্যা হয়েছে।');
+        }
+      } catch (err) {
+        setCustomerDuesState(prev => {
+           if (prev.some(d => String(d.id) === String(dueId))) return prev;
+           return [originalItem, ...prev];
+        });
+        setGlobalError('পাওনা মুছে ফেলা যায়নি।');
+        throw err;
+      }
     } else {
       handleSetCustomerDues(prev => prev.filter(d => String(d.id) !== String(dueId)));
     }
   };
 
   const handleRecordCustomerDuePayment = async (paymentData) => {
+    const dueItem = customerDuesRef.current.find(d => String(d.id) === String(paymentData.dueId));
+    if (!dueItem) return { success: false, message: 'পাওনা রেকর্ড পাওয়া যায়নি' };
+
+    const amountNum = Number(paymentData.amount);
+    const newPaid = (Number(dueItem.paidAmount) || 0) + amountNum;
+    const newDue = Math.max(0, (Number(dueItem.totalAmount) || 0) - newPaid);
+    const newStatus = newDue <= 0 ? 'Paid' : 'Partially Paid';
+    const paymentId = paymentData.paymentId || `pay_due_${Date.now()}`;
+
     if (session?.user?.id) {
-      const res = await withSync(api.rpcRecordCustomerDuePayment(paymentData));
-      if (res && res.success !== false) {
-        const [duesRes, paysRes, incsRes] = await withSync(Promise.all([api.getCustomerDues(session.user.id),
-          api.getCustomerDuePayments(session.user.id),
-          api.getIncome(session.user.id)
-        ]));
-        if (duesRes !== null) {
-          setCustomerDuesState(duesRes);
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
-        if (paysRes !== null) {
-          setDuePaymentsState(paysRes);
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
-        if (incsRes !== null) {
-          setIncomesState(incsRes);
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, পেমেন্ট রেকর্ড করা যায়নি।');
+        return { success: false, message: 'No internet' };
       }
-      return res;
+
+      setCustomerDuesState(prev => prev.map(d => String(d.id) === String(paymentData.dueId) ? {
+        ...d,
+        paidAmount: newPaid,
+        dueAmount: newDue,
+        status: newStatus,
+        _pending: true
+      } : d));
+
+      const pendingPayment = {
+        id: paymentId,
+        dueId: paymentData.dueId,
+        customerId: dueItem.customerId,
+        amount: amountNum,
+        paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+        paymentMethod: paymentData.paymentMethod || 'bKash',
+        note: paymentData.note || '',
+        createdAt: new Date().toISOString(),
+        _pending: true
+      };
+      setDuePaymentsState(prev => [pendingPayment, ...prev]);
+
+      try {
+        const res = await withSync(api.rpcRecordCustomerDuePayment(paymentData), { isOptimistic: false });
+        if (isFailedResult(res) || res?.success === false) {
+           throw new Error(res?.message || 'পেমেন্ট রেকর্ড করা যায়নি');
+        }
+        
+        setCustomerDuesState(prev => prev.map(d => {
+           if (String(d.id) === String(paymentData.dueId)) {
+              const { _pending, ...rest } = d;
+              return rest;
+           }
+           return d;
+        }));
+        setDuePaymentsState(prev => prev.map(p => {
+           if (p.id === paymentId) {
+              const { _pending, ...rest } = p;
+              return rest;
+           }
+           return p;
+        }));
+
+        api.getCustomerDues(session.user.id).then(duesRes => {
+          if (duesRes !== null) setCustomerDuesState(duesRes);
+        });
+        api.getCustomerDuePayments(session.user.id).then(paysRes => {
+          if (paysRes !== null) setDuePaymentsState(paysRes);
+        });
+        api.getIncome(session.user.id).then(incsRes => {
+          if (incsRes !== null) setIncomesState(incsRes);
+        });
+
+        return res;
+      } catch (err) {
+        setCustomerDuesState(prev => prev.map(d => String(d.id) === String(paymentData.dueId) ? dueItem : d));
+        setDuePaymentsState(prev => prev.filter(p => p.id !== paymentId));
+        setGlobalError('পেমেন্ট রেকর্ড করা ব্যর্থ হয়েছে।');
+        throw err;
+      }
     } else {
-      const dueItem = customerDues.find(d => String(d.id) === String(paymentData.dueId));
-      if (!dueItem) return { success: false, message: 'Pawn record not found' };
-
-      const amountNum = Number(paymentData.amount);
-      const newPaid = (Number(dueItem.paidAmount) || 0) + amountNum;
-      const newDue = Math.max(0, (Number(dueItem.totalAmount) || 0) - newPaid);
-      const newStatus = newDue <= 0 ? 'Paid' : 'Partially Paid';
-
-      const paymentId = paymentData.paymentId || `pay_due_${Date.now()}`;
       const newPayment = {
         id: paymentId,
         dueId: paymentData.dueId,
@@ -1931,7 +2044,6 @@ export default function App() {
         dueAmount: newDue,
         status: newStatus
       } : d));
-
       handleSetDuePayments(prev => [newPayment, ...prev]);
       setIncomesState(prev => [newIncome, ...prev]);
 

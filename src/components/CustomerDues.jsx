@@ -520,7 +520,7 @@ export default function CustomerDues({
                       key={item.id} 
                       className={`hover:bg-slate-50/50 transition-colors ${
                         isOverdue ? 'bg-amber-50/10' : ''
-                      }`}
+                      } ${item._pending ? 'opacity-50 pointer-events-none' : ''}`}
                     >
                       {/* Customer Name */}
                       <td className="px-4 py-3.5">
