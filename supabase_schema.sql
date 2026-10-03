@@ -144,6 +144,11 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
 -- Ensure billing_cycle and plan_id exists for additive migration
 ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS billing_cycle TEXT NOT NULL DEFAULT 'monthly';
 ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS plan_id TEXT;
+ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS trial_plan_id TEXT;
+ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS trial_starts_at TIMESTAMPTZ;
+ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ;
+ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS trial_ended_at TIMESTAMPTZ;
+ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS trial_note TEXT;
 
 -- 11. PAYMENT REQUESTS TABLE (Payment Submission & Renewal History)
 CREATE TABLE IF NOT EXISTS public.payment_requests (
@@ -164,6 +169,22 @@ CREATE TABLE IF NOT EXISTS public.payment_requests (
 -- Ensure plan_id exists for additive migration
 ALTER TABLE public.payment_requests ADD COLUMN IF NOT EXISTS plan_id TEXT;
 
+-- 12. TRIAL HISTORY TABLE (Append-Only Free Trial Audit History)
+CREATE TABLE IF NOT EXISTS public.trial_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+    admin_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+    action TEXT NOT NULL CHECK (action IN ('START', 'EXTEND', 'SET_DATE', 'END', 'RESET', 'CONVERTED_TO_PAID')),
+    days_added INTEGER DEFAULT 0,
+    previous_end_at TIMESTAMPTZ,
+    new_end_at TIMESTAMPTZ,
+    note TEXT DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_trial_history_user_created 
+    ON public.trial_history(user_id, created_at DESC);
+
 -- ====================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ====================================================================
@@ -178,6 +199,7 @@ ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ninety_day_plan ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payment_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.trial_history ENABLE ROW LEVEL SECURITY;
 
 -- SETTINGS POLICIES
 DROP POLICY IF EXISTS "Users can select own settings" ON public.settings;
@@ -314,12 +336,60 @@ CREATE POLICY "Users can view own subscription"
 
 CREATE POLICY "Users can insert own initial subscription" 
     ON public.subscriptions FOR INSERT 
-    WITH CHECK (auth.uid() = user_id);
+    TO authenticated
+    WITH CHECK (
+        auth.uid() = user_id 
+        AND status IN ('unpaid', 'pending')
+        AND trial_starts_at IS NULL
+        AND trial_ends_at IS NULL
+        AND trial_ended_at IS NULL
+        AND trial_plan_id IS NULL
+        AND trial_note IS NULL
+    );
 
 CREATE POLICY "Users can update own subscription to pending" 
     ON public.subscriptions FOR UPDATE 
     USING (auth.uid() = user_id) 
     WITH CHECK (auth.uid() = user_id AND status = 'pending');
+
+-- TRIAL HISTORY POLICIES (Append-Only Audit Log)
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.trial_history FROM PUBLIC, anon, authenticated;
+DROP POLICY IF EXISTS "Users can view own trial history or admin can view all" ON public.trial_history;
+CREATE POLICY "Users can view own trial history or admin can view all" 
+    ON public.trial_history FOR SELECT 
+    TO authenticated
+    USING (auth.uid() = user_id OR public.is_admin(auth.uid()));
+GRANT SELECT ON public.trial_history TO authenticated;
+
+-- TRIGGER TO PREVENT CLIENT-SIDE MODIFICATION OF TRIAL COLUMNS ON UPDATE
+CREATE OR REPLACE FUNCTION public.protect_subscription_trial_fields()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    IF public.is_admin(auth.uid()) THEN
+        RETURN NEW;
+    END IF;
+
+    IF (NEW.trial_plan_id IS DISTINCT FROM OLD.trial_plan_id) OR
+       (NEW.trial_starts_at IS DISTINCT FROM OLD.trial_starts_at) OR
+       (NEW.trial_ends_at IS DISTINCT FROM OLD.trial_ends_at) OR
+       (NEW.trial_ended_at IS DISTINCT FROM OLD.trial_ended_at) OR
+       (NEW.trial_note IS DISTINCT FROM OLD.trial_note) THEN
+        RAISE EXCEPTION 'Unauthorized: Trial fields cannot be modified by standard users.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_protect_subscription_trial_fields ON public.subscriptions;
+CREATE TRIGGER trg_protect_subscription_trial_fields
+    BEFORE UPDATE ON public.subscriptions
+    FOR EACH ROW
+    EXECUTE FUNCTION public.protect_subscription_trial_fields();
 
 -- PAYMENT REQUESTS POLICIES
 DROP POLICY IF EXISTS "Users can view own payment requests" ON public.payment_requests;
@@ -333,10 +403,409 @@ CREATE POLICY "Users can submit own payment requests"
     WITH CHECK (auth.uid() = user_id AND status = 'pending');
 
 -- ====================================================================
--- SERVER-SIDE ADMIN RPC APPROVAL FUNCTIONS (SECURITY DEFINER)
+-- SERVER-SIDE ADMIN & TRIAL RPC FUNCTIONS (SECURITY DEFINER)
 -- ====================================================================
 
--- 1. FUNCTION TO APPROVE PAYMENT REQUEST
+-- 1. FUNCTION TO START SELF-SERVICE 14-DAY TRIAL
+CREATE OR REPLACE FUNCTION public.start_self_service_trial()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_user_id UUID;
+    v_user_email TEXT;
+    v_sub RECORD;
+    v_new_end TIMESTAMPTZ;
+    v_has_previous_trial BOOLEAN;
+BEGIN
+    v_user_id := auth.uid();
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required to start a trial.';
+    END IF;
+
+    SELECT email INTO v_user_email FROM auth.users WHERE id = v_user_id;
+    IF v_user_email IS NULL THEN
+        RAISE EXCEPTION 'User account not found.';
+    END IF;
+
+    SELECT * INTO v_sub 
+    FROM public.subscriptions 
+    WHERE user_id = v_user_id 
+    FOR UPDATE;
+
+    IF v_sub IS NOT NULL AND v_sub.status = 'active' AND v_sub.expires_at IS NOT NULL AND v_sub.expires_at > NOW() THEN
+        RETURN jsonb_build_object(
+            'success', false, 
+            'message', 'আপনার ইতিমধ্যে একটি সক্রিয় পেইড সাবস্ক্রিপশন চালু রয়েছে।'
+        );
+    END IF;
+
+    IF v_sub IS NOT NULL AND v_sub.trial_ends_at IS NOT NULL AND v_sub.trial_ends_at > NOW() AND v_sub.trial_ended_at IS NULL THEN
+        RETURN jsonb_build_object(
+            'success', false, 
+            'message', 'আপনার ফ্রি ট্রায়াল ইতিমধ্যে সক্রিয় রয়েছে।'
+        );
+    END IF;
+
+    v_has_previous_trial := (
+        (v_sub IS NOT NULL AND v_sub.trial_starts_at IS NOT NULL) OR
+        EXISTS (SELECT 1 FROM public.trial_history WHERE user_id = v_user_id)
+    );
+
+    IF v_has_previous_trial THEN
+        RETURN jsonb_build_object(
+            'success', false, 
+            'already_used', true,
+            'message', 'আপনি ইতিমধ্যে আপনার ফ্রি ট্রায়াল ব্যবহার করেছেন। সেবা চালু রাখতে সাবস্ক্রাইব করুন।'
+        );
+    END IF;
+
+    v_new_end := NOW() + INTERVAL '14 days';
+
+    IF v_sub IS NULL THEN
+        INSERT INTO public.subscriptions (
+            user_id,
+            user_email,
+            status,
+            plan_id,
+            plan_name,
+            billing_cycle,
+            starts_at,
+            expires_at,
+            trial_plan_id,
+            trial_starts_at,
+            trial_ends_at,
+            trial_ended_at,
+            trial_note,
+            created_at,
+            updated_at
+        ) VALUES (
+            v_user_id,
+            v_user_email,
+            'unpaid',
+            NULL,
+            'Starter',
+            'monthly',
+            NULL,
+            NULL,
+            'starter',
+            NOW(),
+            v_new_end,
+            NULL,
+            'Self-service 14-day free trial',
+            NOW(),
+            NOW()
+        );
+    ELSE
+        UPDATE public.subscriptions
+        SET trial_plan_id = 'starter',
+            trial_starts_at = NOW(),
+            trial_ends_at = v_new_end,
+            trial_ended_at = NULL,
+            trial_note = 'Self-service 14-day free trial',
+            updated_at = NOW()
+        WHERE user_id = v_user_id;
+    END IF;
+
+    INSERT INTO public.trial_history (
+        user_id,
+        admin_id,
+        action,
+        days_added,
+        previous_end_at,
+        new_end_at,
+        note
+    ) VALUES (
+        v_user_id,
+        v_user_id,
+        'START',
+        14,
+        NULL,
+        v_new_end,
+        'Self-service 14-day trial started by user'
+    );
+
+    RETURN jsonb_build_object(
+        'success', true, 
+        'trial_ends_at', v_new_end,
+        'message', '১৪ দিনের ফ্রি ট্রায়াল সফলভাবে চালু হয়েছে!'
+    );
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.start_self_service_trial() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.start_self_service_trial() FROM anon;
+GRANT EXECUTE ON FUNCTION public.start_self_service_trial() TO authenticated;
+
+-- 2. FUNCTION TO MANAGE USER TRIAL (ADMIN ONLY)
+CREATE OR REPLACE FUNCTION public.manage_user_trial(
+    p_user_id UUID,
+    p_action TEXT,
+    p_days INT DEFAULT NULL,
+    p_target_date TIMESTAMPTZ DEFAULT NULL,
+    p_plan_id TEXT DEFAULT 'starter',
+    p_reason TEXT DEFAULT ''
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_admin_id UUID;
+    v_sub RECORD;
+    v_user_email TEXT;
+    v_new_end TIMESTAMPTZ;
+    v_prev_end TIMESTAMPTZ;
+    v_clean_plan TEXT;
+    v_is_paid_active BOOLEAN;
+    v_is_trial_active BOOLEAN;
+BEGIN
+    v_admin_id := auth.uid();
+    IF v_admin_id IS NULL OR NOT public.is_admin(v_admin_id) THEN
+        RAISE EXCEPTION 'Unauthorized: Only system administrators can manage trials.';
+    END IF;
+
+    SELECT email INTO v_user_email FROM auth.users WHERE id = p_user_id;
+    IF v_user_email IS NULL THEN
+        RAISE EXCEPTION 'User not found in system.';
+    END IF;
+
+    IF p_action NOT IN ('START', 'EXTEND', 'SET_DATE', 'END', 'RESET') THEN
+        RAISE EXCEPTION 'Invalid trial action: %', p_action;
+    END IF;
+
+    v_clean_plan := COALESCE(NULLIF(trim(p_plan_id), ''), 'starter');
+    IF v_clean_plan NOT IN ('starter', 'monthly_pro', 'pro_business', 'agency') THEN
+        RAISE EXCEPTION 'Invalid plan ID: %', p_plan_id;
+    END IF;
+
+    SELECT * INTO v_sub 
+    FROM public.subscriptions 
+    WHERE user_id = p_user_id 
+    FOR UPDATE;
+
+    v_is_paid_active := (v_sub IS NOT NULL AND v_sub.status = 'active' AND v_sub.expires_at IS NOT NULL AND v_sub.expires_at > NOW());
+    v_is_trial_active := (v_sub IS NOT NULL AND v_sub.trial_ends_at IS NOT NULL AND v_sub.trial_ends_at > NOW() AND v_sub.trial_ended_at IS NULL);
+    v_prev_end := v_sub.trial_ends_at;
+
+    IF v_is_paid_active AND p_action IN ('START', 'EXTEND', 'SET_DATE') THEN
+        RAISE EXCEPTION 'User already has an active paid subscription until %. Trial actions are blocked.', to_char(v_sub.expires_at, 'YYYY-MM-DD HH24:MI:SS');
+    END IF;
+
+    IF p_action = 'START' THEN
+        IF v_is_trial_active THEN
+            RAISE EXCEPTION 'User already has an active trial until %. Use Extend instead.', to_char(v_sub.trial_ends_at, 'YYYY-MM-DD HH24:MI:SS');
+        END IF;
+
+        IF p_days IS NULL OR p_days < 1 OR p_days > 90 THEN
+            RAISE EXCEPTION 'Trial duration must be between 1 and 90 days.';
+        END IF;
+
+        v_new_end := NOW() + (p_days || ' days')::INTERVAL;
+
+        IF v_sub IS NULL THEN
+            INSERT INTO public.subscriptions (
+                user_id,
+                user_email,
+                status,
+                plan_id,
+                plan_name,
+                billing_cycle,
+                starts_at,
+                expires_at,
+                trial_plan_id,
+                trial_starts_at,
+                trial_ends_at,
+                trial_ended_at,
+                trial_note,
+                created_at,
+                updated_at
+            ) VALUES (
+                p_user_id,
+                v_user_email,
+                'unpaid',
+                NULL,
+                'Starter',
+                'monthly',
+                NULL,
+                NULL,
+                v_clean_plan,
+                NOW(),
+                v_new_end,
+                NULL,
+                COALESCE(p_reason, ''),
+                NOW(),
+                NOW()
+            );
+        ELSE
+            UPDATE public.subscriptions
+            SET trial_plan_id = v_clean_plan,
+                trial_starts_at = NOW(),
+                trial_ends_at = v_new_end,
+                trial_ended_at = NULL,
+                trial_note = COALESCE(p_reason, ''),
+                updated_at = NOW()
+            WHERE user_id = p_user_id;
+        END IF;
+
+        INSERT INTO public.trial_history (
+            user_id, admin_id, action, days_added, previous_end_at, new_end_at, note
+        ) VALUES (
+            p_user_id, v_admin_id, 'START', p_days, v_prev_end, v_new_end, COALESCE(p_reason, '')
+        );
+
+        RETURN jsonb_build_object(
+            'success', true,
+            'action', 'START',
+            'trial_ends_at', v_new_end,
+            'message', 'Free trial started successfully.'
+        );
+
+    ELSIF p_action = 'EXTEND' THEN
+        IF v_sub IS NULL THEN
+            RAISE EXCEPTION 'No subscription record found. Start a trial first.';
+        END IF;
+
+        IF p_days IS NULL OR p_days < 1 OR p_days > 90 THEN
+            RAISE EXCEPTION 'Extension days must be between 1 and 90 days.';
+        END IF;
+
+        IF v_is_trial_active THEN
+            v_new_end := v_sub.trial_ends_at + (p_days || ' days')::INTERVAL;
+        ELSE
+            v_new_end := NOW() + (p_days || ' days')::INTERVAL;
+        END IF;
+
+        UPDATE public.subscriptions
+        SET trial_ends_at = v_new_end,
+            trial_ended_at = NULL,
+            updated_at = NOW()
+        WHERE user_id = p_user_id;
+
+        INSERT INTO public.trial_history (
+            user_id, admin_id, action, days_added, previous_end_at, new_end_at, note
+        ) VALUES (
+            p_user_id, v_admin_id, 'EXTEND', p_days, v_prev_end, v_new_end, COALESCE(p_reason, '')
+        );
+
+        RETURN jsonb_build_object(
+            'success', true,
+            'action', 'EXTEND',
+            'trial_ends_at', v_new_end,
+            'message', 'Trial extended successfully.'
+        );
+
+    ELSIF p_action = 'SET_DATE' THEN
+        IF v_sub IS NULL THEN
+            RAISE EXCEPTION 'No subscription record found. Start a trial first.';
+        END IF;
+
+        IF p_target_date IS NULL OR p_target_date <= NOW() THEN
+            RAISE EXCEPTION 'Target trial end date must be strictly in the future.';
+        END IF;
+
+        IF p_target_date > (NOW() + INTERVAL '365 days') THEN
+            RAISE EXCEPTION 'Target trial end date cannot exceed 365 days from now.';
+        END IF;
+
+        IF v_prev_end IS NOT NULL AND p_target_date = v_prev_end THEN
+            RAISE EXCEPTION 'Target date is identical to the current end date.';
+        END IF;
+
+        v_new_end := p_target_date;
+
+        UPDATE public.subscriptions
+        SET trial_ends_at = v_new_end,
+            trial_ended_at = NULL,
+            updated_at = NOW()
+        WHERE user_id = p_user_id;
+
+        INSERT INTO public.trial_history (
+            user_id, admin_id, action, days_added, previous_end_at, new_end_at, note
+        ) VALUES (
+            p_user_id, v_admin_id, 'SET_DATE', 0, v_prev_end, v_new_end, COALESCE(p_reason, '')
+        );
+
+        RETURN jsonb_build_object(
+            'success', true,
+            'action', 'SET_DATE',
+            'trial_ends_at', v_new_end,
+            'message', 'Trial end date updated successfully.'
+        );
+
+    ELSIF p_action = 'END' THEN
+        IF v_sub IS NULL THEN
+            RAISE EXCEPTION 'No subscription record found.';
+        END IF;
+
+        IF v_sub.trial_ended_at IS NOT NULL THEN
+            RETURN jsonb_build_object(
+                'success', true,
+                'action', 'END',
+                'message', 'Trial was already ended.'
+            );
+        END IF;
+
+        UPDATE public.subscriptions
+        SET trial_ended_at = NOW(),
+            updated_at = NOW()
+        WHERE user_id = p_user_id;
+
+        INSERT INTO public.trial_history (
+            user_id, admin_id, action, days_added, previous_end_at, new_end_at, note
+        ) VALUES (
+            p_user_id, v_admin_id, 'END', 0, v_prev_end, NOW(), COALESCE(p_reason, '')
+        );
+
+        RETURN jsonb_build_object(
+            'success', true,
+            'action', 'END',
+            'message', 'Trial ended successfully.'
+        );
+
+    ELSIF p_action = 'RESET' THEN
+        IF v_sub IS NULL THEN
+            RAISE EXCEPTION 'No subscription record found.';
+        END IF;
+
+        IF p_reason IS NULL OR char_length(trim(p_reason)) < 5 THEN
+            RAISE EXCEPTION 'A mandatory audit reason of at least 5 characters is required to reset a trial.';
+        END IF;
+
+        UPDATE public.subscriptions
+        SET trial_plan_id = NULL,
+            trial_starts_at = NULL,
+            trial_ends_at = NULL,
+            trial_ended_at = NOW(),
+            trial_note = trim(p_reason),
+            updated_at = NOW()
+        WHERE user_id = p_user_id;
+
+        INSERT INTO public.trial_history (
+            user_id, admin_id, action, days_added, previous_end_at, new_end_at, note
+        ) VALUES (
+            p_user_id, v_admin_id, 'RESET', 0, v_prev_end, NULL, trim(p_reason)
+        );
+
+        RETURN jsonb_build_object(
+            'success', true,
+            'action', 'RESET',
+            'message', 'Trial state reset successfully.'
+        );
+    END IF;
+
+    RETURN jsonb_build_object('success', false, 'message', 'Unhandled trial action.');
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.manage_user_trial(UUID, TEXT, INT, TIMESTAMPTZ, TEXT, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.manage_user_trial(UUID, TEXT, INT, TIMESTAMPTZ, TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.manage_user_trial(UUID, TEXT, INT, TIMESTAMPTZ, TEXT, TEXT) TO authenticated;
+
+-- 3. FUNCTION TO APPROVE PAYMENT REQUEST (WITH SMART RENEWAL & TRIAL CONVERSION)
 CREATE OR REPLACE FUNCTION public.approve_payment_request(request_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -348,12 +817,19 @@ DECLARE
     v_existing_sub RECORD;
     v_starts_at TIMESTAMPTZ;
     v_expires_at TIMESTAMPTZ;
+    v_admin_id UUID;
+    v_had_active_trial BOOLEAN;
 BEGIN
-    IF NOT public.is_admin(auth.uid()) THEN
+    v_admin_id := auth.uid();
+    IF v_admin_id IS NULL OR NOT public.is_admin(v_admin_id) THEN
         RAISE EXCEPTION 'Unauthorized: Only system administrators can approve payment requests.';
     END IF;
 
-    SELECT * INTO req FROM public.payment_requests WHERE id = request_id AND status = 'pending';
+    -- 1. Fetch & lock pending payment request
+    SELECT * INTO req 
+    FROM public.payment_requests 
+    WHERE id = request_id AND status = 'pending'
+    FOR UPDATE;
     
     IF req IS NULL THEN
         RAISE EXCEPTION 'Payment request not found or already processed.';
@@ -363,21 +839,53 @@ BEGIN
     SET status = 'approved', updated_at = NOW() 
     WHERE id = request_id;
 
-    -- Fetch existing subscription to handle smart renewal logic
-    SELECT * INTO v_existing_sub FROM public.subscriptions WHERE user_id = req.user_id;
+    -- 2. Fetch & lock existing subscription for smart renewal & trial conversion
+    SELECT * INTO v_existing_sub 
+    FROM public.subscriptions 
+    WHERE user_id = req.user_id
+    FOR UPDATE;
 
+    -- Smart Renewal calculation for paid subscription
     IF v_existing_sub IS NOT NULL AND v_existing_sub.status = 'active' AND v_existing_sub.expires_at > NOW() THEN
-        -- Active subscription: extend from current expiry
         v_starts_at := v_existing_sub.starts_at;
         v_expires_at := v_existing_sub.expires_at + INTERVAL '1 month';
     ELSE
-        -- Expired or new subscription: start from now
         v_starts_at := NOW();
         v_expires_at := NOW() + INTERVAL '1 month';
     END IF;
 
-    INSERT INTO public.subscriptions (user_id, user_email, status, plan_id, plan_name, billing_cycle, starts_at, expires_at, updated_at)
-    VALUES (req.user_id, req.user_email, 'active', req.plan_id, req.plan_name, 'monthly', v_starts_at, v_expires_at, NOW())
+    -- Check if user currently has an active trial
+    v_had_active_trial := (
+        v_existing_sub IS NOT NULL 
+        AND v_existing_sub.trial_ends_at IS NOT NULL 
+        AND v_existing_sub.trial_ends_at > NOW() 
+        AND v_existing_sub.trial_ended_at IS NULL
+    );
+
+    -- 3. Upsert paid subscription state & conclude active trial if present
+    INSERT INTO public.subscriptions (
+        user_id, 
+        user_email, 
+        status, 
+        plan_id, 
+        plan_name, 
+        billing_cycle, 
+        starts_at, 
+        expires_at, 
+        trial_ended_at,
+        updated_at
+    ) VALUES (
+        req.user_id, 
+        req.user_email, 
+        'active', 
+        req.plan_id, 
+        req.plan_name, 
+        'monthly', 
+        v_starts_at, 
+        v_expires_at, 
+        CASE WHEN v_had_active_trial THEN NOW() ELSE NULL END,
+        NOW()
+    )
     ON CONFLICT (user_id) 
     DO UPDATE SET 
         status = 'active',
@@ -386,11 +894,41 @@ BEGIN
         billing_cycle = 'monthly',
         starts_at = v_starts_at,
         expires_at = v_expires_at,
+        trial_ended_at = CASE 
+            WHEN v_had_active_trial THEN NOW() 
+            ELSE public.subscriptions.trial_ended_at 
+        END,
         updated_at = NOW();
 
-    RETURN jsonb_build_object('success', true, 'message', 'Payment request approved successfully.');
+    -- 4. If trial was active, record immutable CONVERTED_TO_PAID audit event
+    IF v_had_active_trial THEN
+        INSERT INTO public.trial_history (
+            user_id,
+            admin_id,
+            action,
+            days_added,
+            previous_end_at,
+            new_end_at,
+            note
+        ) VALUES (
+            req.user_id,
+            v_admin_id,
+            'CONVERTED_TO_PAID',
+            0,
+            v_existing_sub.trial_ends_at,
+            NOW(),
+            'Trial concluded automatically upon payment request approval.'
+        );
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', true, 
+        'converted_from_trial', v_had_active_trial,
+        'message', 'Payment request approved successfully.'
+    );
 END;
 $$;
+
 
 -- 2. FUNCTION TO REJECT PAYMENT REQUEST
 CREATE OR REPLACE FUNCTION public.reject_payment_request(request_id UUID, rejection_reason TEXT DEFAULT '')
