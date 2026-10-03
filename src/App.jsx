@@ -26,13 +26,15 @@ import { RefreshCw, AlertCircle, CloudOff } from 'lucide-react';
 import Toast from './components/ui/Toast';
 import SyncStatusPill from './components/ui/SyncStatusPill';
 import { useSyncStore, withSync, resetSyncState, getSyncState, isFailedResult } from './store/syncStore';
-import { isSubscribed } from './utils/subscriptionHelper';
+import { isSubscribed, hasActiveTrial } from './utils/subscriptionHelper';
+import { Sparkles, Crown, Clock } from 'lucide-react';
 
 export default function App() {
   const [session, setSession] = useState(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [publicView, setPublicView] = useState('landing'); // 'landing' | 'auth_login' | 'auth_signup'
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
   const [globalError, setGlobalError] = useState(null);
@@ -2363,6 +2365,11 @@ export default function App() {
     );
   }
 
+  const hasTrial = !isAdmin && hasActiveTrial(subscription);
+  const trialDaysRemaining = hasTrial 
+    ? Math.max(0, Math.ceil((new Date(subscription.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
       <Sidebar 
@@ -2371,6 +2378,8 @@ export default function App() {
         user={session.user} 
         onLogout={handleLogout}
         isAdmin={isAdmin}
+        subscription={subscription}
+        onOpenUpgrade={() => setShowUpgradeModal(true)}
       />
       
       {/* Top Subtle Animated Sync Progress Line */}
@@ -2378,7 +2387,40 @@ export default function App() {
         <div className="fixed top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 z-50 animate-pulse"></div>
       )}
 
-      <main className="flex-1 md:ml-64 p-4 sm:p-6 md:p-8 w-full min-w-0 max-w-[1600px] mx-auto">
+      <main className="flex-1 md:ml-64 p-4 sm:p-6 md:p-8 w-full min-w-0 max-w-[1600px] mx-auto space-y-4">
+        {/* Top Header Trial Status Banner (Dismissable / Actionable) */}
+        {hasTrial && (
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 sm:px-6 shadow-sm border border-indigo-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 text-amber-300 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5 text-amber-300" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-sm sm:text-base text-white">
+                    ১৪ দিনের ফ্রি ট্রায়াল চালু রয়েছে
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                    {trialDaysRemaining} দিন বাকি
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 font-medium">
+                  ট্রায়াল চলাকালীন সমস্ত ফিচার সম্পূর্ণ ফ্রি। ট্রায়াল শেষ হলেও ডেটা সুরক্ষিত থাকবে।
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowUpgradeModal(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
+            >
+              <Crown className="w-4 h-4 text-slate-950" />
+              <span>এখনই পেইড সাবস্ক্রাইব করুন</span>
+            </button>
+          </div>
+        )}
+
         {session?.user && (
           <SyncStatusPill 
             status={syncStatus.status} 
@@ -2581,6 +2623,20 @@ export default function App() {
         type="error"
         onClose={() => setGlobalError(null)}
       />
+
+      {/* Upgrade / Subscription Modal for Active Trial Users */}
+      {showUpgradeModal && (
+        <SubscriptionModal
+          subscription={subscription}
+          paymentRequests={paymentRequests}
+          onSubmitPayment={handleSubmitPayment}
+          onStartTrial={handleStartTrial}
+          user={session.user}
+          onLogout={handleLogout}
+          onClose={() => setShowUpgradeModal(false)}
+          selectedPlanId={localStorage.getItem('dremoy_selected_plan')}
+        />
+      )}
     </div>
   );
 }

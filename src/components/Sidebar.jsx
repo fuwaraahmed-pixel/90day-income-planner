@@ -16,10 +16,13 @@ import {
   ShieldCheck,
   GraduationCap,
   Wallet,
-  Landmark
+  Landmark,
+  Sparkles,
+  Crown
 } from 'lucide-react';
+import { hasActiveTrial } from '../utils/subscriptionHelper';
 
-export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdmin = false }) {
+export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdmin = false, subscription, onOpenUpgrade }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigationGroups = [
@@ -129,6 +132,34 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
             ))}
           </div>
 
+          {/* Mobile Free Trial Promo Card */}
+          {!isAdmin && hasActiveTrial(subscription) && (
+            <div className="pt-4 mt-4 border-t border-slate-100 px-3">
+              <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white rounded-2xl p-3.5 shadow-md relative overflow-hidden space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
+                    <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                    <span>ফ্রি ট্রায়াল</span>
+                  </span>
+                  <span className="text-[11px] font-bold text-amber-300">
+                    {Math.max(0, Math.ceil((new Date(subscription.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)))} দিন বাকি
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (onOpenUpgrade) onOpenUpgrade();
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-all"
+                >
+                  <Crown className="w-3.5 h-3.5 text-slate-950" />
+                  <span>এখনই সাবস্ক্রাইব করুন</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {user && (
             <div className="pt-4 mt-6 border-t border-slate-100 px-3">
               <button
@@ -188,6 +219,38 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
             ))}
           </nav>
         </div>
+
+        {/* Free Trial Upgrade Promo Card (If user is currently in trial) */}
+        {!isAdmin && hasActiveTrial(subscription) && (
+          <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+            <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white rounded-2xl p-3.5 shadow-md relative overflow-hidden space-y-2.5">
+              <div className="absolute top-0 right-0 -mr-4 -mt-4 w-20 h-20 bg-indigo-500/20 rounded-full blur-xl pointer-events-none"></div>
+              
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
+                  <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                  <span>ফ্রি ট্রায়াল</span>
+                </span>
+                <span className="text-[11px] font-bold text-amber-300">
+                  {Math.max(0, Math.ceil((new Date(subscription.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24)))} দিন বাকি
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-300 leading-tight">
+                মেয়াদ শেষে সেবা সচল রাখতে এখনই পেইড সাবস্ক্রিপশন নিন।
+              </p>
+
+              <button
+                type="button"
+                onClick={onOpenUpgrade}
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Crown className="w-3.5 h-3.5 text-slate-950" />
+                <span>সাবস্ক্রাইব করুন</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* User Profile & Logout Box */}
         <div className="p-4 border-t border-slate-100 bg-white">
