@@ -1661,34 +1661,87 @@ export default function App() {
   };
 
   const handleRecordCrmPayment = async (paymentData) => {
+    const paymentId = paymentData.paymentId || `pay_${Date.now()}`;
+    const amountNum = Number(paymentData.amount);
+    const client = leadsRef.current.find(l => String(l.id) === String(paymentData.crmClientId));
+
     if (session?.user?.id) {
-      const res = await withSync(api.rpcRecordCrmPayment(paymentData));
-      if (res && res.success !== false) {
-        // Refresh crmPayments, leads, and incomes atomically
-        const [crmPaysRes, leadsRes, incsRes] = await withSync(Promise.all([api.getCrmPayments(session.user.id),
-          api.getCRMClients(session.user.id),
-          api.getIncome(session.user.id)
-        ]));
-        if (crmPaysRes !== null) {
-          setCrmPayments(crmPaysRes);
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
-        if (leadsRes !== null) {
-          setLeadsState(prev => {
-            const pendingItems = prev.filter(l => l._pending);
-            return pendingItems.length ? [...pendingItems, ...leadsRes] : leadsRes;
-          });
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
-        if (incsRes !== null) {
-          setIncomesState(incsRes);
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, পেমেন্ট রেকর্ড করা যায়নি।');
+        return { success: false, message: 'No internet' };
       }
-      return res;
+
+      const newPayment = {
+        id: paymentId,
+        paymentId: paymentId,
+        crmClientId: Number(paymentData.crmClientId),
+        paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+        amount: amountNum,
+        paymentMethod: paymentData.paymentMethod || 'bKash',
+        notes: paymentData.notes || '',
+        _pending: true
+      };
+
+      const newIncome = {
+        id: Date.now(),
+        date: newPayment.paymentDate,
+        source: 'CRM / Service',
+        clientDetails: client ? `${client.clientName} (${client.businessName})` : 'CRM Client',
+        amount: amountNum,
+        paymentType: newPayment.paymentMethod,
+        month: 'Month 1',
+        notes: newPayment.notes,
+        crmPaymentId: paymentId,
+        _pending: true
+      };
+
+      setCrmPayments(prev => [newPayment, ...prev]);
+      setIncomesState(prev => [newIncome, ...prev]);
+
+      if (client) {
+        const newAdvance = (Number(client.advance) || 0) + amountNum;
+        let newStatus = client.status;
+        if (Number(client.quotedPrice) > 0 && newAdvance >= Number(client.quotedPrice)) {
+          newStatus = 'Paid';
+        } else if (newAdvance > 0 && (client.status === 'New' || client.status === 'Negotiation' || client.status === 'Proposal Sent')) {
+          newStatus = 'Advance Paid';
+        }
+        setLeadsState(prev => prev.map(l => String(l.id) === String(client.id) ? { ...l, advance: newAdvance, status: newStatus, _pending: true } : l));
+      }
+
+      try {
+        const res = await withSync(api.rpcRecordCrmPayment(paymentData), { isOptimistic: false });
+        if (isFailedResult(res) || res?.success === false) {
+           throw new Error(res?.message || 'পেমেন্ট রেকর্ড করা যায়নি');
+        }
+
+        setCrmPayments(prev => prev.map(p => p.paymentId === paymentId ? { ...p, _pending: false } : p));
+        setIncomesState(prev => prev.map(i => i.crmPaymentId === paymentId ? { ...i, _pending: false } : i));
+        if (client) {
+          setLeadsState(prev => prev.map(l => String(l.id) === String(client.id) ? { ...l, _pending: false } : l));
+        }
+
+        api.getCrmPayments(session.user.id).then(crmPaysRes => { if (crmPaysRes) setCrmPayments(crmPaysRes); });
+        api.getCRMClients(session.user.id).then(leadsRes => {
+          if (leadsRes) {
+            setLeadsState(prev => {
+              const pendingItems = prev.filter(l => l._pending);
+              return pendingItems.length ? [...pendingItems, ...leadsRes] : leadsRes;
+            });
+          }
+        });
+        api.getIncome(session.user.id).then(incsRes => { if (incsRes) setIncomesState(incsRes); });
+
+        return res;
+      } catch (err) {
+        setCrmPayments(prev => prev.filter(p => p.paymentId !== paymentId));
+        setIncomesState(prev => prev.filter(i => i.crmPaymentId !== paymentId));
+        if (client) {
+           setLeadsState(prev => prev.map(l => String(l.id) === String(client.id) ? client : l));
+        }
+        setGlobalError('পেমেন্ট রেকর্ড করা ব্যর্থ হয়েছে।');
+        throw err;
+      }
     } else {
       // LocalStorage fallback mode with payment_id idempotency check
       const existing = crmPayments.find(p => p.paymentId === paymentData.paymentId || p.id === paymentData.paymentId);
@@ -2054,89 +2107,167 @@ export default function App() {
   // Liabilities Handlers
   const handleCreateLiability = async (liabilityData) => {
     if (session?.user?.id) {
-      const res = await withSync(api.createLiability(session.user.id, liabilityData));
-      if (res?.error || !res?.data) {
-        return { success: false, message: res?.error || 'Supabase-এ দেনা সংরক্ষণ করা সম্ভব হয়নি।' };
+      if (!navigator.onLine) {
+        return { success: false, message: 'ইন্টারনেট সংযোগ নেই, সংরক্ষণ করা যায়নি।' };
       }
       
-      const newLiability = res.data;
-      setLiabilitiesState(prev => [newLiability, ...prev]);
+      const tempId = `temp_liab_${Date.now()}`;
+      const optimisticLiability = {
+        ...liabilityData,
+        id: tempId,
+        remainingAmount: Number(liabilityData.totalAmount) || 0,
+        status: 'Active',
+        _pending: true
+      };
 
-      // If it's an EMI, generate and create the schedule
-      if (newLiability.liabilityType === 'EMI' && newLiability.durationMonths > 0) {
-        const installments = [];
-        const startDate = newLiability.startDate ? new Date(newLiability.startDate) : new Date();
-        const dueDay = newLiability.dueDay || startDate.getDate();
+      setLiabilitiesState(prev => [optimisticLiability, ...prev]);
+
+      try {
+        const res = await withSync(api.createLiability(session.user.id, liabilityData), { isOptimistic: false });
+        if (isFailedResult(res) || !res?.data) {
+          throw new Error(res?.error || 'Supabase-এ দেনা সংরক্ষণ করা সম্ভব হয়নি।');
+        }
         
-        const addMonthsSafely = (date, monthsToAdd, targetDay) => {
-          const result = new Date(date.getFullYear(), date.getMonth() + monthsToAdd, 1);
-          const daysInMonth = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
-          result.setDate(Math.min(targetDay, daysInMonth));
-          return result;
-        };
+        const newLiability = res.data;
+        setLiabilitiesState(prev => prev.map(l => String(l.id) === String(tempId) ? newLiability : l));
 
-        for (let i = 1; i <= newLiability.durationMonths; i++) {
-          // Calculate due date for this installment using the safe helper
-          const dueDate = addMonthsSafely(startDate, i, dueDay);
-          const yyyy = dueDate.getFullYear();
-          const mm = String(dueDate.getMonth() + 1).padStart(2, '0');
-          const dd = String(dueDate.getDate()).padStart(2, '0');
+        if (newLiability.liabilityType === 'EMI' && newLiability.durationMonths > 0) {
+          const installments = [];
+          const startDate = newLiability.startDate ? new Date(newLiability.startDate) : new Date();
+          const dueDay = newLiability.dueDay || startDate.getDate();
+          
+          const addMonthsSafely = (date, monthsToAdd, targetDay) => {
+            const result = new Date(date.getFullYear(), date.getMonth() + monthsToAdd, 1);
+            const daysInMonth = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+            result.setDate(Math.min(targetDay, daysInMonth));
+            return result;
+          };
 
-          installments.push({
-            liabilityId: newLiability.id,
-            installmentNumber: i,
-            dueDate: `${yyyy}-${mm}-${dd}`,
-            expectedAmount: newLiability.emiAmount
+          for (let i = 1; i <= newLiability.durationMonths; i++) {
+            const dueDate = addMonthsSafely(startDate, i, dueDay);
+            const yyyy = dueDate.getFullYear();
+            const mm = String(dueDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(dueDate.getDate()).padStart(2, '0');
+
+            installments.push({
+              liabilityId: newLiability.id,
+              installmentNumber: i,
+              dueDate: `${yyyy}-${mm}-${dd}`,
+              expectedAmount: newLiability.emiAmount
+            });
+          }
+
+          api.createEmiInstallments(session.user.id, installments).then(emiRes => {
+            if (emiRes.success) {
+              api.getEmiInstallments(session.user.id).then(freshEmis => {
+                if (freshEmis) setEmiInstallments(freshEmis);
+              });
+            }
           });
         }
 
-        const emiRes = await withSync(api.createEmiInstallments(session.user.id, installments));
-        if (emiRes.success) {
-          // Fetch updated EMI installments to ensure state is synchronized
-          const freshEmis = await withSync(api.getEmiInstallments(session.user.id));
-          if (freshEmis !== null) setEmiInstallments(freshEmis);
-        }
+        return { success: true, data: newLiability };
+      } catch (err) {
+        setLiabilitiesState(prev => prev.filter(l => String(l.id) !== String(tempId)));
+        return { success: false, message: err.message };
       }
-
-      return { success: true, data: newLiability };
     }
     return { success: false, message: 'লগইন করা নেই' };
   };
 
   const handleDeleteLiability = async (liabilityId) => {
     if (session?.user?.id) {
-      const deleted = await withSync(api.deleteLiability(session.user.id, liabilityId));
-      if (deleted) {
-        setLiabilitiesState(prev => prev.filter(l => String(l.id) !== String(liabilityId)));
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, ডিলিট করা যায়নি।');
+        return;
+      }
+      
+      const originalLiabilities = liabilities;
+      setLiabilitiesState(prev => prev.filter(l => String(l.id) !== String(liabilityId)));
+      
+      try {
+        const deleted = await withSync(api.deleteLiability(session.user.id, liabilityId), { isOptimistic: false });
+        if (!deleted) throw new Error('Deletion failed');
+      } catch (err) {
+        setLiabilitiesState(originalLiabilities);
+        setGlobalError('দেনা মুছে ফেলা সম্ভব হয়নি।');
       }
     }
   };
 
   const handleRecordLiabilityPayment = async (paymentData) => {
     if (session?.user?.id) {
-      const res = await withSync(api.rpcRecordLiabilityPayment(paymentData));
-      if (res && res.success !== false) {
-        const [liabRes, liabPaysRes, expRes] = await withSync(Promise.all([api.getLiabilities(session.user.id),
-          api.getLiabilityPayments(session.user.id),
-          api.getExpenses(session.user.id)
-        ]));
-        if (liabRes !== null) {
-          setLiabilitiesState(liabRes);
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
-        if (liabPaysRes !== null) {
-          setLiabilityPaymentsState(liabPaysRes);
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
-        if (expRes !== null) {
-          setExpensesState(expRes);
-        } else {
-          setGlobalError("Couldn't refresh data — check your connection. Showing last known data.");
-        }
+      if (!navigator.onLine) {
+        setGlobalError('ইন্টারনেট সংযোগ নেই, পেমেন্ট রেকর্ড করা যায়নি।');
+        return { success: false, message: 'No internet' };
       }
-      return res;
+
+      const amountNum = Number(paymentData.amount);
+      const liabilityItem = liabilities.find(l => String(l.id) === String(paymentData.liabilityId));
+      if (!liabilityItem) return { success: false, message: 'Liability not found' };
+
+      const newPaidAmount = (Number(liabilityItem.paidAmount) || 0) + amountNum;
+      const newRemaining = Math.max(0, (Number(liabilityItem.totalAmount) || 0) - newPaidAmount);
+      const newStatus = newRemaining <= 0 ? 'Paid Off' : liabilityItem.status;
+
+      setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? {
+        ...l,
+        paidAmount: newPaidAmount,
+        remainingAmount: newRemaining,
+        status: newStatus,
+        _pending: true
+      } : l));
+
+      const paymentId = paymentData.paymentId || `pay_liab_${Date.now()}`;
+      setLiabilityPaymentsState(prev => [{
+        id: paymentId,
+        liabilityId: paymentData.liabilityId,
+        amount: amountNum,
+        paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+        paymentMethod: paymentData.paymentMethod || 'Cash',
+        _pending: true
+      }, ...prev]);
+
+      if (paymentData.addToExpense) {
+        setExpensesState(prev => [{
+          id: Date.now(),
+          date: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+          category: 'Debt Repayment',
+          title: `Payment for ${liabilityItem.creditorName}`,
+          amount: amountNum,
+          paymentMethod: paymentData.paymentMethod || 'Cash',
+          _pending: true
+        }, ...prev]);
+      }
+
+      try {
+        const res = await withSync(api.rpcRecordLiabilityPayment(paymentData), { isOptimistic: false });
+        if (isFailedResult(res) || res?.success === false) {
+           throw new Error(res?.message || 'পেমেন্ট রেকর্ড করা যায়নি');
+        }
+
+        setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? { ...l, _pending: false } : l));
+        setLiabilityPaymentsState(prev => prev.map(p => p.id === paymentId ? { ...p, _pending: false } : p));
+        if (paymentData.addToExpense) {
+           // Refetching expenses will fix the temporary ID
+        }
+
+        api.getLiabilities(session.user.id).then(liabRes => { if (liabRes) setLiabilitiesState(liabRes); });
+        api.getLiabilityPayments(session.user.id).then(liabPaysRes => { if (liabPaysRes) setLiabilityPaymentsState(liabPaysRes); });
+        if (paymentData.addToExpense) {
+          api.getExpenses(session.user.id).then(expRes => { if (expRes) setExpensesState(expRes); });
+        }
+
+        return res;
+      } catch (err) {
+        setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? liabilityItem : l));
+        setLiabilityPaymentsState(prev => prev.filter(p => p.id !== paymentId));
+        if (paymentData.addToExpense) {
+           api.getExpenses(session.user.id).then(expRes => { if (expRes) setExpensesState(expRes); });
+        }
+        setGlobalError('পেমেন্ট রেকর্ড করা ব্যর্থ হয়েছে।');
+        throw err;
+      }
     }
     return { success: false, message: 'লগইন করা নেই' };
   };
@@ -2291,18 +2422,71 @@ export default function App() {
             onRecordPayment={handleRecordLiabilityPayment}
             onRecordEmiPayment={async (paymentData) => {
               if (!session?.user?.id) return { success: false, message: 'Not logged in' };
-              const res = await withSync(api.rpcRecordEmiPayment(paymentData));
-              if (res && res.success) {
-                // Refresh data
-                const [liabRes, liabPaysRes, emiRes] = await withSync(Promise.all([api.getLiabilities(session.user.id),
-                  api.getLiabilityPayments(session.user.id),
-                  api.getEmiInstallments(session.user.id)
-                ]));
-                if (liabRes !== null) setLiabilitiesState(liabRes);
-                if (liabPaysRes !== null) setLiabilityPaymentsState(liabPaysRes);
-                if (emiRes !== null) setEmiInstallments(emiRes);
+              if (!navigator.onLine) {
+                setGlobalError('ইন্টারনেট সংযোগ নেই, পেমেন্ট রেকর্ড করা যায়নি।');
+                return { success: false, message: 'No internet' };
               }
-              return res;
+
+              const amountNum = Number(paymentData.amount);
+              const liabilityItem = liabilities.find(l => String(l.id) === String(paymentData.liabilityId));
+              const installmentItem = emiInstallments.find(e => String(e.id) === String(paymentData.installmentId));
+              if (!liabilityItem || !installmentItem) return { success: false, message: 'Liability or Installment not found' };
+
+              const newPaidAmount = (Number(liabilityItem.paidAmount) || 0) + amountNum;
+              const newRemaining = Math.max(0, (Number(liabilityItem.totalAmount) || 0) - newPaidAmount);
+              const newLiabStatus = newRemaining <= 0 ? 'Paid Off' : liabilityItem.status;
+
+              const instNewPaid = (Number(installmentItem.paidAmount) || 0) + amountNum;
+              const instStatus = instNewPaid >= Number(installmentItem.expectedAmount) ? 'Paid' : 'Partial';
+
+              setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? {
+                ...l,
+                paidAmount: newPaidAmount,
+                remainingAmount: newRemaining,
+                status: newLiabStatus,
+                _pending: true
+              } : l));
+
+              setEmiInstallments(prev => prev.map(e => String(e.id) === String(paymentData.installmentId) ? {
+                ...e,
+                paidAmount: instNewPaid,
+                status: instStatus,
+                _pending: true
+              } : e));
+
+              const paymentId = paymentData.paymentId || `pay_emi_${Date.now()}`;
+              setLiabilityPaymentsState(prev => [{
+                id: paymentId,
+                liabilityId: paymentData.liabilityId,
+                emiInstallmentId: paymentData.installmentId,
+                amount: amountNum,
+                paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+                paymentMethod: paymentData.paymentMethod || 'Cash',
+                _pending: true
+              }, ...prev]);
+
+              try {
+                const res = await withSync(api.rpcRecordEmiPayment(paymentData), { isOptimistic: false });
+                if (isFailedResult(res) || res?.success === false) {
+                  throw new Error(res?.message || 'Failed');
+                }
+
+                setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? { ...l, _pending: false } : l));
+                setEmiInstallments(prev => prev.map(e => String(e.id) === String(paymentData.installmentId) ? { ...e, _pending: false } : e));
+                setLiabilityPaymentsState(prev => prev.map(p => p.id === paymentId ? { ...p, _pending: false } : p));
+
+                api.getLiabilities(session.user.id).then(liabRes => { if (liabRes) setLiabilitiesState(liabRes); });
+                api.getLiabilityPayments(session.user.id).then(liabPaysRes => { if (liabPaysRes) setLiabilityPaymentsState(liabPaysRes); });
+                api.getEmiInstallments(session.user.id).then(emiRes => { if (emiRes) setEmiInstallments(emiRes); });
+
+                return res;
+              } catch (err) {
+                setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? liabilityItem : l));
+                setEmiInstallments(prev => prev.map(e => String(e.id) === String(paymentData.installmentId) ? installmentItem : e));
+                setLiabilityPaymentsState(prev => prev.filter(p => p.id !== paymentId));
+                setGlobalError('পেমেন্ট রেকর্ড করা ব্যর্থ হয়েছে।');
+                throw err;
+              }
             }}
           />
         )}

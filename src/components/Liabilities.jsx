@@ -316,7 +316,7 @@ export default function Liabilities({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {activeLiabilities.map(liability => (
-                    <tr key={liability.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <tr key={liability.id} className={`hover:bg-slate-50/50 transition-colors group ${liability._pending ? 'opacity-50 pointer-events-none' : ''}`}>
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-800 whitespace-normal min-w-[150px]">{liability.creditorName}</div>
                         {liability.dueDate && (
@@ -403,7 +403,7 @@ export default function Liabilities({
             {/* Mobile Cards */}
             <div className="md:hidden flex flex-col divide-y divide-slate-100">
               {activeLiabilities.map(liability => (
-                <div key={liability.id} className="p-4 space-y-4">
+                <div key={liability.id} className={`p-4 space-y-4 ${liability._pending ? 'opacity-50 pointer-events-none' : ''}`}>
                   <div className="flex justify-between items-start gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="font-medium text-slate-800 truncate">{liability.creditorName}</div>

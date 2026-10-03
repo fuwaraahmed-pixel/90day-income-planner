@@ -189,7 +189,7 @@ export default function Crm({
       const userId = session?.user?.id;
       
       if (userId) {
-        const success = await withSync(api.updateCRMClientStatus(userId, leadId, newStatus));
+        const success = await withSync(api.updateCRMClientStatus(userId, leadId, newStatus), { isOptimistic: false });
         if (!success) {
           throw new Error('Database update failed');
         }
