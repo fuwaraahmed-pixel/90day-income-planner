@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CreditCard, Send, CheckCircle2, AlertCircle, Clock, ShieldCheck, PhoneCall, Copy, LogOut, Sparkles, Gift, X } from 'lucide-react';
+import { Bkash, Nagad, Rocket } from 'react-bangla-pay-icons';
 import { PLANS, DEFAULT_PLAN } from '../utils/plans';
 
 export default function SubscriptionModal({ subscription, paymentRequests, onSubmitPayment, onStartTrial, user, onLogout, onClose, selectedPlanId }) {
@@ -287,17 +288,15 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
                 onClick={() => setPaymentMethod('bKash')}
                 className={`relative rounded-2xl p-4 cursor-pointer transition-all border flex flex-col justify-between ${
                   paymentMethod === 'bKash' 
-                    ? 'bg-pink-50/60 border-pink-500 shadow-md ring-2 ring-pink-500/20' 
+                    ? 'bg-pink-50/70 border-pink-500 shadow-md ring-2 ring-pink-500/20' 
                     : 'bg-white border-slate-200/90 hover:border-pink-300 hover:shadow-xs'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    {/* bKash Brand Icon */}
-                    <div className="w-9 h-9 rounded-xl bg-pink-600 flex items-center justify-center shadow-xs">
-                      <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white" aria-label="bKash">
-                        <path d="M12.02 2.5l-6.8 9.98 4.3 6.35 6.84-2.85-4.34-13.48zm-1.02 11.23l-2.07-3.05 4.32-6.34 2.1 6.54-4.35 2.85zm6.82 2.22l-4.73 1.97 3.31 3.58 1.42-5.55zm-11.64-1.28l3.19 4.7 1.5-3.02-4.69-1.68z" />
-                      </svg>
+                    {/* Official bKash Logo */}
+                    <div className="w-12 h-12 rounded-2xl bg-white border border-pink-100 flex items-center justify-center p-1.5 shadow-xs">
+                      <Bkash width={36} height={36} />
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-pink-100 text-pink-700">
                       বিকাশ
@@ -328,18 +327,15 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
                 onClick={() => setPaymentMethod('Nagad')}
                 className={`relative rounded-2xl p-4 cursor-pointer transition-all border flex flex-col justify-between ${
                   paymentMethod === 'Nagad' 
-                    ? 'bg-orange-50/60 border-orange-500 shadow-md ring-2 ring-orange-500/20' 
+                    ? 'bg-orange-50/70 border-orange-500 shadow-md ring-2 ring-orange-500/20' 
                     : 'bg-white border-slate-200/90 hover:border-orange-300 hover:shadow-xs'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    {/* Nagad Brand Icon */}
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center shadow-xs">
-                      <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white" aria-label="Nagad">
-                        <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2" fill="none" />
-                        <path d="M12 7v10M8.5 9.5l7 5M15.5 9.5l-7 5" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
+                    {/* Official Nagad Logo */}
+                    <div className="w-12 h-12 rounded-2xl bg-white border border-orange-100 flex items-center justify-center p-1.5 shadow-xs">
+                      <Nagad width={36} height={36} />
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
                       নগদ
@@ -370,17 +366,15 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
                 onClick={() => setPaymentMethod('Rocket')}
                 className={`relative rounded-2xl p-4 cursor-pointer transition-all border flex flex-col justify-between ${
                   paymentMethod === 'Rocket' 
-                    ? 'bg-purple-50/60 border-purple-600 shadow-md ring-2 ring-purple-600/20' 
+                    ? 'bg-purple-50/70 border-purple-600 shadow-md ring-2 ring-purple-600/20' 
                     : 'bg-white border-slate-200/90 hover:border-purple-300 hover:shadow-xs'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    {/* Rocket Brand Icon */}
-                    <div className="w-9 h-9 rounded-xl bg-purple-700 flex items-center justify-center shadow-xs">
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" aria-label="Rocket">
-                        <path d="M12 2.5C9.5 2.5 8 5.5 8 8c0 3 2.5 7 4 9 1.5-2 4-6 4-9 0-2.5-1.5-5.5-4-5.5zm0 8a2 2 0 110-4 2 2 0 010 4zm-5 7.5c-2 1-3 2.5-3 4h16c0-1.5-1-3-3-4-2 1-3.5 1-5 1s-3 0-5-1z" />
-                      </svg>
+                    {/* Official Rocket Logo */}
+                    <div className="w-12 h-12 rounded-2xl bg-white border border-purple-100 flex items-center justify-center p-1.5 shadow-xs">
+                      <Rocket width={36} height={36} />
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
                       রকেট
@@ -406,6 +400,7 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
                 </button>
               </div>
             </div>
+
           </div>
 
           {/* Submit Form */}
