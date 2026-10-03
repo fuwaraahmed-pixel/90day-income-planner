@@ -20,7 +20,7 @@ import Liabilities from './components/Liabilities';
 
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import * as api from './lib/supabaseService';
-import { loadData, STORAGE_KEYS } from './utils/storage';
+import { loadData, saveData, removeData, STORAGE_KEYS } from './utils/storage';
 import { RefreshCw, AlertCircle, CloudOff } from 'lucide-react';
 
 import Toast from './components/ui/Toast';
@@ -461,24 +461,36 @@ export default function App() {
 
   // Auth Logout Action
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    setIsAdmin(false);
-    setSubscription(null);
-    setPaymentRequests([]);
-    setTasksState([]);
-    setLeadsState([]);
-    setIncomesState([]);
-    setExpensesState([]);
-    setReviewsState([]);
-    setServicesState([]);
-    setAppDataState(defaultAppData);
-    setPlanDataState(null);
-    setTuitionStudents([]);
-    setTuitionPayments([]);
-    setLiabilitiesState([]);
-    setLiabilityPaymentsState([]);
-    setEmiInstallments([]);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Logout error");
+      setGlobalError('লগআউট করতে সমস্যা হয়েছে, তবে আপনার তথ্য মুছে ফেলা হয়েছে।');
+    } finally {
+      setSession(null);
+      setIsAdmin(false);
+      setSubscription(null);
+      setPaymentRequests([]);
+      setTasksState([]);
+      setLeadsState([]);
+      setIncomesState([]);
+      setExpensesState([]);
+      setReviewsState([]);
+      setServicesState([]);
+      setAppDataState(defaultAppData);
+      setPlanDataState(null);
+      setTuitionStudents([]);
+      setTuitionPayments([]);
+      setLiabilitiesState([]);
+      setLiabilityPaymentsState([]);
+      setEmiInstallments([]);
+      setCrmPayments([]);
+      setCustomerDuesState([]);
+      setDuePaymentsState([]);
+      setActiveTab('dashboard');
+      removeData(STORAGE_KEYS.CUSTOMER_DUES);
+      removeData(STORAGE_KEYS.DUE_PAYMENTS);
+    }
   };
 
   // Submit Payment Request Handler

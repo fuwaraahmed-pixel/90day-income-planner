@@ -10,6 +10,38 @@ export default function Auth({ initialSignUp = false, onBackToLanding }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  const getAuthErrorMessage = (error) => {
+    if (!error) return 'সার্ভারে একটি সমস্যা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।';
+
+    const msg = (error.message || '').toLowerCase();
+    const code = error.code || '';
+    const status = error.status || 0;
+
+    if (msg.includes('invalid login credentials') || code === 'invalid_credentials') {
+      return 'ইমেইল অথবা পাসওয়ার্ড ভুল হয়েছে। আবার চেষ্টা করুন।';
+    }
+    if (msg.includes('email not confirmed') || code === 'email_not_confirmed') {
+      return 'আপনার ইমেইলটি এখনও ভেরিফাই করা হয়নি। দয়া করে আপনার ইমেইল চেক করুন।';
+    }
+    if (msg.includes('already registered') || code === 'user_already_exists') {
+      return 'এই ইমেইল দিয়ে অ্যাকাউন্ট তৈরি করা সম্ভব হয়নি। আপনার তথ্য যাচাই করে আবার চেষ্টা করুন।';
+    }
+    if (msg.includes('invalid email') || code === 'validation_failed') {
+      return 'দয়া করে একটি সঠিক ইমেইল ঠিকানা দিন।';
+    }
+    if (msg.includes('weak_password') || msg.includes('password should be at least') || code === 'weak_password') {
+      return 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।';
+    }
+    if (msg.includes('rate limit') || msg.includes('too many requests') || status === 429 || code === 'over_email_send_rate_limit') {
+      return 'অতিরিক্ত চেষ্টার কারণে সাময়িকভাবে অনুরোধ সীমিত করা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।';
+    }
+    if (msg.includes('failed to fetch') || msg.includes('network error')) {
+      return 'ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।';
+    }
+
+    return 'সার্ভারে একটি সমস্যা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।';
+  };
+
   const handleAuth = async (e) => {
     e.preventDefault();
     if (!email.trim() || !password) return;
@@ -24,14 +56,17 @@ export default function Auth({ initialSignUp = false, onBackToLanding }) {
     setSuccessMessage('');
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: normalizedEmail,
           password: password,
         });
 
         if (error) {
-          setErrorMessage(error.message || 'অ্যাকাউন্ট তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+          console.error("Signup error");
+          setErrorMessage(getAuthErrorMessage(error));
         } else if (data?.user && data?.session === null) {
           setSuccessMessage('আপনার ইমেইলে একটি নিশ্চিতকরণ লিংক পাঠানো হয়েছে। দয়া করে ইমেইল ভেরিফাই করুন।');
         } else {
@@ -39,20 +74,18 @@ export default function Auth({ initialSignUp = false, onBackToLanding }) {
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
+          email: normalizedEmail,
           password: password,
         });
 
         if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            setErrorMessage('ইমেইল অথবা পাসওয়ার্ড ভুল হয়েছে। আবার চেষ্টা করুন।');
-          } else {
-            setErrorMessage(error.message || 'লগইন করতে সমস্যা হয়েছে।');
-          }
+          console.error("Login error");
+          setErrorMessage(getAuthErrorMessage(error));
         }
       }
     } catch (err) {
-      setErrorMessage('একটি অপ্রত্যাশিত ভুল ঘটেছে: ' + err.message);
+      console.error("Auth exception");
+      setErrorMessage(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
