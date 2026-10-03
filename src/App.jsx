@@ -516,6 +516,17 @@ export default function App() {
     return res;
   };
 
+  // Start Free Trial Handler
+  const handleStartTrial = async () => {
+    if (!session?.user?.id) return { success: false, message: 'ইউজার লগইন করা নেই' };
+    const res = await withSync(api.rpcStartSelfServiceTrial());
+    if (res && res.success) {
+      const subRes = await api.getSubscription(session.user.id);
+      setSubscription(subRes);
+    }
+    return res;
+  };
+
 
   // State Mutators with Supabase Sync
   const handleSetAppData = (newSettings) => {
@@ -2344,6 +2355,7 @@ export default function App() {
         subscription={subscription}
         paymentRequests={paymentRequests}
         onSubmitPayment={handleSubmitPayment}
+        onStartTrial={handleStartTrial}
         user={session.user}
         onLogout={handleLogout}
         selectedPlanId={localStorage.getItem('dremoy_selected_plan')}

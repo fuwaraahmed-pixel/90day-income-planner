@@ -104,7 +104,7 @@ export default function Auth({ initialSignUp = false, onBackToLanding }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://app.dremoy.com'
+          redirectTo: window.location.origin
         }
       });
       if (error) {

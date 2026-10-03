@@ -34,9 +34,8 @@ export default function TruncatedText({ text, className = "" }) {
     };
   }, [showTooltip]);
 
-  if (!text) return <span className="text-slate-400 italic">--</span>;
-
   useEffect(() => {
+    if (!text) return;
     const checkTruncation = () => {
       if (spanRef.current) {
         setIsTruncated(spanRef.current.scrollWidth > spanRef.current.clientWidth);
@@ -50,6 +49,8 @@ export default function TruncatedText({ text, className = "" }) {
     window.addEventListener('resize', checkTruncation);
     return () => window.removeEventListener('resize', checkTruncation);
   }, [text]);
+
+  if (!text) return <span className="text-slate-400 italic">--</span>;
 
   const handleToggle = (e) => {
     e.stopPropagation(); // Prevent parent row/card clicks

@@ -146,6 +146,48 @@ export const rpcRejectPaymentRequest = async (requestId, reason = '') => {
   return data;
 };
 
+export const rpcStartSelfServiceTrial = async () => {
+  if (!isSupabaseConfigured) return { success: false, message: 'Supabase কনফিগারেশন পাওয়া যায়নি।' };
+  const { data, error } = await supabase.rpc('start_self_service_trial');
+  if (error) {
+    console.error('RPC Start Trial Error:', error);
+    return { success: false, message: error.message };
+  }
+  return data;
+};
+
+export const rpcManageUserTrial = async ({ userId, action, days, targetDate, planId, reason }) => {
+  if (!isSupabaseConfigured) return { success: false, message: 'Supabase কনফিগারেশন পাওয়া যায়নি।' };
+  const { data, error } = await supabase.rpc('manage_user_trial', {
+    p_user_id: userId,
+    p_action: action,
+    p_days: days ? Number(days) : null,
+    p_target_date: targetDate || null,
+    p_plan_id: planId || 'starter',
+    p_reason: reason || ''
+  });
+  if (error) {
+    console.error('RPC Manage User Trial Error:', error);
+    return { success: false, message: error.message };
+  }
+  return data;
+};
+
+export const getTrialHistory = async (userId) => {
+  if (!isSupabaseConfigured || !userId) return [];
+  const { data, error } = await supabase
+    .from('trial_history')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching trial history:', error);
+    return [];
+  }
+  return data ? data.map(toCamel) : [];
+};
+
 export const checkIsAdmin = async (userId, userEmail = '') => {
   if (!isSupabaseConfigured || !userId) return false;
   try {

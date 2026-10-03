@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { CreditCard, Send, CheckCircle2, AlertCircle, Clock, ShieldCheck, PhoneCall, Copy, LogOut } from 'lucide-react';
+import { CreditCard, Send, CheckCircle2, AlertCircle, Clock, ShieldCheck, PhoneCall, Copy, LogOut, Sparkles, Gift } from 'lucide-react';
 import { PLANS, DEFAULT_PLAN } from '../utils/plans';
 
-export default function SubscriptionModal({ subscription, paymentRequests, onSubmitPayment, user, onLogout, selectedPlanId }) {
+export default function SubscriptionModal({ subscription, paymentRequests, onSubmitPayment, onStartTrial, user, onLogout, selectedPlanId }) {
   const [paymentMethod, setPaymentMethod] = useState('bKash');
   const [senderNumber, setSenderNumber] = useState('');
   const [trxId, setTrxId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [trialLoading, setTrialLoading] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [copiedNumber, setCopiedNumber] = useState(null);
@@ -24,6 +25,17 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
   // Resolve the plan: find the matching one, ignore legacy 'monthly_pro', fallback to DEFAULT_PLAN
   const matchedPlan = Object.values(PLANS).find(p => p.id === selectedPlanId);
   const activePlan = matchedPlan && matchedPlan.id !== 'monthly_pro' ? matchedPlan : DEFAULT_PLAN;
+
+  const handleStartTrialClick = async () => {
+    if (!onStartTrial) return;
+    setTrialLoading(true);
+    setErrorMsg('');
+    const res = await onStartTrial();
+    setTrialLoading(false);
+    if (!res || !res.success) {
+      setErrorMsg(res?.message || 'ফ্রি ট্রায়াল চালু করতে সমস্যা হয়েছে।');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,10 +68,11 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
     }
   };
 
-
   const isPending = subscription?.status === 'pending';
   const isRejected = subscription?.status === 'rejected';
   const isExpired = subscription?.status === 'expired';
+  // Has user already used trial?
+  const hasUsedTrial = Boolean(subscription?.trialStartsAt || subscription?.trialEndedAt || (subscription?.trialEndsAt && new Date(subscription.trialEndsAt) <= new Date()));
 
   const latestRequest = paymentRequests && paymentRequests.length > 0 ? paymentRequests[0] : null;
 
@@ -91,6 +104,51 @@ export default function SubscriptionModal({ subscription, paymentRequests, onSub
             <span>লগআউট</span>
           </button>
         </div>
+
+        {/* 14-Day Free Trial Offer Card (Show only if user hasn't consumed trial) */}
+        {!hasUsedTrial && !isPending && (
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-indigo-700 text-white rounded-3xl p-6 shadow-lg space-y-4">
+            <div className="absolute top-0 right-0 -mr-6 -mt-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-md rounded-full text-[11px] font-bold tracking-wide">
+                  <Gift className="w-3.5 h-3.5 text-amber-300" />
+                  <span>স্পেশাল অফার — সম্পূর্ণ ফ্রি</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                  ১৪ দিনের ফ্রি ট্রায়াল নিন!
+                </h2>
+                <p className="text-xs sm:text-sm text-emerald-50/90 leading-relaxed max-w-md">
+                  কোনো ক্রেডিট কার্ড বা পেমেন্ট ছাড়াই এখনই ১৪ দিনের জন্য সম্পূর্ণ অ্যাপের সমস্ত প্রিমিয়াম ফিচার ব্যবহার করুন।
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleStartTrialClick}
+                disabled={trialLoading}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white hover:bg-emerald-50 text-emerald-800 font-extrabold text-sm rounded-2xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 flex-shrink-0"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-600 animate-spin" style={{ animationDuration: '3s' }} />
+                <span>{trialLoading ? 'চালু হচ্ছে...' : '১৪ দিনের ফ্রি ট্রায়াল শুরু করুন'}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Trial Expired Notice Banner */}
+        {hasUsedTrial && !subscription?.expiresAt && !isPending && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 text-xs space-y-1">
+            <div className="font-bold text-sm flex items-center gap-1.5 text-amber-900">
+              <AlertCircle className="w-4 h-4 text-amber-600" />
+              <span>আপনার ফ্রি ট্রায়ালের মেয়াদ শেষ হয়েছে</span>
+            </div>
+            <p className="text-slate-700">
+              অ্যাপটির নিরবচ্ছিন্ন ব্যবহার চালিয়ে যেতে অনুগ্রহ করে নিচে দেওয়া নম্বরে মাসিক ফি প্রদান করে পেইড সাবস্ক্রিপশন সম্পন্ন করুন।
+            </p>
+          </div>
+        )}
 
         {/* Pending Request Status Banner */}
         {isPending && (

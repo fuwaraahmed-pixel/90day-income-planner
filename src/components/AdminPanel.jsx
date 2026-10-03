@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { getPendingPaymentRequestsForAdmin, rpcApprovePaymentRequest, rpcRejectPaymentRequest, getAllSubscriptionsForAdmin } from '../lib/supabaseService';
-import { ShieldCheck, CheckCircle2, XCircle, RefreshCw, Clock, Search, AlertCircle, CreditCard, LayoutList, Calendar, CalendarX2 } from 'lucide-react';
+import { 
+  getPendingPaymentRequestsForAdmin, 
+  rpcApprovePaymentRequest, 
+  rpcRejectPaymentRequest, 
+  getAllSubscriptionsForAdmin,
+  rpcManageUserTrial,
+  getTrialHistory
+} from '../lib/supabaseService';
+import { 
+  ShieldCheck, CheckCircle2, XCircle, RefreshCw, Clock, Search, AlertCircle, 
+  CreditCard, LayoutList, Calendar, CalendarX2, Sparkles, PlusCircle, History, 
+  RotateCcw, Ban, ChevronRight, X
+} from 'lucide-react';
 
 export default function AdminPanel({ adminUser }) {
   const [activeTab, setActiveTab] = useState('requests'); // 'requests' | 'subscriptions'
@@ -9,6 +20,15 @@ export default function AdminPanel({ adminUser }) {
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [feedbackMsg, setFeedbackMsg] = useState(null);
+
+  // Trial Modal States
+  const [selectedSubForTrial, setSelectedSubForTrial] = useState(null);
+  const [trialModalType, setTrialModalType] = useState(null); // 'START' | 'EXTEND' | 'RESET' | 'HISTORY'
+  const [trialDays, setTrialDays] = useState(14);
+  const [trialPlanId, setTrialPlanId] = useState('starter');
+  const [trialReason, setTrialReason] = useState('');
+  const [trialHistoryList, setTrialHistoryList] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Filters for subscriptions tab
   const [filterPlan, setFilterPlan] = useState('all');
@@ -61,6 +81,60 @@ export default function AdminPanel({ adminUser }) {
       fetchAdminData();
     } else {
       setFeedbackMsg({ type: 'error', message: 'বাতিল করতে ব্যর্থ: ' + (result?.message || 'অজানা ত্রুটি') });
+    }
+  };
+
+  // Open Trial History
+  const handleOpenHistory = async (sub) => {
+    setSelectedSubForTrial(sub);
+    setTrialModalType('HISTORY');
+    setHistoryLoading(true);
+    const history = await getTrialHistory(sub.userId);
+    setTrialHistoryList(history || []);
+    setHistoryLoading(false);
+  };
+
+  // Submit Trial Action (START, EXTEND, RESET, END)
+  const handleTrialActionSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!selectedSubForTrial) return;
+
+    setActionLoadingId(selectedSubForTrial.id);
+    const res = await rpcManageUserTrial({
+      userId: selectedSubForTrial.userId,
+      action: trialModalType,
+      days: trialDays,
+      planId: trialPlanId,
+      reason: trialReason
+    });
+    setActionLoadingId(null);
+
+    if (res && res.success) {
+      setFeedbackMsg({ type: 'success', message: res.message || 'ট্রায়াল সফলভাবে আপডেট করা হয়েছে।' });
+      setTrialModalType(null);
+      setSelectedSubForTrial(null);
+      setTrialReason('');
+      fetchAdminData();
+    } else {
+      alert('ব্যর্থ হয়েছে: ' + (res?.message || 'অজানা ত্রুটি'));
+    }
+  };
+
+  // End Trial Directly with Confirmation
+  const handleDirectEndTrial = async (sub) => {
+    if (!window.confirm(`আপনি কি নিশ্চিত যে ${sub.userEmail} এর ফ্রি ট্রায়াল সাথে সাথে বাতিল করতে চান?`)) return;
+    setActionLoadingId(sub.id);
+    const res = await rpcManageUserTrial({
+      userId: sub.userId,
+      action: 'END',
+      reason: 'Admin cancelled trial manually'
+    });
+    setActionLoadingId(null);
+    if (res && res.success) {
+      setFeedbackMsg({ type: 'success', message: 'ট্রায়াল সফলভাবে বন্ধ করা হয়েছে।' });
+      fetchAdminData();
+    } else {
+      alert('ব্যর্থ: ' + (res?.message || 'অজানা ত্রুটি'));
     }
   };
 
@@ -360,8 +434,10 @@ export default function AdminPanel({ adminUser }) {
                     <th className="px-4 py-3">Customer</th>
                     <th className="px-4 py-3">Plan</th>
                     <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Trial Status</th>
                     <th className="px-4 py-3">Start Date</th>
                     <th className="px-4 py-3">Expiry</th>
+                    <th className="px-4 py-3 text-right">Trial Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -375,6 +451,15 @@ export default function AdminPanel({ adminUser }) {
                     if (sub.status === 'expired') statusBadge = "bg-rose-100 text-rose-800";
                     if (sub.status === 'pending') statusBadge = "bg-amber-100 text-amber-800";
 
+                    // Trial info
+                    const hasActiveTrial = sub.trialEndsAt && new Date(sub.trialEndsAt) > new Date() && !sub.trialEndedAt;
+                    const isTrialExpired = sub.trialEndsAt && new Date(sub.trialEndsAt) <= new Date() && !sub.trialEndedAt;
+                    const isTrialEnded = Boolean(sub.trialEndedAt);
+
+                    const trialDaysRemaining = hasActiveTrial 
+                      ? Math.ceil((new Date(sub.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24))
+                      : 0;
+
                     return (
                       <tr key={sub.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-4 py-3 font-semibold text-slate-900">{sub.userEmail}</td>
@@ -387,6 +472,24 @@ export default function AdminPanel({ adminUser }) {
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${statusBadge}`}>
                             {sub.status}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {hasActiveTrial ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              <Sparkles className="w-3 h-3 text-indigo-600" />
+                              <span>{trialDaysRemaining} দিন বাকি</span>
+                            </span>
+                          ) : isTrialExpired ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                              মেয়াদোত্তীর্ণ
+                            </span>
+                          ) : isTrialEnded ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">
+                              বাতিলকৃত
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-xs">-</span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-xs">
                           {sub.startsAt ? new Date(sub.startsAt).toLocaleDateString('bn-BD') : '-'}
@@ -406,6 +509,49 @@ export default function AdminPanel({ adminUser }) {
                             <span className="text-slate-400">-</span>
                           )}
                         </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="inline-flex items-center gap-1.5">
+                            {!hasActiveTrial && sub.status !== 'active' ? (
+                              <button
+                                onClick={() => {
+                                  setSelectedSubForTrial(sub);
+                                  setTrialModalType('START');
+                                  setTrialDays(14);
+                                }}
+                                className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors"
+                              >
+                                Start Trial
+                              </button>
+                            ) : hasActiveTrial ? (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedSubForTrial(sub);
+                                    setTrialModalType('EXTEND');
+                                    setTrialDays(7);
+                                  }}
+                                  className="px-2 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors"
+                                >
+                                  +7 দিন
+                                </button>
+                                <button
+                                  onClick={() => handleDirectEndTrial(sub)}
+                                  className="px-2 py-1 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors"
+                                >
+                                  End
+                                </button>
+                              </>
+                            ) : null}
+
+                            <button
+                              onClick={() => handleOpenHistory(sub)}
+                              className="p-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                              title="Trial History"
+                            >
+                              <History className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -414,6 +560,132 @@ export default function AdminPanel({ adminUser }) {
             ) : (
               <div className="py-12 text-center text-slate-500 text-xs">
                 কোনো সাবস্ক্রিপশন পাওয়া যায়নি।
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Trial Modal (Start / Extend / History) */}
+      {trialModalType && selectedSubForTrial && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-emerald-600" />
+                <span>
+                  {trialModalType === 'START' && 'ফ্রি ট্রায়াল শুরু করুন'}
+                  {trialModalType === 'EXTEND' && 'ট্রায়ালের মেয়াদ বৃদ্ধি করুন'}
+                  {trialModalType === 'HISTORY' && 'ট্রায়াল অডিট হিস্টোরি'}
+                </span>
+              </h3>
+              <button 
+                onClick={() => { setTrialModalType(null); setSelectedSubForTrial(null); }}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              ইউজার: <strong className="text-slate-800">{selectedSubForTrial.userEmail}</strong>
+            </p>
+
+            {/* Modal Body: Form for START / EXTEND */}
+            {(trialModalType === 'START' || trialModalType === 'EXTEND') && (
+              <form onSubmit={handleTrialActionSubmit} className="space-y-4 pt-1">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    মেয়াদ (দিন):
+                  </label>
+                  <select 
+                    value={trialDays} 
+                    onChange={e => setTrialDays(Number(e.target.value))}
+                    className="w-full text-xs font-semibold p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value={7}>৭ দিন (১ সপ্তাহ)</option>
+                    <option value={14}>১৪ দিন (২ সপ্তাহ - স্ট্যান্ডার্ড)</option>
+                    <option value={30}>৩০ দিন (১ মাস)</option>
+                  </select>
+                </div>
+
+                {trialModalType === 'START' && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      প্যাকেজ (Plan):
+                    </label>
+                    <select 
+                      value={trialPlanId} 
+                      onChange={e => setTrialPlanId(e.target.value)}
+                      className="w-full text-xs font-semibold p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="starter">Starter</option>
+                      <option value="pro_business">Pro Business</option>
+                      <option value="agency">Agency</option>
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    নোট (ঐচ্ছিক):
+                  </label>
+                  <input 
+                    type="text" 
+                    value={trialReason} 
+                    onChange={e => setTrialReason(e.target.value)}
+                    placeholder="যেমন: স্পেশাল অনবোর্ডিং রিকোয়েস্ট"
+                    className="w-full text-xs p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setTrialModalType(null); setSelectedSubForTrial(null); }}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={actionLoadingId === selectedSubForTrial.id}
+                    className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm"
+                  >
+                    {actionLoadingId === selectedSubForTrial.id ? 'আপডেট হচ্ছে...' : 'নিশ্চিত করুন'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Modal Body: Trial History List */}
+            {trialModalType === 'HISTORY' && (
+              <div className="space-y-3 pt-1">
+                {historyLoading ? (
+                  <div className="py-8 text-center text-xs text-slate-500">হিস্টোরি লোড হচ্ছে...</div>
+                ) : trialHistoryList.length > 0 ? (
+                  <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                    {trialHistoryList.map(h => (
+                      <div key={h.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+                        <div className="flex items-center justify-between font-bold">
+                          <span className="text-emerald-700 uppercase tracking-wide text-[10px] bg-emerald-100 px-2 py-0.5 rounded">
+                            {h.action}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(h.createdAt).toLocaleString('bn-BD')}
+                          </span>
+                        </div>
+                        <div className="text-slate-700 font-medium">
+                          {h.daysAdded > 0 && <span>+ {h.daysAdded} দিন বৃদ্ধি | </span>}
+                          {h.newEndAt && <span>মেয়াদ: {new Date(h.newEndAt).toLocaleDateString('bn-BD')}</span>}
+                        </div>
+                        {h.note && <div className="text-[11px] text-slate-500 italic">নোট: {h.note}</div>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-xs text-slate-500">কোনো ট্রায়াল রেকর্ড পাওয়া যায়নি।</div>
+                )}
               </div>
             )}
           </div>
