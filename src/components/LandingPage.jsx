@@ -2328,9 +2328,9 @@ export default function LandingPage({ onNavigateToAuth }) {
             <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between relative">
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">স্টার্টার প্ল্যান</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">একক উদ্যোক্তা ও শিক্ষক</span>
                   <h3 className="text-xl font-bold text-slate-900">Starter</h3>
-                  <p className="text-xs text-slate-500 font-medium">ফ্রিল্যান্সার ও সোলো উদ্যোক্তাদের জন্য</p>
+                  <p className="text-xs text-slate-500 font-medium">ফ্রিল্যান্সার, সোলো প্রফেশনাল ও টিউটরদের জন্য</p>
                 </div>
 
                 <div className="flex items-baseline gap-1 pt-2 border-t border-slate-100">
@@ -2341,7 +2341,7 @@ export default function LandingPage({ onNavigateToAuth }) {
                 <ul className="space-y-3 pt-4 text-xs font-semibold text-slate-700 border-t border-slate-100">
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>আয় ও ব্যয় ট্র্যাকিং</span>
+                    <span>মেইন ড্যাশবোর্ড ও মেট্রিক্স</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
@@ -2349,15 +2349,19 @@ export default function LandingPage({ onNavigateToAuth }) {
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>১০ জন পর্যন্ত সেলস লিড (CRM)</span>
+                    <span>৯০ দিনের ইনকাম গোল ও উইকলি রিভিউ</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>বেসিক বিজনেস ওভারভিউ</span>
+                    <span>আয় ও নিয়মিত ব্যয় ট্র্যাকিং</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>নিরাপদ ক্লাউড ডাটা সিঙ্ক</span>
+                    <span>টিউশন ও স্টুডেন্ট ফি ট্র্যাকার</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    <span>ক্লাউড ব্যাকআপ ও ডাটা সিঙ্ক</span>
                   </li>
                 </ul>
               </div>
@@ -2382,9 +2386,9 @@ export default function LandingPage({ onNavigateToAuth }) {
 
               <div className="space-y-4">
                 <div className="space-y-1 pt-1">
-                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">প্রফেশনাল প্ল্যান</span>
+                  <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">ব্যবসা ও সার্ভিস প্রোভাইডার</span>
                   <h3 className="text-xl font-bold text-slate-900">Pro Business</h3>
-                  <p className="text-xs text-slate-500 font-medium">ছোট ব্যবসা ও গ্রোইং উদ্যোক্তাদের জন্য</p>
+                  <p className="text-xs text-slate-500 font-medium">ছোট ব্যবসা, সার্ভিস প্রোভাইডার ও গ্রোইং উদ্যোক্তাদের জন্য</p>
                 </div>
 
                 <div className="flex items-baseline gap-1 pt-2 border-t border-slate-100">
@@ -2395,27 +2399,27 @@ export default function LandingPage({ onNavigateToAuth }) {
                 <ul className="space-y-3 pt-4 text-xs font-semibold text-slate-800 border-t border-slate-100">
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>আনলিমিটেড আয় ও ব্যয় ট্র্যাকিং</span>
+                    <span className="font-bold">Starter-এর সকল ফিচার অন্তর্ভুক্ত</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>অ্যাডভান্সড CRM ও পাইপলাইন</span>
+                    <span>ক্লায়েন্ট CRM ও সেলস পাইপলাইন</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>ক্লায়েন্ট অনুস্মারক ও কাস্টমার ফলো-আপ</span>
+                    <span>কাস্টমার বাকি ও পাওনা ম্যানেজমেন্ট (Dues)</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>টিউশন ও সার্ভিস চার্জ ট্র্যাকার</span>
+                    <span>সার্ভিস প্যাকেজ ও প্রাইসিং রেট ক্যাটালগ</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>৯০ দিনের গোল ও উইকলি রিভিউ</span>
+                    <span>ক্লায়েন্ট পেমেন্ট ও ইনকাম অটো-সিঙ্ক</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>প্রায়োরিটি সাপোর্ট</span>
+                    <span>১৪ দিনের ফ্রি ট্রায়াল সুবিধা</span>
                   </li>
                 </ul>
               </div>
@@ -2425,18 +2429,18 @@ export default function LandingPage({ onNavigateToAuth }) {
                   onClick={() => handleSelectPlan('pro_business')}
                   className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-emerald-600/20"
                 >
-                  বিনামূল্যে শুরু করুন
+                  ১৪ দিনের ফ্রি ট্রায়াল নিন
                 </button>
               </div>
             </div>
 
-            {/* Plan 3: Business / Agency */}
+            {/* Plan 3: Business Plus */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between relative">
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">এজেন্সি ও টিম</span>
-                  <h3 className="text-xl font-bold text-slate-900">Agency</h3>
-                  <p className="text-xs text-slate-500 font-medium">এজেন্সি ও ক্রমবর্ধমান টিম পরিচালনার জন্য</p>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ফুল ফাইন্যান্সিয়াল কমান্ড</span>
+                  <h3 className="text-xl font-bold text-slate-900">Business Plus</h3>
+                  <p className="text-xs text-slate-500 font-medium">যাদের লোন, দেনা ও কিস্তিসহ ফুল ফাইন্যান্স ট্র্যাকিং প্রয়োজন</p>
                 </div>
 
                 <div className="flex items-baseline gap-1 pt-2 border-t border-slate-100">
@@ -2447,23 +2451,27 @@ export default function LandingPage({ onNavigateToAuth }) {
                 <ul className="space-y-3 pt-4 text-xs font-semibold text-slate-700 border-t border-slate-100">
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>Pro-এর সকল ফিচার অন্তর্ভুক্ত</span>
+                    <span className="font-bold">Pro Business-এর সকল ফিচার অন্তর্ভুক্ত</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>আনলিমিটেড কাস্টমার ডাটাবেজ</span>
+                    <span>দেনা ও ব্যাংক লোন ট্র্যাকার (Liabilities)</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>কাস্টম রিপোর্ট ও ডাটা এক্সপোর্ট</span>
+                    <span>ব্যাংক ও পার্সোনাল EMI কিস্তি শিডিউলার</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>মাল্টি-ডিভাইস এক্সেস</span>
+                    <span>কিস্তি পরিশোধ ও ব্যালেন্স অটো-ক্যালকুলেশন</span>
                   </li>
                   <li className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span>ডেডিকেটেড অনবোর্ডিং সাপোর্ট</span>
+                    <span>মাল্টি-ডিভাইস ফুল এক্সেস</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    <span>প্রায়োরিটি সাপোর্ট</span>
                   </li>
                 </ul>
               </div>
@@ -2473,7 +2481,7 @@ export default function LandingPage({ onNavigateToAuth }) {
                   onClick={() => handleSelectPlan('agency')}
                   className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-sm transition-all"
                 >
-                  একাউন্ট তৈরি করুন
+                  Business Plus সিলেক্ট করুন
                 </button>
               </div>
             </div>

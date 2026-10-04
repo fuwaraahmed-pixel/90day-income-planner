@@ -19,10 +19,11 @@ export const PLANS = {
   },
   AGENCY: {
     id: 'agency',
-    name: 'Agency',
+    name: 'Business Plus',
     price: 1999,
     cycle: 'monthly',
   }
 };
+
 
 export const DEFAULT_PLAN = PLANS.STARTER;

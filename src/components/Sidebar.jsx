@@ -18,9 +18,11 @@ import {
   Wallet,
   Landmark,
   Sparkles,
-  Crown
+  Crown,
+  Lock
 } from 'lucide-react';
 import { hasActiveTrial } from '../utils/subscriptionHelper';
+import { isFeatureAllowed } from '../utils/planPermissions';
 
 export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdmin = false, subscription, onOpenUpgrade }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -112,18 +114,26 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
                   {group.items.map((item) => {
                     const Icon = item.icon;
                     const isActive = activeTab === item.id;
+                    const isAllowed = isFeatureAllowed(item.id, subscription, isAdmin);
                     return (
                       <button
                         key={item.id}
                         onClick={() => handleTabClick(item.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] transition-all duration-150 text-left group ${
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] transition-all duration-150 text-left group ${
                           isActive
                             ? 'bg-emerald-50/70 text-emerald-950 font-semibold'
                             : 'text-slate-600 font-medium hover:bg-slate-100/60 hover:text-slate-900'
                         }`}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
-                        <span className="truncate">{item.label}</span>
+                        <div className="flex items-center gap-3 truncate">
+                          <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        {!isAllowed && (
+                          <span title="Locked feature - Upgrade required" className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-400 group-hover:text-amber-600 group-hover:bg-amber-50 shrink-0">
+                            <Lock className="w-3 h-3" />
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -199,18 +209,26 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
                   {group.items.map((item) => {
                     const Icon = item.icon;
                     const isActive = activeTab === item.id;
+                    const isAllowed = isFeatureAllowed(item.id, subscription, isAdmin);
                     return (
                       <button
                         key={item.id}
                         onClick={() => handleTabClick(item.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 text-left group ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-all duration-150 text-left group ${
                           isActive
                             ? 'bg-emerald-50/70 text-emerald-950 font-semibold'
                             : 'text-slate-600 font-medium hover:bg-slate-100/60 hover:text-slate-900'
                         }`}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
-                        <span className="truncate">{item.label}</span>
+                        <div className="flex items-center gap-3 truncate">
+                          <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        {!isAllowed && (
+                          <span title="Locked feature - Upgrade required" className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-400 group-hover:text-amber-600 group-hover:bg-amber-50 shrink-0">
+                            <Lock className="w-3 h-3" />
+                          </span>
+                        )}
                       </button>
                     );
                   })}

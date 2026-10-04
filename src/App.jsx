@@ -16,6 +16,8 @@ import AdminPanel from './components/AdminPanel';
 import Tuition from './components/Tuition';
 import CustomerDues from './components/CustomerDues';
 import Liabilities from './components/Liabilities';
+import FeatureLockCard from './components/ui/FeatureLockCard';
+import { isFeatureAllowed } from './utils/planPermissions';
 
 
 import { supabase, isSupabaseConfigured } from './lib/supabase';
@@ -2466,111 +2468,141 @@ export default function App() {
         )}
 
         {activeTab === 'dues' && (
-          <CustomerDues
-            dues={customerDues}
-            duePayments={duePayments}
-            crmClients={leads}
-            onAddDue={handleAddCustomerDue}
-            onUpdateDue={handleUpdateCustomerDue}
-            onDeleteDue={handleDeleteCustomerDue}
-            onRecordPayment={handleRecordCustomerDuePayment}
-          />
+          !isFeatureAllowed('dues', subscription, isAdmin) ? (
+            <FeatureLockCard
+              featureId="dues"
+              onUpgrade={(planId) => {
+                localStorage.setItem('dremoy_selected_plan', planId);
+                setShowUpgradeModal(true);
+              }}
+            />
+          ) : (
+            <CustomerDues
+              dues={customerDues}
+              duePayments={duePayments}
+              crmClients={leads}
+              onAddDue={handleAddCustomerDue}
+              onUpdateDue={handleUpdateCustomerDue}
+              onDeleteDue={handleDeleteCustomerDue}
+              onRecordPayment={handleRecordCustomerDuePayment}
+            />
+          )
         )}
 
         {activeTab === 'liabilities' && (
-          <Liabilities
-            liabilities={liabilities}
-            setLiabilities={setLiabilitiesState}
-            liabilityPayments={liabilityPayments}
-            emiInstallments={emiInstallments}
-            onCreateLiability={handleCreateLiability}
-            onDeleteLiability={handleDeleteLiability}
-            onRecordPayment={handleRecordLiabilityPayment}
-            onRecordEmiPayment={async (paymentData) => {
-              if (!session?.user?.id) return { success: false, message: 'Not logged in' };
-              if (!navigator.onLine) {
-                setGlobalError('ইন্টারনেট সংযোগ নেই, পেমেন্ট রেকর্ড করা যায়নি।');
-                return { success: false, message: 'No internet' };
-              }
-
-              const amountNum = Number(paymentData.amount);
-              const liabilityItem = liabilities.find(l => String(l.id) === String(paymentData.liabilityId));
-              const installmentItem = emiInstallments.find(e => String(e.id) === String(paymentData.installmentId));
-              if (!liabilityItem || !installmentItem) return { success: false, message: 'Liability or Installment not found' };
-
-              const newPaidAmount = (Number(liabilityItem.paidAmount) || 0) + amountNum;
-              const newRemaining = Math.max(0, (Number(liabilityItem.totalAmount) || 0) - newPaidAmount);
-              const newLiabStatus = newRemaining <= 0 ? 'Paid Off' : liabilityItem.status;
-
-              const instNewPaid = (Number(installmentItem.paidAmount) || 0) + amountNum;
-              const instStatus = instNewPaid >= Number(installmentItem.expectedAmount) ? 'Paid' : 'Partial';
-
-              setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? {
-                ...l,
-                paidAmount: newPaidAmount,
-                remainingAmount: newRemaining,
-                status: newLiabStatus,
-                _pending: true
-              } : l));
-
-              setEmiInstallments(prev => prev.map(e => String(e.id) === String(paymentData.installmentId) ? {
-                ...e,
-                paidAmount: instNewPaid,
-                status: instStatus,
-                _pending: true
-              } : e));
-
-              const paymentId = paymentData.paymentId || `pay_emi_${Date.now()}`;
-              setLiabilityPaymentsState(prev => [{
-                id: paymentId,
-                liabilityId: paymentData.liabilityId,
-                emiInstallmentId: paymentData.installmentId,
-                amount: amountNum,
-                paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
-                paymentMethod: paymentData.paymentMethod || 'Cash',
-                _pending: true
-              }, ...prev]);
-
-              try {
-                const res = await withSync(api.rpcRecordEmiPayment(paymentData), { isOptimistic: false });
-                if (isFailedResult(res) || res?.success === false) {
-                  throw new Error(res?.message || 'Failed');
+          !isFeatureAllowed('liabilities', subscription, isAdmin) ? (
+            <FeatureLockCard
+              featureId="liabilities"
+              onUpgrade={(planId) => {
+                localStorage.setItem('dremoy_selected_plan', planId);
+                setShowUpgradeModal(true);
+              }}
+            />
+          ) : (
+            <Liabilities
+              liabilities={liabilities}
+              setLiabilities={setLiabilitiesState}
+              liabilityPayments={liabilityPayments}
+              emiInstallments={emiInstallments}
+              onCreateLiability={handleCreateLiability}
+              onDeleteLiability={handleDeleteLiability}
+              onRecordPayment={handleRecordLiabilityPayment}
+              onRecordEmiPayment={async (paymentData) => {
+                if (!session?.user?.id) return { success: false, message: 'Not logged in' };
+                if (!navigator.onLine) {
+                  setGlobalError('ইন্টারনেট সংযোগ নেই, পেমেন্ট রেকর্ড করা যায়নি।');
+                  return { success: false, message: 'No internet' };
                 }
 
-                setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? { ...l, _pending: false } : l));
-                setEmiInstallments(prev => prev.map(e => String(e.id) === String(paymentData.installmentId) ? { ...e, _pending: false } : e));
-                setLiabilityPaymentsState(prev => prev.map(p => p.id === paymentId ? { ...p, _pending: false } : p));
+                const amountNum = Number(paymentData.amount);
+                const liabilityItem = liabilities.find(l => String(l.id) === String(paymentData.liabilityId));
+                const installmentItem = emiInstallments.find(e => String(e.id) === String(paymentData.installmentId));
+                if (!liabilityItem || !installmentItem) return { success: false, message: 'Liability or Installment not found' };
 
-                api.getLiabilities(session.user.id).then(liabRes => { if (liabRes) setLiabilitiesState(liabRes); });
-                api.getLiabilityPayments(session.user.id).then(liabPaysRes => { if (liabPaysRes) setLiabilityPaymentsState(liabPaysRes); });
-                api.getEmiInstallments(session.user.id).then(emiRes => { if (emiRes) setEmiInstallments(emiRes); });
+                const newPaidAmount = (Number(liabilityItem.paidAmount) || 0) + amountNum;
+                const newRemaining = Math.max(0, (Number(liabilityItem.totalAmount) || 0) - newPaidAmount);
+                const newLiabStatus = newRemaining <= 0 ? 'Paid Off' : liabilityItem.status;
 
-                return res;
-              } catch (err) {
-                setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? liabilityItem : l));
-                setEmiInstallments(prev => prev.map(e => String(e.id) === String(paymentData.installmentId) ? installmentItem : e));
-                setLiabilityPaymentsState(prev => prev.filter(p => p.id !== paymentId));
-                setGlobalError('পেমেন্ট রেকর্ড করা ব্যর্থ হয়েছে।');
-                throw err;
-              }
-            }}
-          />
+                const instNewPaid = (Number(installmentItem.paidAmount) || 0) + amountNum;
+                const instStatus = instNewPaid >= Number(installmentItem.expectedAmount) ? 'Paid' : 'Partial';
+
+                setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? {
+                  ...l,
+                  paidAmount: newPaidAmount,
+                  remainingAmount: newRemaining,
+                  status: newLiabStatus,
+                  _pending: true
+                } : l));
+
+                setEmiInstallments(prev => prev.map(e => String(e.id) === String(paymentData.installmentId) ? {
+                  ...e,
+                  paidAmount: instNewPaid,
+                  status: instStatus,
+                  _pending: true
+                } : e));
+
+                const paymentId = paymentData.paymentId || `pay_emi_${Date.now()}`;
+                setLiabilityPaymentsState(prev => [{
+                  id: paymentId,
+                  liabilityId: paymentData.liabilityId,
+                  emiInstallmentId: paymentData.installmentId,
+                  amount: amountNum,
+                  paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
+                  paymentMethod: paymentData.paymentMethod || 'Cash',
+                  _pending: true
+                }, ...prev]);
+
+                try {
+                  const res = await withSync(api.rpcRecordEmiPayment(paymentData), { isOptimistic: false });
+                  if (isFailedResult(res) || res?.success === false) {
+                    throw new Error(res?.message || 'Failed');
+                  }
+
+                  setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? { ...l, _pending: false } : l));
+                  setEmiInstallments(prev => prev.map(e => String(e.id) === String(paymentData.installmentId) ? { ...e, _pending: false } : e));
+                  setLiabilityPaymentsState(prev => prev.map(p => p.id === paymentId ? { ...p, _pending: false } : p));
+
+                  api.getLiabilities(session.user.id).then(liabRes => { if (liabRes) setLiabilitiesState(liabRes); });
+                  api.getLiabilityPayments(session.user.id).then(liabPaysRes => { if (liabPaysRes) setLiabilityPaymentsState(liabPaysRes); });
+                  api.getEmiInstallments(session.user.id).then(emiRes => { if (emiRes) setEmiInstallments(emiRes); });
+
+                  return res;
+                } catch (err) {
+                  setLiabilitiesState(prev => prev.map(l => String(l.id) === String(paymentData.liabilityId) ? liabilityItem : l));
+                  setEmiInstallments(prev => prev.map(e => String(e.id) === String(paymentData.installmentId) ? installmentItem : e));
+                  setLiabilityPaymentsState(prev => prev.filter(p => p.id !== paymentId));
+                  setGlobalError('পেমেন্ট রেকর্ড করা ব্যর্থ হয়েছে।');
+                  throw err;
+                }
+              }}
+            />
+          )
         )}
 
         {activeTab === 'crm' && (
-          <Crm 
-            leads={leads} 
-            setLeads={handleSetLeads} 
-            leadActions={leadActions} 
-            crmPayments={crmPayments}
-            customerDues={customerDues}
-            duePayments={duePayments}
-            onRecordPayment={handleRecordCrmPayment}
-            onNavigateToDues={() => setActiveTab('dues')}
-            onRecordIncome={(incomeItem) => {
-              handleSetIncomes(prev => [incomeItem, ...prev]);
-            }}
-          />
+          !isFeatureAllowed('crm', subscription, isAdmin) ? (
+            <FeatureLockCard
+              featureId="crm"
+              onUpgrade={(planId) => {
+                localStorage.setItem('dremoy_selected_plan', planId);
+                setShowUpgradeModal(true);
+              }}
+            />
+          ) : (
+            <Crm 
+              leads={leads} 
+              setLeads={handleSetLeads} 
+              leadActions={leadActions} 
+              crmPayments={crmPayments}
+              customerDues={customerDues}
+              duePayments={duePayments}
+              onRecordPayment={handleRecordCrmPayment}
+              onNavigateToDues={() => setActiveTab('dues')}
+              onRecordIncome={(incomeItem) => {
+                handleSetIncomes(prev => [incomeItem, ...prev]);
+              }}
+            />
+          )
         )}
 
         {activeTab === 'income' && (
@@ -2599,7 +2631,17 @@ export default function App() {
         )}
 
         {activeTab === 'services' && (
-          <Services services={services} serviceActions={serviceActions} />
+          !isFeatureAllowed('services', subscription, isAdmin) ? (
+            <FeatureLockCard
+              featureId="services"
+              onUpgrade={(planId) => {
+                localStorage.setItem('dremoy_selected_plan', planId);
+                setShowUpgradeModal(true);
+              }}
+            />
+          ) : (
+            <Services services={services} serviceActions={serviceActions} />
+          )
         )}
 
         {activeTab === 'settings' && (
