@@ -88,22 +88,26 @@ export default function IncomeTracker({ incomes, setIncomes, incomeActions, targ
   };
 
   // Calculations
-  const totalIncome = incomes.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-  const salaryIncome = incomes.filter(i => i.source.includes('Salary')).reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+  const totalIncome = incomes.reduce((acc, curr) => acc + (Number(curr?.amount) || 0), 0);
+  const salaryIncome = incomes
+    .filter(i => (i?.source || '').includes('Salary'))
+    .reduce((acc, curr) => acc + (Number(curr?.amount) || 0), 0);
   const newClientIncome = totalIncome - salaryIncome;
   const remainingTarget = Math.max(0, targetIncome - totalIncome);
 
   // Filter & Search
   const baseFilteredIncomes = incomes.filter(inc => {
-    const q = searchQuery.toLowerCase();
-    const matchQ = inc.clientDetails.toLowerCase().includes(q) || inc.notes.toLowerCase().includes(q);
-    const matchS = filterSource === 'All' || inc.source === filterSource;
+    const q = (searchQuery || '').toLowerCase();
+    const matchQ =
+      (inc?.clientDetails || '').toLowerCase().includes(q) ||
+      (inc?.notes || '').toLowerCase().includes(q);
+    const matchS = filterSource === 'All' || inc?.source === filterSource;
     return matchQ && matchS;
   });
 
   // Helper to format YYYY-MM to month name
   const formatMonthName = (monthStr) => {
-    if (!monthStr || !monthStr.match(/^\d{4}-\d{2}$/)) return monthStr;
+    if (!monthStr || typeof monthStr !== 'string' || !monthStr.match(/^\d{4}-\d{2}$/)) return monthStr || '';
     try {
       return new Date(monthStr + '-01').toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
     } catch {
@@ -114,21 +118,23 @@ export default function IncomeTracker({ incomes, setIncomes, incomeActions, targ
   // Visually group identical Tuition incomes that have same date, client, and payment type
   const filteredIncomes = [];
   baseFilteredIncomes.forEach(inc => {
-    if (inc.source === 'Tuition' || inc.source.includes('Tuition')) {
+    const sourceStr = inc?.source || '';
+    const monthStr = inc?.month || '';
+    if (sourceStr === 'Tuition' || sourceStr.includes('Tuition')) {
       const existingGroup = filteredIncomes.find(g => 
-        g.isGroup && g.date === inc.date && g.clientDetails === inc.clientDetails && g.source === inc.source && g.paymentType === inc.paymentType
+        g.isGroup && g.date === inc?.date && g.clientDetails === inc?.clientDetails && g.source === inc?.source && g.paymentType === inc?.paymentType
       );
       if (existingGroup) {
-        existingGroup.amount += Number(inc.amount);
-        const currentMonthExtracted = inc.month.includes('(') ? inc.month.split('(')[1].replace(')', '') : inc.month;
+        existingGroup.amount += Number(inc?.amount) || 0;
+        const currentMonthExtracted = monthStr.includes('(') ? monthStr.split('(')[1].replace(')', '') : monthStr;
         existingGroup.month = existingGroup.month + ', ' + formatMonthName(currentMonthExtracted);
-        existingGroup.originalIds.push(inc.id);
+        existingGroup.originalIds.push(inc?.id);
       } else {
-        const initialMonthExtracted = inc.month?.includes('(') ? inc.month.split('(')[1].replace(')', '') : (inc.month || '');
-        filteredIncomes.push({ ...inc, amount: Number(inc.amount), month: formatMonthName(initialMonthExtracted), originalIds: [inc.id], isGroup: true });
+        const initialMonthExtracted = monthStr.includes('(') ? monthStr.split('(')[1].replace(')', '') : monthStr;
+        filteredIncomes.push({ ...inc, amount: Number(inc?.amount) || 0, month: formatMonthName(initialMonthExtracted), originalIds: [inc?.id], isGroup: true });
       }
     } else {
-      filteredIncomes.push({ ...inc, originalIds: [inc.id], isGroup: false });
+      filteredIncomes.push({ ...inc, originalIds: [inc?.id], isGroup: false });
     }
   });
 

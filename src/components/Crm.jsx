@@ -318,14 +318,19 @@ export default function Crm({
 
   // Filter & Search Logic
   const filteredLeads = leads.filter(lead => {
-    const query = searchQuery.toLowerCase();
-    const matchSearch = 
-      lead.clientName.toLowerCase().includes(query) ||
-      lead.businessName.toLowerCase().includes(query) ||
-      lead.service.toLowerCase().includes(query) ||
-      (lead.contact && lead.contact.toLowerCase().includes(query));
+    const query = (searchQuery || '').toLowerCase();
+    const cName = (lead?.clientName || '').toLowerCase();
+    const bName = (lead?.businessName || '').toLowerCase();
+    const sName = (lead?.service || '').toLowerCase();
+    const contact = (lead?.contact || '').toLowerCase();
     
-    const matchStatus = filterStatus === 'All' || lead.status === filterStatus;
+    const matchSearch = 
+      cName.includes(query) ||
+      bName.includes(query) ||
+      sName.includes(query) ||
+      contact.includes(query);
+    
+    const matchStatus = filterStatus === 'All' || lead?.status === filterStatus;
     return matchSearch && matchStatus;
   });
 

@@ -2300,8 +2300,8 @@ export default function App() {
   };
 
   // Dynamic Financial Calculations
-  const salarySum = incomes.filter(i => i.source.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-  const newIncomeSum = incomes.filter(i => !i.source.includes('Salary')).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const salarySum = incomes.filter(i => (i?.source || '').includes('Salary')).reduce((sum, item) => sum + (Number(item?.amount) || 0), 0);
+  const newIncomeSum = incomes.filter(i => !(i?.source || '').includes('Salary')).reduce((sum, item) => sum + (Number(item?.amount) || 0), 0);
 
   const updatedAppData = {
     ...appData,

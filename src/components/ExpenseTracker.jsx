@@ -88,16 +88,22 @@ export default function ExpenseTracker({ expenses, setExpenses, expenseActions, 
   };
 
   // Calculations
-  const totalExpense = expenses.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-  const installmentPaid = expenses.filter(e => e.category.includes('Installment') || e.category.includes('Liability')).reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-  const householdExpense = expenses.filter(e => e.category.includes('Household')).reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+  const totalExpense = expenses.reduce((acc, curr) => acc + (Number(curr?.amount) || 0), 0);
+  const installmentPaid = expenses
+    .filter(e => (e?.category || '').includes('Installment') || (e?.category || '').includes('Liability'))
+    .reduce((acc, curr) => acc + (Number(curr?.amount) || 0), 0);
+  const householdExpense = expenses
+    .filter(e => (e?.category || '').includes('Household'))
+    .reduce((acc, curr) => acc + (Number(curr?.amount) || 0), 0);
   const netCashRemaining = totalIncome - totalExpense;
 
   // Filter & Search
   const filteredExpenses = expenses.filter(exp => {
-    const q = searchQuery.toLowerCase();
-    const matchQ = exp.description.toLowerCase().includes(q) || exp.notes.toLowerCase().includes(q);
-    const matchC = filterCategory === 'All' || exp.category === filterCategory;
+    const q = (searchQuery || '').toLowerCase();
+    const matchQ =
+      (exp?.description || '').toLowerCase().includes(q) ||
+      (exp?.notes || '').toLowerCase().includes(q);
+    const matchC = filterCategory === 'All' || exp?.category === filterCategory;
     return matchQ && matchC;
   });
 

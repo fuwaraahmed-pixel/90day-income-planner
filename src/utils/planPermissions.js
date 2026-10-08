@@ -130,8 +130,12 @@ export const getEffectivePlanId = (subscription, isAdmin = false) => {
 export const isFeatureAllowed = (featureId, subscription, isAdmin = false) => {
   if (isAdmin) return true; // Admins bypass all limits
 
-  const planId = getEffectivePlanId(subscription, isAdmin);
-  const allowedFeatures = PLAN_FEATURE_PERMISSIONS[planId] || PLAN_FEATURE_PERMISSIONS.starter;
+  try {
+    const planId = getEffectivePlanId(subscription, isAdmin);
+    const allowedFeatures = PLAN_FEATURE_PERMISSIONS[planId] || PLAN_FEATURE_PERMISSIONS.starter || [];
 
-  return allowedFeatures.includes(featureId);
+    return Array.isArray(allowedFeatures) ? allowedFeatures.includes(featureId) : false;
+  } catch {
+    return false;
+  }
 };

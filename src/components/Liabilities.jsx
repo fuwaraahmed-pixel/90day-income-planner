@@ -65,8 +65,10 @@ export default function Liabilities({
   const paymentMethods = ['Cash', 'bKash', 'Nagad', 'Rocket', 'Bank Transfer'];
 
   const filteredLiabilities = liabilities.filter(l => {
-    return l.creditorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           l.liabilityType.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = (searchQuery || '').toLowerCase();
+    const creditor = (l?.creditorName || '').toLowerCase();
+    const liabType = (l?.liabilityType || '').toLowerCase();
+    return creditor.includes(q) || liabType.includes(q);
   });
 
   const activeLiabilities = filteredLiabilities.filter(l => l.status !== 'Paid Off');
