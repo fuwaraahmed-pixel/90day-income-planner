@@ -35,6 +35,17 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [publicView, setPublicView] = useState('landing'); // 'landing' | 'auth_login' | 'auth_signup'
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const search = window.location.search || '';
+    const hash = window.location.hash || '';
+    const isExplicitRecovery = search.includes('recovery=true') || 
+                               search.includes('type=recovery') ||
+                               hash.includes('type=recovery');
+    const isAwaitingRecovery = sessionStorage.getItem('dremoy_awaiting_recovery') === 'true' && 
+                               (search.includes('code=') || hash.includes('access_token=') || isExplicitRecovery);
+    return Boolean(isExplicitRecovery || isAwaitingRecovery);
+  });
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
@@ -322,8 +333,11 @@ export default function App() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (_event === 'SIGNED_OUT') {
+      if (_event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      } else if (_event === 'SIGNED_OUT') {
         resetSyncState();
+        setIsPasswordRecovery(false);
         prevUserIdRef.current = null;
       } else if (session?.user?.id && prevUserIdRef.current && session.user.id !== prevUserIdRef.current) {
         resetSyncState();
@@ -336,13 +350,18 @@ export default function App() {
       setAuthChecking(false);
     });
 
+    // Also check if initial URL hash contains recovery token
+    if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
+      setIsPasswordRecovery(true);
+    }
+
     return () => subscription.unsubscribe();
   }, []);
 
   // 2. Fetch Subscription, Admin Role & User Data from Supabase when Session Changes
   useEffect(() => {
-    if (!session?.user?.id) {
-      setIsAdmin(false);
+    if (!session?.user?.id || isPasswordRecovery) {
+      if (!session?.user?.id) setIsAdmin(false);
       return;
     }
 
@@ -2335,7 +2354,22 @@ export default function App() {
     );
   }
 
-  // 1. Auth Guard: Unauthenticated user gets Public Landing Page or Auth screen
+  // 1. Password Recovery Guard: Active recovery state takes priority to set new password
+  if (isPasswordRecovery) {
+    return (
+      <Auth
+        initialSignUp={false}
+        initialResetMode={true}
+        onPasswordResetSuccess={() => setIsPasswordRecovery(false)}
+        onBackToLanding={() => {
+          setIsPasswordRecovery(false);
+          setPublicView('landing');
+        }}
+      />
+    );
+  }
+
+  // 2. Auth Guard: Unauthenticated user gets Public Landing Page or Auth screen
   if (!session) {
     if (publicView === 'landing') {
       return (
@@ -2352,7 +2386,7 @@ export default function App() {
     );
   }
 
-  // 2. Subscription Guard: Unsubscribed non-admin user gets SubscriptionModal
+  // 3. Subscription Guard: Unsubscribed non-admin user gets SubscriptionModal
   if (!loadingSub && !isSubscribed(subscription, isAdmin) && activeTab !== 'admin') {
     return (
       <SubscriptionModal
