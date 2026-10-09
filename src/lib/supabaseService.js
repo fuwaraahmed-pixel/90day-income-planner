@@ -233,7 +233,14 @@ export const getSettings = async (userId) => {
     return null;
   }
   
-  if (!data) return null;
+  if (!data) {
+    return {
+      targetIncome: 100000,
+      installment: 80000,
+      dailyOutreachTarget: 10,
+      currency: '৳',
+    };
+  }
 
   return {
     targetIncome: Number(data.target_income) || 100000,
@@ -725,7 +732,7 @@ export const get90DayPlan = async (userId) => {
     console.error('Error fetching 90-day plan:', error);
     return null;
   }
-  if (!data || data.length === 0) return null;
+  if (!data || data.length === 0) return [];
 
   return data.map(m => ({
     id: m.id,

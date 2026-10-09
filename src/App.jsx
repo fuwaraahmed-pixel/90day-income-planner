@@ -444,7 +444,7 @@ export default function App() {
         if (expensesRes !== null) setExpensesState(expensesRes);
         if (reviewsRes !== null) setReviewsState(reviewsRes);
         if (servicesRes !== null) setServicesState(servicesRes.length > 0 ? servicesRes : defaultServices);
-        if (planRes !== null) setPlanDataState(planRes);
+        if (planRes !== null) setPlanDataState(planRes.length > 0 ? planRes : null);
         if (tuitionStsRes !== null) setTuitionStudents(tuitionStsRes);
         if (tuitionPaysRes !== null) setTuitionPayments(tuitionPaysRes);
         if (crmPaysRes !== null) setCrmPayments(crmPaysRes);
