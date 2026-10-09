@@ -19,9 +19,12 @@ import TruncatedText from './ui/TruncatedText';
 export default function Tasks({ tasks, setTasks, planData, taskActions }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [selectedTaskIds, setSelectedTaskIds] = useState(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterPriority, setFilterPriority] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All');
 
   // Extract Plan Weeks for Goal Linkage
   const planWeeks = planData?.months 
@@ -95,33 +98,75 @@ export default function Tasks({ tasks, setTasks, planData, taskActions }) {
 
   const handleDeleteTask = async (taskId) => {
     await taskActions.remove(taskId);
+    setSelectedTaskIds(prev => {
+      const next = new Set(prev);
+      next.delete(taskId);
+      return next;
+    });
+  };
+
+  const toggleTaskSelect = (taskId) => {
+    setSelectedTaskIds(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedTaskIds.size === filteredTasks.length) {
+      setSelectedTaskIds(new Set());
+    } else {
+      setSelectedTaskIds(new Set(filteredTasks.map(t => t.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedTaskIds);
+    setShowBulkDeleteConfirm(false);
+    setSelectedTaskIds(new Set());
+    for (const id of ids) {
+      await taskActions.remove(id);
+    }
   };
 
   // Filtered Tasks
   const filteredTasks = tasks.filter(t => {
     const matchCat = filterCategory === 'All' || t.category === filterCategory;
     const matchPri = filterPriority === 'All' || t.priority === filterPriority;
-    return matchCat && matchPri;
+    const matchStat = filterStatus === 'All' || t.status === filterStatus;
+    return matchCat && matchPri && matchStat;
   });
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+      {/* Header Banner (Executive Dark Slate with Emerald Glow) */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500" />
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+        
+        <div className="relative z-10 space-y-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold mb-1 shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            দৈনিক টাস্ক ম্যানেজমেন্ট
+          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight flex items-center gap-2">
             ☑️ আজকের ও দৈনিক কাজের ট্র্যাকার
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-400 font-medium">
             প্রতিদিনের প্রায়োরিটি অনুযায়ী কাজ গুছিয়ে রাখুন ও সম্পন্ন করুন
           </p>
         </div>
 
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm self-start sm:self-auto"
+          className="relative z-10 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-emerald-950/40 self-start sm:self-auto cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>নতুন কাজ যোগ করুন</span>
         </button>
       </div>
@@ -220,9 +265,21 @@ export default function Tasks({ tasks, setTasks, planData, taskActions }) {
 
       {/* Filters Bar */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <span className="text-xs font-bold text-slate-700">ফিল্টার:</span>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={filteredTasks.length > 0 && selectedTaskIds.size === filteredTasks.length}
+              onChange={toggleSelectAll}
+              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded cursor-pointer"
+            />
+            <span className="text-xs font-semibold text-slate-600">সব সিলেক্ট</span>
+          </label>
+
+          <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
+            <Filter className="w-4 h-4 text-slate-400" />
+            <span className="text-xs font-bold text-slate-700">ফিল্টার:</span>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -246,9 +303,19 @@ export default function Tasks({ tasks, setTasks, planData, taskActions }) {
             {priorities.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
 
-          {(filterCategory !== 'All' || filterPriority !== 'All') && (
+          {/* Status Filter (Task Completion Status) */}
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-1.5 rounded-lg border border-emerald-500 text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+          >
+            <option value="All">সব স্ট্যাটাস</option>
+            {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+
+          {(filterCategory !== 'All' || filterPriority !== 'All' || filterStatus !== 'All') && (
             <button
-              onClick={() => { setFilterCategory('All'); setFilterPriority('All'); }}
+              onClick={() => { setFilterCategory('All'); setFilterPriority('All'); setFilterStatus('All'); }}
               className="text-xs font-semibold text-rose-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors"
             >
               রিসেট
@@ -267,7 +334,15 @@ export default function Tasks({ tasks, setTasks, planData, taskActions }) {
                 task.status === 'Done' ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 hover:border-slate-300'
               }`}
             >
-              <div className="flex items-start gap-3.5">
+              <div className="flex items-start gap-3">
+                {/* Bulk Select Checkbox */}
+                <input
+                  type="checkbox"
+                  checked={selectedTaskIds.has(task.id)}
+                  onChange={() => toggleTaskSelect(task.id)}
+                  className="mt-1.5 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
+                />
+
                 {/* Status Toggle Circle */}
                 <button
                   onClick={() => handleStatusChange(task.id, task.status === 'Done' ? 'NotStarted' : 'Done')}
@@ -349,6 +424,35 @@ export default function Tasks({ tasks, setTasks, planData, taskActions }) {
         )}
       </div>
 
+      {/* Floating Sticky Bulk Actions Bar */}
+      {selectedTaskIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="text-xs font-semibold">
+            <span className="bg-emerald-500 text-slate-900 px-2 py-0.5 rounded-full font-bold mr-1.5">
+              {selectedTaskIds.size}
+            </span>
+            টি কাজ নির্বাচিত
+          </div>
+
+          <div className="h-4 w-[1px] bg-slate-700" />
+
+          <button
+            onClick={() => setShowBulkDeleteConfirm(true)}
+            className="flex items-center gap-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 px-3 py-1.5 rounded-xl transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>নির্বাচিত কাজগুলো মুছুন</span>
+          </button>
+
+          <button
+            onClick={() => setSelectedTaskIds(new Set())}
+            className="text-xs text-slate-400 hover:text-white px-2 py-1 transition-colors"
+          >
+            বাতিল
+          </button>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={Boolean(deleteConfirmId)}
@@ -362,6 +466,15 @@ export default function Tasks({ tasks, setTasks, planData, taskActions }) {
         }}
         title="কাজটি মুছে ফেলতে চান?"
         description="এই কাজটি আপনার তালিকা থেকে স্থায়ীভাবে মুছে যাবে।"
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={handleBulkDelete}
+        title={`${selectedTaskIds.size}টি কাজ একসাথে মুছে ফেলতে চান?`}
+        description="নির্বাচিত সমস্ত কাজ স্থায়ীভাবে মুছে যাবে। আপনি কি নিশ্চিত?"
       />
     </div>
   );

@@ -81,20 +81,30 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
   return (
     <>
       {/* Mobile Top Header */}
-      <div className="md:hidden bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 sticky top-0 z-50 flex items-center justify-between shadow-2xs">
+      <div className="md:hidden bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 sticky top-0 z-50 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-emerald-600 text-white rounded-lg flex items-center justify-center font-bold text-base shadow-xs">
-            ৳
-          </div>
+          {user?.user_metadata?.avatar_url ? (
+            <img 
+              src={user.user_metadata.avatar_url} 
+              alt="Avatar" 
+              className="w-8 h-8 rounded-xl object-cover border border-emerald-500/30 shadow-xs" 
+            />
+          ) : (
+            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 text-slate-950 rounded-xl flex items-center justify-center font-extrabold text-base shadow-xs shadow-emerald-500/20">
+              {user?.user_metadata?.full_name ? user.user_metadata.full_name.slice(0, 1).toUpperCase() : '৳'}
+            </div>
+          )}
           <div>
-            <h1 className="text-sm font-bold text-slate-900 leading-tight">ইনকাম ম্যানেজার</h1>
-            <p className="text-[10px] text-slate-500 font-medium truncate max-w-[140px]">{user?.email || '৯০ দিনের ট্র্যাকার'}</p>
+            <h1 className="text-sm font-bold text-white leading-tight">
+              {user?.user_metadata?.full_name || 'ইনকাম ম্যানেজার'}
+            </h1>
+            <p className="text-[10px] text-slate-400 font-medium truncate max-w-[140px]">{user?.email || '৯০ দিনের ট্র্যাকার'}</p>
           </div>
         </div>
 
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+          className="p-2 text-slate-400 hover:text-white hover:bg-slate-900 rounded-xl transition-colors cursor-pointer"
           aria-label="Toggle Navigation Menu"
         >
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -103,11 +113,11 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
 
       {/* Mobile Slide-down Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 p-4 sticky top-[56px] z-40 shadow-md max-h-[calc(100vh-56px)] overflow-y-auto">
+        <div className="md:hidden bg-slate-950 border-b border-slate-850 p-4 sticky top-[56px] z-40 shadow-xl max-h-[calc(100vh-56px)] overflow-y-auto">
           <div className="space-y-5">
             {navigationGroups.map((group, groupIdx) => (
               <div key={groupIdx}>
-                <h3 className="px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase mb-2">
+                <h3 className="px-3 text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-2">
                   {group.title}
                 </h3>
                 <div className="space-y-1">
@@ -119,18 +129,18 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
                       <button
                         key={item.id}
                         onClick={() => handleTabClick(item.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] transition-all duration-150 text-left group ${
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] transition-all duration-150 text-left cursor-pointer group ${
                           isActive
-                            ? 'bg-emerald-50/70 text-emerald-950 font-semibold'
-                            : 'text-slate-600 font-medium hover:bg-slate-100/60 hover:text-slate-900'
+                            ? 'bg-emerald-500/15 text-emerald-300 font-semibold border border-emerald-500/25 shadow-xs shadow-emerald-950/50'
+                            : 'text-slate-400 font-medium hover:bg-slate-900 hover:text-white'
                         }`}
                       >
                         <div className="flex items-center gap-3 truncate">
-                          <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                          <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
                           <span className="truncate">{item.label}</span>
                         </div>
                         {!isAllowed && (
-                          <span title="Locked feature - Upgrade required" className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-400 group-hover:text-amber-600 group-hover:bg-amber-50 shrink-0">
+                          <span title="Locked feature - Upgrade required" className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-900 text-slate-500 group-hover:text-amber-400 shrink-0">
                             <Lock className="w-3 h-3" />
                           </span>
                         )}
@@ -144,8 +154,8 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
 
           {/* Mobile Free Trial Promo Card */}
           {!isAdmin && hasActiveTrial(subscription) && (
-            <div className="pt-4 mt-4 border-t border-slate-100 px-3">
-              <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white rounded-2xl p-3.5 shadow-md relative overflow-hidden space-y-2.5">
+            <div className="pt-4 mt-4 border-t border-slate-850 px-2">
+              <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 text-white rounded-2xl p-3.5 shadow-md border border-indigo-500/20 relative overflow-hidden space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
                     <Sparkles className="w-2.5 h-2.5 text-amber-300" />
@@ -161,7 +171,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
                     setMobileMenuOpen(false);
                     if (onOpenUpgrade) onOpenUpgrade();
                   }}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-all"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
                 >
                   <Crown className="w-3.5 h-3.5 text-slate-950" />
                   <span>এখনই সাবস্ক্রাইব করুন</span>
@@ -171,10 +181,10 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
           )}
 
           {user && (
-            <div className="pt-4 mt-6 border-t border-slate-100 px-3">
+            <div className="pt-4 mt-6 border-t border-slate-850 px-2">
               <button
                 onClick={onLogout}
-                className="w-full flex items-center gap-3 py-2 rounded-lg text-[13px] font-medium text-rose-600 hover:text-rose-700 transition-colors text-left"
+                className="w-full flex items-center gap-3 py-2 px-3 rounded-xl text-[13px] font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 transition-colors text-left cursor-pointer"
               >
                 <LogOut className="w-4 h-4 shrink-0" />
                 <span>লগআউট (Logout)</span>
@@ -185,16 +195,16 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
       )}
 
       {/* Desktop Fixed Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-slate-200/80 fixed h-screen top-0 left-0 z-40 flex-col justify-between">
+      <aside className="hidden md:flex w-64 bg-slate-950 border-r border-slate-800/80 fixed h-screen top-0 left-0 z-40 flex-col justify-between select-none">
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 no-scrollbar">
           {/* Brand Header */}
-          <div className="flex items-center gap-3 pb-6 mb-6 border-b border-slate-100">
-            <div className="w-9 h-9 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-base shadow-xs shrink-0">
+          <div className="flex items-center gap-3 pb-6 mb-6 border-b border-slate-850">
+            <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 text-slate-950 rounded-xl flex items-center justify-center font-extrabold text-base shadow-sm shadow-emerald-500/20 shrink-0">
               ৳
             </div>
             <div className="min-w-0">
-              <h1 className="text-sm font-bold text-slate-900 tracking-tight leading-tight truncate">ইনকাম ম্যানেজার</h1>
-              <p className="text-[11px] text-slate-500 font-medium truncate">৯০ দিনের বিজেনস কমান্ড</p>
+              <h1 className="text-sm font-bold text-white tracking-tight leading-tight truncate">ইনকাম ম্যানেজার</h1>
+              <p className="text-[11px] text-slate-400 font-medium truncate">৯০ দিনের বিজনেস কমান্ড</p>
             </div>
           </div>
 
@@ -202,7 +212,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
           <nav className="space-y-5">
             {navigationGroups.map((group, groupIdx) => (
               <div key={groupIdx}>
-                <h3 className="px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase mb-2">
+                <h3 className="px-3 text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-2">
                   {group.title}
                 </h3>
                 <div className="space-y-1">
@@ -214,18 +224,18 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
                       <button
                         key={item.id}
                         onClick={() => handleTabClick(item.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-all duration-150 text-left group ${
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] transition-all duration-150 text-left cursor-pointer group ${
                           isActive
-                            ? 'bg-emerald-50/70 text-emerald-950 font-semibold'
-                            : 'text-slate-600 font-medium hover:bg-slate-100/60 hover:text-slate-900'
+                            ? 'bg-emerald-500/15 text-emerald-300 font-semibold border border-emerald-500/25 shadow-xs shadow-emerald-950/50'
+                            : 'text-slate-400 font-medium hover:bg-slate-900/80 hover:text-white'
                         }`}
                       >
                         <div className="flex items-center gap-3 truncate">
-                          <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                          <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
                           <span className="truncate">{item.label}</span>
                         </div>
                         {!isAllowed && (
-                          <span title="Locked feature - Upgrade required" className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-400 group-hover:text-amber-600 group-hover:bg-amber-50 shrink-0">
+                          <span title="Locked feature - Upgrade required" className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-900 text-slate-500 group-hover:text-amber-400 shrink-0">
                             <Lock className="w-3 h-3" />
                           </span>
                         )}
@@ -240,8 +250,8 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
 
         {/* Free Trial Upgrade Promo Card (If user is currently in trial) */}
         {!isAdmin && hasActiveTrial(subscription) && (
-          <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-            <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white rounded-2xl p-3.5 shadow-md relative overflow-hidden space-y-2.5">
+          <div className="p-3.5 border-t border-slate-850 bg-slate-950/60">
+            <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 text-white rounded-2xl p-3.5 shadow-md border border-indigo-500/20 relative overflow-hidden space-y-2.5">
               <div className="absolute top-0 right-0 -mr-4 -mt-4 w-20 h-20 bg-indigo-500/20 rounded-full blur-xl pointer-events-none"></div>
               
               <div className="flex items-center justify-between">
@@ -261,7 +271,7 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
               <button
                 type="button"
                 onClick={onOpenUpgrade}
-                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer hover:scale-[1.01]"
               >
                 <Crown className="w-3.5 h-3.5 text-slate-950" />
                 <span>সাবস্ক্রাইব করুন</span>
@@ -271,30 +281,47 @@ export default function Sidebar({ activeTab, setActiveTab, user, onLogout, isAdm
         )}
 
         {/* User Profile & Logout Box */}
-        <div className="p-4 border-t border-slate-100 bg-white">
-          {user && (
-            <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0">
-                  <UserIcon className="w-3.5 h-3.5 text-emerald-700" />
-                </div>
-                <div className="overflow-hidden">
-                  <div className="text-[11px] font-semibold text-slate-900 truncate">{user.email}</div>
-                  <div className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-                    <span>Supabase Cloud</span>
+        <div className="p-3.5 border-t border-slate-850 bg-slate-950">
+          {user && (() => {
+            const fullName = user?.user_metadata?.full_name || '';
+            const avatarUrl = user?.user_metadata?.avatar_url || '';
+            const initials = fullName 
+              ? fullName.slice(0, 2).toUpperCase() 
+              : (user?.email?.slice(0, 2).toUpperCase() || 'U');
+
+            return (
+              <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
+                <div 
+                  onClick={() => handleTabClick('settings')}
+                  className="flex items-center gap-2.5 overflow-hidden cursor-pointer group"
+                  title="প্রোফাইল ও সেটিংস দেখুন"
+                >
+                  <div className="w-8 h-8 rounded-xl overflow-hidden bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center justify-center font-bold text-xs shrink-0 shadow-xs group-hover:border-emerald-400 transition-colors">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt={fullName || 'Avatar'} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{initials}</span>
+                    )}
+                  </div>
+                  <div className="overflow-hidden">
+                    <div className="text-[12px] font-bold text-white group-hover:text-emerald-300 truncate transition-colors">
+                      {fullName || user.email?.split('@')[0]}
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate max-w-[125px]">
+                      {user.email}
+                    </div>
                   </div>
                 </div>
+                <button
+                  onClick={onLogout}
+                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors shrink-0 cursor-pointer"
+                  title="লগআউট করুন"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={onLogout}
-                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
-                title="লগআউট করুন"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </aside>
     </>

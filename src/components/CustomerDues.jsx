@@ -349,28 +349,28 @@ export default function CustomerDues({
     <div className="space-y-6 max-w-[1600px] mx-auto font-sans antialiased text-slate-800 pb-12">
       
       {/* ========================================================================= */}
-      {/* 1. HEADER BANNER */}
-      {/* ========================================================================= */}
-      <div className="bg-white border border-slate-200/60 rounded-2xl p-6 sm:p-8 shadow-sm relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
+      {/* 1. HEADER BANNER (Executive Dark Slate with Emerald Glow) */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500" />
+        <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="space-y-2 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-              <Wallet className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-xs">
+              <Wallet className="w-3.5 h-3.5 text-emerald-400" />
               কাস্টমার পাওনা ম্যানেজমেন্ট
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
             কার কাছে কত টাকা পাওনা — এক নজরে হিসাব ৳
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed font-medium">
             আপনার ব্যবসার প্রতিটি বিক্রয় ও অর্ডারের বকেয়া পাওনা ট্র্যাক করুন, কিস্তিতে পেমেন্ট গ্রহণ করুন এবং বকেয়া টাকা আদায় সহজ করুন।
           </p>
         </div>
 
         <button
           onClick={handleOpenAddModal}
-          className="self-start md:self-auto bg-slate-900 hover:bg-slate-800 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-2 text-sm shrink-0"
+          className="self-start md:self-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] text-white font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-emerald-950/40 transition-all flex items-center gap-2 text-sm shrink-0 cursor-pointer relative z-10"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>নতুন পাওনা যোগ করুন</span>
@@ -383,10 +383,10 @@ export default function CustomerDues({
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
         
         {/* Card 1: Total Receivable */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm space-y-1.5 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="bg-white border-2 border-slate-300 hover:border-slate-500 rounded-2xl p-4 shadow-xs space-y-1.5 col-span-2 sm:col-span-1 transition-all">
+          <div className="flex items-center justify-between text-slate-600 text-xs font-bold">
             <span>মোট বাকি পাওনা</span>
-            <div className="p-1 rounded-lg bg-slate-50 text-slate-600">
+            <div className="p-1 rounded-lg bg-slate-100 text-slate-700">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
@@ -396,42 +396,42 @@ export default function CustomerDues({
         </div>
 
         {/* Card 2: Overdue Dues */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm space-y-1.5 relative overflow-hidden">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="bg-white border-2 border-rose-400 hover:border-rose-600 rounded-2xl p-4 shadow-xs space-y-1.5 relative overflow-hidden transition-all">
+          <div className="flex items-center justify-between text-rose-700 text-xs font-bold">
             <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-rose-500" /> মেয়ানোত্তীর্ণ</span>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+          <div className="text-xl sm:text-2xl font-bold text-rose-600 tracking-tight">
             ৳{overdueAmount.toLocaleString()}
           </div>
         </div>
 
         {/* Card 3: Due This Week */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-            <span>এই সপ্তাহে প্ৰদেয়</span>
+        <div className="bg-white border-2 border-amber-400 hover:border-amber-600 rounded-2xl p-4 shadow-xs space-y-1.5 transition-all">
+          <div className="flex items-center justify-between text-amber-700 text-xs font-bold">
+            <span>এই সপ্তাহে প্রদেয়</span>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+          <div className="text-xl sm:text-2xl font-bold text-amber-600 tracking-tight">
             ৳{dueThisWeekAmount.toLocaleString()}
           </div>
         </div>
 
         {/* Card 4: Collected This Month */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="bg-white border-2 border-emerald-400 hover:border-emerald-600 rounded-2xl p-4 shadow-xs space-y-1.5 transition-all">
+          <div className="flex items-center justify-between text-emerald-700 text-xs font-bold">
             <span>এই মাসে আদায়</span>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+          <div className="text-xl sm:text-2xl font-bold text-emerald-600 tracking-tight">
             ৳{collectedThisMonth.toLocaleString()}
           </div>
         </div>
 
         {/* Card 5: Outstanding Customers */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="bg-white border-2 border-blue-400 hover:border-blue-600 rounded-2xl p-4 shadow-xs space-y-1.5 transition-all">
+          <div className="flex items-center justify-between text-blue-700 text-xs font-bold">
             <span>বকেয়া গ্রাহক</span>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-            {outstandingCustomersCount} <span className="text-sm text-slate-500 font-medium">জন</span>
+          <div className="text-xl sm:text-2xl font-bold text-blue-600 tracking-tight">
+            {outstandingCustomersCount} <span className="text-sm text-slate-500 font-semibold">জন</span>
           </div>
         </div>
 
@@ -527,7 +527,14 @@ export default function CustomerDues({
                         <div className="font-bold text-slate-900">{item.customerName}</div>
                         {getCustomerMobile(item.customerId) && (
                           <div className="flex items-center gap-1 mt-1">
-                            <span className="text-[11px] font-medium text-slate-500">{getCustomerMobile(item.customerId)}</span>
+                            <a
+                              href={`tel:${getCustomerMobile(item.customerId)}`}
+                              onClick={e => e.stopPropagation()}
+                              className="text-[11px] font-medium text-slate-600 hover:text-emerald-700 underline decoration-slate-300 hover:decoration-emerald-500 underline-offset-2 transition-colors cursor-pointer"
+                              title="কল করতে ক্লিক করুন"
+                            >
+                              {getCustomerMobile(item.customerId)}
+                            </a>
                             <div className="flex items-center gap-1 ml-1">
                               <a href={`tel:${getCustomerMobile(item.customerId)}`} onClick={e => e.stopPropagation()} className="p-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors" title="Call">
                                 <Phone className="w-3 h-3" />
@@ -827,7 +834,14 @@ export default function CustomerDues({
                   <h3 className="font-extrabold text-slate-900 text-base">{viewingDue.customerName}</h3>
                   {getCustomerMobile(viewingDue.customerId) && (
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-semibold text-slate-700">{getCustomerMobile(viewingDue.customerId)}</span>
+                      <a
+                        href={`tel:${getCustomerMobile(viewingDue.customerId)}`}
+                        onClick={e => e.stopPropagation()}
+                        className="text-xs font-semibold text-slate-700 hover:text-emerald-700 underline decoration-slate-300 hover:decoration-emerald-500 underline-offset-2 transition-colors cursor-pointer"
+                        title="কল করতে ক্লিক করুন"
+                      >
+                        {getCustomerMobile(viewingDue.customerId)}
+                      </a>
                       <div className="flex items-center gap-1">
                         <a href={`tel:${getCustomerMobile(viewingDue.customerId)}`} onClick={e => e.stopPropagation()} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors shadow-sm" title="Call">
                           <Phone className="w-3.5 h-3.5" />

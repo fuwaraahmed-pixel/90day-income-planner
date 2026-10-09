@@ -52,6 +52,16 @@
   transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@keyframes splashProgress {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(50%); }
+  100% { transform: translateX(200%); }
+}
+
+.animate-splash-bar {
+  animation: splashProgress 1.4s ease-in-out infinite;
+}
+
 /* Scroll Reveal System */
 .reveal-init {
   opacity: 0;

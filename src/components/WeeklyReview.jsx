@@ -79,50 +79,57 @@ export default function WeeklyReview({ reviews, reviewActions }) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+      {/* Header Banner (Executive Dark Slate with Emerald Glow) */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500" />
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold mb-1 shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            পারফরম্যান্স অডিট
+          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight flex items-center gap-2">
             📅 সাপ্তাহিক পারফরম্যান্স রিভিউ (Weekly Review)
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-400 font-medium">
             প্রতি সপ্তাহের কাজের হিসেব, সাফল্য ও সমস্যা বিশ্লেষণ ট্র্যাকার
           </p>
         </div>
 
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm self-start sm:self-auto"
+          className="relative z-10 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-emerald-950/40 self-start sm:self-auto cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>নতুন সপ্তাহের রিভিউ যোগ করুন</span>
         </button>
       </div>
 
-      {/* 4 Summary Stats */}
+      {/* 4 Summary Stats (White Cards with Distinct Border-2 Accents) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">মোট ক্লায়েন্ট আউটরিচ</div>
-          <div className="text-2xl font-bold text-slate-800 mt-0.5">{totalOutreach} টি</div>
-          <div className="text-[11px] text-slate-400 mt-1">কোল্ড কল / মেইল পাঠানো</div>
+        <div className="bg-white border-2 border-slate-300 hover:border-slate-500 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-slate-600 font-bold">মোট ক্লায়েন্ট আউটরিচ</div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">{totalOutreach} <span className="text-sm font-semibold text-slate-500">টি</span></div>
+          <div className="text-[11px] text-slate-400 font-medium mt-1">কোল্ড কল / মেইল পাঠানো</div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">মোট রিপ্লাই প্রাপ্তি</div>
-          <div className="text-2xl font-bold text-blue-600 mt-0.5">{totalReplies} টি</div>
-          <div className="text-[11px] text-blue-600 font-medium mt-1">উত্তর এসেছে</div>
+        <div className="bg-white border-2 border-blue-400 hover:border-blue-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-blue-700 font-bold">মোট রিপ্লাই প্রাপ্তি</div>
+          <div className="text-2xl font-bold text-blue-600 mt-1">{totalReplies} <span className="text-sm font-semibold text-slate-500">টি</span></div>
+          <div className="text-[11px] text-blue-600 font-semibold mt-1">উত্তর এসেছে</div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">আগ্রহী লিড (Interested)</div>
-          <div className="text-2xl font-bold text-teal-600 mt-0.5">{totalInterested} জন</div>
-          <div className="text-[11px] text-teal-600 font-medium mt-1">মিটিং / প্রস্তাবনা</div>
+        <div className="bg-white border-2 border-teal-400 hover:border-teal-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-teal-700 font-bold">আগ্রহী লিড (Interested)</div>
+          <div className="text-2xl font-bold text-teal-600 mt-1">{totalInterested} <span className="text-sm font-semibold text-slate-500">জন</span></div>
+          <div className="text-[11px] text-teal-600 font-semibold mt-1">মিটিং / প্রস্তাবনা</div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">অর্জিত মোট ক্লায়েন্ট</div>
-          <div className="text-2xl font-bold text-emerald-600 mt-0.5">{totalClientsWon} জন</div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1">সফল কনভার্সন</div>
+        <div className="bg-white border-2 border-emerald-400 hover:border-emerald-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-emerald-700 font-bold">অর্জিত মোট ক্লায়েন্ট</div>
+          <div className="text-2xl font-bold text-emerald-600 mt-1">{totalClientsWon} <span className="text-sm font-semibold text-slate-500">জন</span></div>
+          <div className="text-[11px] text-emerald-600 font-semibold mt-1">সফল কনভার্সন</div>
         </div>
       </div>
 

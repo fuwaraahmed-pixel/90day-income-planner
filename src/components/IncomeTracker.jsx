@@ -11,7 +11,8 @@ import {
   Target, 
   CheckCircle,
   Tag,
-  Edit2
+  Edit2,
+  Link2
 } from 'lucide-react';
 import Button from './ui/Button';
 import Badge from './ui/Badge';
@@ -140,50 +141,57 @@ export default function IncomeTracker({ incomes, setIncomes, incomeActions, targ
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+      {/* Header Banner (Executive Dark Slate with Emerald Glow) */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500" />
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold mb-1 shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            আয় ট্র্যাকিং
+          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight flex items-center gap-2">
             📈 ইনকাম ট্র্যাকার (Income Tracker)
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-400 font-medium">
             দৈনিক ও প্রজেক্টভিত্তিক সমস্ত আয়ের স্বচ্ছ হিসাব ট্র্যাকিং
           </p>
         </div>
 
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm self-start sm:self-auto"
+          className="relative z-10 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-emerald-950/40 self-start sm:self-auto cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>নতুন ইনকাম এন্ট্রি করুন</span>
         </button>
       </div>
 
-      {/* 4 Income Summary Cards */}
+      {/* 4 Income Summary Cards (White Cards with Distinct Border-2 Accents) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">সর্বমোট সংগৃহীত ইনকাম</div>
-          <div className="text-2xl font-bold text-emerald-600 mt-0.5">৳{totalIncome.toLocaleString()}</div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1">চলতি জমা</div>
+        <div className="bg-white border-2 border-emerald-400 hover:border-emerald-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-emerald-700 font-bold">সর্বমোট সংগৃহীত ইনকাম</div>
+          <div className="text-2xl font-bold text-emerald-600 mt-1">৳{totalIncome.toLocaleString()}</div>
+          <div className="text-[11px] text-emerald-600 font-semibold mt-1">চলতি জমা</div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">নতুন কাজ থেকে আয়</div>
-          <div className="text-2xl font-bold text-blue-600 mt-0.5">৳{newClientIncome.toLocaleString()}</div>
-          <div className="text-[11px] text-blue-600 font-medium mt-1">ওয়েবসাইট/সার্ভিস ইনকাম</div>
+        <div className="bg-white border-2 border-blue-400 hover:border-blue-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-blue-700 font-bold">নতুন কাজ থেকে আয়</div>
+          <div className="text-2xl font-bold text-blue-600 mt-1">৳{newClientIncome.toLocaleString()}</div>
+          <div className="text-[11px] text-blue-600 font-semibold mt-1">ওয়েবসাইট/সার্ভিস ইনকাম</div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">মাসিক লক্ষ্যমাত্রা</div>
-          <div className="text-2xl font-bold text-slate-800 mt-0.5">৳{targetIncome.toLocaleString()}</div>
-          <div className="text-[11px] text-slate-400 mt-1">৯০ দিনের টার্গেট</div>
+        <div className="bg-white border-2 border-slate-300 hover:border-slate-500 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-slate-600 font-bold">মাসিক লক্ষ্যমাত্রা</div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">৳{targetIncome.toLocaleString()}</div>
+          <div className="text-[11px] text-slate-500 font-medium mt-1">৯০ দিনের টার্গেট</div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">টার্গেটে পৌঁছাতে বাকি</div>
-          <div className="text-2xl font-bold text-rose-600 mt-0.5">৳{remainingTarget.toLocaleString()}</div>
-          <div className="text-[11px] text-rose-600 font-medium mt-1">বাকি ইনকাম</div>
+        <div className="bg-white border-2 border-rose-400 hover:border-rose-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-rose-700 font-bold">টার্গেটে পৌঁছাতে বাকি</div>
+          <div className="text-2xl font-bold text-rose-600 mt-1">৳{remainingTarget.toLocaleString()}</div>
+          <div className="text-[11px] text-rose-600 font-semibold mt-1">বাকি ইনকাম</div>
         </div>
       </div>
 
@@ -366,6 +374,21 @@ export default function IncomeTracker({ incomes, setIncomes, incomeActions, targ
                 <div className="flex items-center gap-1">
                   {(inc.isGroup && inc.originalIds?.length > 1) ? (
                     <span className="text-[10px] text-slate-400 italic px-2">Bulk (Manage in Tuition)</span>
+                  ) : inc.crmPaymentId || inc.tuitionPaymentId ? (
+                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl text-slate-500 text-xs">
+                      <Link2 className="w-3.5 h-3.5 text-blue-500" />
+                      <span className="text-[11px] font-medium">
+                        {inc.crmPaymentId ? 'CRM লিংকড' : 'টিউশন লিংকড'}
+                      </span>
+                      <button
+                        onClick={() => !inc._pending && setDeleteConfirmId(inc.id)}
+                        disabled={inc._pending}
+                        className={`p-1 rounded-lg ml-1 transition-colors ${inc._pending ? 'text-slate-300 cursor-not-allowed' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
+                        title={inc._pending ? 'সংরক্ষণ হচ্ছে...' : 'মুছে ফেলুন (Delete)'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   ) : (
                     <>
                       <button
@@ -523,18 +546,28 @@ export default function IncomeTracker({ incomes, setIncomes, incomeActions, targ
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        isOpen={Boolean(deleteConfirmId)}
-        onClose={() => setDeleteConfirmId(null)}
-        onConfirm={() => {
-          if (deleteConfirmId) {
-            handleDeleteIncome(deleteConfirmId);
-            setDeleteConfirmId(null);
-          }
-        }}
-        title="ইনকাম এন্ট্রি মুছে ফেলতে চান?"
-        description="এই আয়ের রেকর্ডটি তালিকা থেকে স্থায়ীভাবে মুছে যাবে।"
-      />
+      {(() => {
+        const itemToDelete = incomes.find(i => i.id === deleteConfirmId);
+        const isLinked = Boolean(itemToDelete?.crmPaymentId || itemToDelete?.tuitionPaymentId);
+        return (
+          <ConfirmModal
+            isOpen={Boolean(deleteConfirmId)}
+            onClose={() => setDeleteConfirmId(null)}
+            onConfirm={() => {
+              if (deleteConfirmId) {
+                handleDeleteIncome(deleteConfirmId);
+                setDeleteConfirmId(null);
+              }
+            }}
+            title={isLinked ? "⚠️ লিংকড পেমেন্ট এন্ট্রি মুছে ফেলতে চান?" : "ইনকাম এন্ট্রি মুছে ফেলতে চান?"}
+            description={
+              isLinked
+                ? "সতর্কতা: এই ইনকাম রেকর্ডটি CRM/টিউশন পেমেন্ট হিস্ট্রির সাথে সংযুক্ত। এটি মুছে ফেললে আয়ের খাতা থেকে টাকা কমবে কিন্তু মূল পেমেন্ট হিস্ট্রি অবিকল থাকবে।"
+                : "এই আয়ের রেকর্ডটি তালিকা থেকে স্থায়ীভাবে মুছে যাবে।"
+            }
+          />
+        );
+      })()}
     </div>
   );
 }

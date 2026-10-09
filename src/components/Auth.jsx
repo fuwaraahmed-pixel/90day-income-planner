@@ -194,6 +194,11 @@ export default function Auth({
       return;
     }
 
+    if (isSignUp && !phone.trim()) {
+      setErrorMessage('অনুগ্রহ করে আপনার মোবাইল নম্বর প্রদান করুন।');
+      return;
+    }
+
     if (!isSupabaseConfigured) {
       setErrorMessage('Supabase কনফিগারেশন অনুপস্থিত! দয়া করে .env.local ফাইলে VITE_SUPABASE_URL এবং VITE_SUPABASE_ANON_KEY সেট করুন।');
       return;
@@ -221,6 +226,9 @@ export default function Auth({
 
         if (error) {
           setErrorMessage(getAuthErrorMessage(error));
+        } else if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          // Supabase returns an empty identities array if user with this email already exists
+          setErrorMessage('এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট তৈরি করা আছে। দয়া করে লগইন করুন।');
         } else if (data?.user && data?.session === null) {
           setSuccessMessage('আপনার ইমেইলে একটি নিশ্চিতকরণ লিংক পাঠানো হয়েছে। ইনবক্স চেক করে ইমেইল ভেরিফাই করুন।');
         } else {
@@ -600,7 +608,7 @@ export default function Auth({
               {/* Card Header & Selected Plan Badge */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                  <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
                     {isResetMode 
                       ? 'নতুন পাসওয়ার্ড দিন' 
                       : isForgotPassword 
@@ -609,7 +617,7 @@ export default function Auth({
                           ? 'নতুন অ্যাকাউন্ট খুলুন' 
                           : 'লগইন করুন'}
                   </h2>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  <p className="text-xs text-slate-500 font-normal mt-0.5">
                     {isResetMode
                       ? 'আপনার অ্যাকাউন্টের জন্য নতুন ও শক্তিশালী পাসওয়ার্ড সেট করুন'
                       : isForgotPassword 
@@ -621,50 +629,11 @@ export default function Auth({
                 </div>
 
                 {selectedPlan && !isResetMode && (
-                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full whitespace-nowrap">
+                  <span className="text-[11px] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full whitespace-nowrap">
                     {selectedPlan.name}
                   </span>
                 )}
               </div>
-
-              {/* Tab Switcher: Sign In vs Sign Up (Visible when not in forgot password or reset mode) */}
-              {!isForgotPassword && !isResetMode && (
-                <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl text-xs font-bold text-slate-600">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSignUp(false);
-                      setErrorMessage('');
-                      setSuccessMessage('');
-                    }}
-                    className={`py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-                      !isSignUp 
-                        ? 'bg-white text-slate-900 shadow-sm font-black' 
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <LogIn className="w-3.5 h-3.5" />
-                    <span>Sign In</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSignUp(true);
-                      setErrorMessage('');
-                      setSuccessMessage('');
-                    }}
-                    className={`py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-                      isSignUp 
-                        ? 'bg-white text-slate-900 shadow-sm font-black' 
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>Create Account</span>
-                  </button>
-                </div>
-              )}
 
               {/* Error Alert */}
               {errorMessage && (
@@ -687,7 +656,7 @@ export default function Auth({
                 <form onSubmit={handleUpdatePassword} className="space-y-4 text-left">
                   {/* New Password */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
                       নতুন পাসওয়ার্ড <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
@@ -700,7 +669,7 @@ export default function Auth({
                         placeholder="কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-semibold text-slate-900 placeholder:text-slate-400 transition-all"
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-normal text-slate-900 placeholder:text-slate-400 transition-all"
                       />
                       <button
                         type="button"
@@ -718,8 +687,8 @@ export default function Auth({
                         <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                           <div className={`h-full transition-all duration-300 ${newPasswordStrength.color} ${newPasswordStrength.width}`}></div>
                         </div>
-                        <p className="text-[11px] font-semibold text-slate-500">
-                          নিরাপত্তা মান: <span className="font-bold text-slate-700">{newPasswordStrength.text}</span>
+                        <p className="text-[11px] font-normal text-slate-500">
+                          নিরাপত্তা মান: <span className="font-semibold text-slate-700">{newPasswordStrength.text}</span>
                         </p>
                       </div>
                     )}
@@ -727,7 +696,7 @@ export default function Auth({
 
                   {/* Confirm Password */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
                       পাসওয়ার্ড নিশ্চিত করুন <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
@@ -740,7 +709,7 @@ export default function Auth({
                         placeholder="পাসওয়ার্ড পুনরায় লিখুন"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-semibold text-slate-900 placeholder:text-slate-400 transition-all"
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-normal text-slate-900 placeholder:text-slate-400 transition-all"
                       />
                       <button
                         type="button"
@@ -757,7 +726,7 @@ export default function Auth({
                   <button
                     type="submit"
                     disabled={loading || resetCompleted || !newPassword || !confirmPassword}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold rounded-xl text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold rounded-xl text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
                   >
                     <span>{loading ? 'সংরক্ষণ করা হচ্ছে...' : resetCompleted ? 'পাসওয়ার্ড সফল' : 'পাসওয়ার্ড পরিবর্তন করুন'}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -781,7 +750,7 @@ export default function Auth({
                           onPasswordResetSuccess();
                         }
                       }}
-                      className="text-xs text-slate-600 hover:text-slate-900 font-semibold underline cursor-pointer"
+                      className="text-xs text-slate-600 hover:text-slate-900 font-medium underline cursor-pointer"
                     >
                       বাতিল করে লগইন পেজে ফিরে যান
                     </button>
@@ -790,7 +759,7 @@ export default function Auth({
               ) : isForgotPassword ? (
                 <form onSubmit={handleResetPassword} className="space-y-4 text-left">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    <label className="block text-xs font-medium text-slate-700 mb-1.5">
                       রেজিস্টার্ড ইমেইল এড্রেস
                     </label>
                     <div className="relative">
@@ -802,7 +771,7 @@ export default function Auth({
                         placeholder="you@company.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-semibold text-slate-900 placeholder:text-slate-400 transition-all"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-normal text-slate-900 placeholder:text-slate-400 transition-all"
                       />
                     </div>
                   </div>
@@ -810,7 +779,7 @@ export default function Auth({
                   <button
                     type="submit"
                     disabled={loading || resetEmailSent}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold rounded-xl text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold rounded-xl text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     <span>{loading ? 'প্রসেসিং হচ্ছে...' : resetEmailSent ? 'লিংক পাঠানো হয়েছে' : 'রিসেট লিংক পাঠান'}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -825,7 +794,7 @@ export default function Auth({
                         setErrorMessage('');
                         setSuccessMessage('');
                       }}
-                      className="text-xs text-slate-600 hover:text-slate-900 font-semibold underline cursor-pointer"
+                      className="text-xs text-slate-600 hover:text-slate-900 font-medium underline cursor-pointer"
                     >
                       লগইন পেজে ফিরে যান
                     </button>
@@ -833,69 +802,64 @@ export default function Auth({
                 </form>
               ) : (
                 /* REGULAR SIGN IN / SIGN UP FORM */
-                <form onSubmit={handleAuth} className="space-y-4 text-left">
+                <form onSubmit={handleAuth} className="space-y-5 text-left">
                   
                   {/* Additional Signup Fields */}
                   {isSignUp && (
                     <>
                       {/* Full Name */}
                       <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        <label className="block text-xs font-medium text-slate-700 mb-2">
                           আপনার নাম <span className="text-rose-500">*</span>
                         </label>
                         <div className="relative">
-                          <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
+                          <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                           <input
                             type="text"
                             required
-                            placeholder="যেমন: মোঃ সাকিব আহমেদ"
+                            placeholder="আপনার নাম লিখুন"
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
-                            className="w-full pl-10 pr-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-semibold text-slate-900 placeholder:text-slate-400 transition-all"
+                            className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-normal text-slate-900 placeholder:text-slate-400 transition-all"
                           />
                         </div>
                       </div>
 
-                      {/* Optional Business & Phone in 2 Columns */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* Business Name (Optional) */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="block text-xs font-semibold text-slate-700 truncate">
-                              প্রতিষ্ঠানের নাম
-                            </label>
-                            <span className="text-[10px] text-slate-400">ঐচ্ছিক</span>
-                          </div>
-                          <div className="relative">
-                            <Building2 className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
-                            <input
-                              type="text"
-                              placeholder="ব্যবসার নাম"
-                              value={businessName}
-                              onChange={(e) => setBusinessName(e.target.value)}
-                              className="w-full pl-10 pr-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 transition-all"
-                            />
-                          </div>
+                      {/* Business Name (Optional) - Single Full-width Row */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-xs font-medium text-slate-700">
+                            প্রতিষ্ঠানের নাম
+                          </label>
+                          <span className="text-[10px] text-slate-400">ঐচ্ছিক</span>
                         </div>
+                        <div className="relative">
+                          <Building2 className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                          <input
+                            type="text"
+                            placeholder="ব্যবসার নাম"
+                            value={businessName}
+                            onChange={(e) => setBusinessName(e.target.value)}
+                            className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-normal text-slate-900 placeholder:text-slate-400 transition-all"
+                          />
+                        </div>
+                      </div>
 
-                        {/* Phone Number (Optional) */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="block text-xs font-semibold text-slate-700">
-                              মোবাইল নম্বর
-                            </label>
-                            <span className="text-[10px] text-slate-400">ঐচ্ছিক</span>
-                          </div>
-                          <div className="relative">
-                            <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
-                            <input
-                              type="tel"
-                              placeholder="01XXXXXXXXX"
-                              value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
-                              className="w-full pl-10 pr-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 transition-all"
-                            />
-                          </div>
+                      {/* Phone Number (Required) - Single Full-width Row */}
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 mb-2">
+                          মোবাইল নম্বর <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                          <input
+                            type="tel"
+                            required
+                            placeholder="01XXXXXXXXX"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-normal text-slate-900 placeholder:text-slate-400 transition-all"
+                          />
                         </div>
                       </div>
                     </>
@@ -903,26 +867,26 @@ export default function Auth({
 
                   {/* Email Field (Always present) */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-medium text-slate-700 mb-2">
                       ইমেইল ঠিকানা <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <input
                         type="email"
                         required
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-semibold text-slate-900 placeholder:text-slate-400 transition-all"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-normal text-slate-900 placeholder:text-slate-400 transition-all"
                       />
                     </div>
                   </div>
 
                   {/* Password Field */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-semibold text-slate-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs font-medium text-slate-700">
                         পাসওয়ার্ড <span className="text-rose-500">*</span>
                       </label>
                       {!isSignUp && (
@@ -933,7 +897,7 @@ export default function Auth({
                             setErrorMessage('');
                             setSuccessMessage('');
                           }}
-                          className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline transition-colors cursor-pointer"
+                          className="text-xs font-medium text-emerald-700 hover:text-emerald-800 underline transition-colors cursor-pointer"
                         >
                           পাসওয়ার্ড ভুলে গেছেন?
                         </button>
@@ -941,7 +905,7 @@ export default function Auth({
                     </div>
 
                     <div className="relative">
-                      <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                      <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
@@ -949,12 +913,12 @@ export default function Auth({
                         placeholder="কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-semibold text-slate-900 placeholder:text-slate-400 transition-all"
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-normal text-slate-900 placeholder:text-slate-400 transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                        className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
                         title={showPassword ? 'Hide password' : 'Show password'}
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -967,8 +931,8 @@ export default function Auth({
                         <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                           <div className={`h-full transition-all duration-300 ${passwordStrength.color} ${passwordStrength.width}`}></div>
                         </div>
-                        <p className="text-[11px] font-semibold text-slate-500">
-                          নিরাপত্তা মান: <span className="font-bold text-slate-700">{passwordStrength.text}</span>
+                        <p className="text-[11px] font-normal text-slate-500">
+                          নিরাপত্তা মান: <span className="font-semibold text-slate-700">{passwordStrength.text}</span>
                         </p>
                       </div>
                     )}
@@ -985,7 +949,7 @@ export default function Auth({
                           className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4"
                         />
                         <span>
-                          আমি ড্রিময়-এর <span className="font-semibold text-slate-900">শর্তাবলী</span> ও <span className="font-semibold text-slate-900">গোপনীয়তা নীতি</span> মেনে নিচ্ছি।
+                          আমি ড্রিময়-এর <span className="font-medium text-slate-900">শর্তাবলী</span> ও <span className="font-medium text-slate-900">গোপনীয়তা নীতি</span> মেনে নিচ্ছি।
                         </span>
                       </label>
                     </div>
@@ -995,7 +959,7 @@ export default function Auth({
                   <button
                     type="submit"
                     disabled={loading || (isSignUp && !agreeTerms)}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold rounded-xl text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold rounded-xl text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-3"
                   >
                     {loading ? (
                       <span>প্রসেসিং হচ্ছে...</span>
@@ -1020,7 +984,7 @@ export default function Auth({
                 <div className="space-y-4 pt-1">
                   <div className="relative flex items-center justify-center">
                     <div className="w-full border-t border-slate-200"></div>
-                    <span className="absolute bg-white px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="absolute bg-white px-3 text-[11px] font-medium text-slate-400 uppercase tracking-wider">
                       বা সরাসরি
                     </span>
                   </div>
@@ -1030,7 +994,7 @@ export default function Auth({
                     type="button"
                     disabled={loading}
                     onClick={handleGoogleLogin}
-                    className="w-full py-2.5 bg-white hover:bg-slate-50 border border-slate-300 active:scale-[0.99] text-slate-700 font-bold rounded-xl text-xs sm:text-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer shadow-2xs"
+                    className="w-full py-2.5 bg-white hover:bg-slate-50 border border-slate-300 active:scale-[0.99] text-slate-700 font-semibold rounded-xl text-xs sm:text-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer shadow-2xs"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -1045,7 +1009,7 @@ export default function Auth({
 
               {/* Bottom Switcher */}
               <div className="pt-2 border-t border-slate-100 text-center">
-                <p className="text-xs text-slate-600 font-medium">
+                <p className="text-xs text-slate-600 font-normal">
                   {isSignUp ? (
                     <>
                       আগে থেকেই অ্যাকাউন্ট আছে?{' '}
@@ -1057,7 +1021,7 @@ export default function Auth({
                           setErrorMessage('');
                           setSuccessMessage('');
                         }}
-                        className="text-emerald-700 font-bold hover:underline ml-1 cursor-pointer"
+                        className="text-emerald-700 font-semibold hover:underline ml-1 cursor-pointer"
                       >
                         Sign In
                       </button>
@@ -1073,7 +1037,7 @@ export default function Auth({
                           setErrorMessage('');
                           setSuccessMessage('');
                         }}
-                        className="text-emerald-700 font-bold hover:underline ml-1 cursor-pointer"
+                        className="text-emerald-700 font-semibold hover:underline ml-1 cursor-pointer"
                       >
                         Create an account
                       </button>

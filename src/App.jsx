@@ -552,11 +552,12 @@ export default function App() {
 
 
   // State Mutators with Supabase Sync
-  const handleSetAppData = (newSettings) => {
+  const handleSetAppData = async (newSettings) => {
     setAppDataState(newSettings);
     if (session?.user?.id) {
-      withSync(api.updateSettings(session.user.id, newSettings), { isOptimistic: true });
+      return await withSync(api.updateSettings(session.user.id, newSettings), { isOptimistic: true });
     }
+    return true;
   };
 
   const handleSetTasks = (newTasksOrFn) => {
@@ -2342,13 +2343,32 @@ export default function App() {
     user: session?.user
   };
 
-  // Loading Splash Screen
+  // Loading Splash Screen with Premium Dremoy Brand Animation
   if (authChecking) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="flex items-center gap-3 bg-white border border-slate-200 px-6 py-4 rounded-2xl shadow-sm">
-          <RefreshCw className="w-5 h-5 text-emerald-600 animate-spin" />
-          <span className="text-sm font-semibold text-slate-700">অনুমোদন যাচাই করা হচ্ছে...</span>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden select-none">
+        {/* Subtle background ambient glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-col items-center text-center space-y-6">
+          {/* Logo Card with subtle pulse and glow */}
+          <div className="relative flex items-center justify-center p-4 sm:p-5 bg-white rounded-2xl shadow-2xl shadow-emerald-950/50 border border-white/20 animate-pulse">
+            <img 
+              src="/dremoy.png" 
+              alt="Dremoy Logo" 
+              className="h-10 sm:h-12 w-auto object-contain"
+            />
+          </div>
+
+          {/* Smooth loading bar and subtle branding subtitle */}
+          <div className="space-y-2.5 flex flex-col items-center">
+            <div className="w-36 h-1 bg-slate-800 rounded-full overflow-hidden relative">
+              <div className="absolute inset-y-0 bg-gradient-to-r from-emerald-500 via-teal-300 to-emerald-500 w-1/2 rounded-full animate-splash-bar"></div>
+            </div>
+            <p className="text-xs font-normal text-slate-400 tracking-wide">
+              লোড হচ্ছে...
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -2479,7 +2499,12 @@ export default function App() {
         )}
 
         {activeTab === 'plan' && (
-          <Plan planData={planData} planActions={planActions} isSavingPlan={isSavingPlan} />
+          <Plan 
+            planData={planData} 
+            planActions={planActions} 
+            isSavingPlan={isSavingPlan}
+            onAddTaskToDay={taskActions.add}
+          />
         )}
 
         {activeTab === 'tasks' && (

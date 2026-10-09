@@ -109,54 +109,61 @@ export default function ExpenseTracker({ expenses, setExpenses, expenseActions, 
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+      {/* Header Banner (Executive Dark Slate with Rose/Emerald Accents) */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-500" />
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[11px] font-semibold mb-1 shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
+            ব্যয় ও খরচ নিয়ন্ত্রণ
+          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight flex items-center gap-2">
             🧾 খরচের ট্র্যাকার (Expense Tracker)
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-400 font-medium">
             সংসার খরচ, কিস্তি ও ব্যবসার যাবতীয় খরচের নির্ভুল ট্র্যাকার
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+        <div className="relative z-10 flex flex-wrap gap-2 self-start sm:self-auto">
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 active:scale-[0.98] text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-rose-950/40 cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>নতুন খরচ এন্ট্রি করুন</span>
           </button>
         </div>
       </div>
 
-      {/* 4 Expense Summary Cards */}
+      {/* 4 Expense Summary Cards (White Cards with Distinct Border-2 Accents) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">সর্বমোট খরচ</div>
-          <div className="text-2xl font-bold text-rose-600 mt-0.5">৳{totalExpense.toLocaleString()}</div>
-          <div className="text-[11px] text-rose-600 font-medium mt-1">মোট ব্যয়</div>
+        <div className="bg-white border-2 border-rose-400 hover:border-rose-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-rose-700 font-bold">সর্বমোট খরচ</div>
+          <div className="text-2xl font-bold text-rose-600 mt-1">৳{totalExpense.toLocaleString()}</div>
+          <div className="text-[11px] text-rose-600 font-semibold mt-1">মোট ব্যয়</div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">মাসিক কিস্তি পরিশোধ</div>
-          <div className="text-2xl font-bold text-amber-600 mt-0.5">৳{installmentPaid.toLocaleString()}</div>
-          <div className="text-[11px] text-amber-600 font-medium mt-1">Installment</div>
+        <div className="bg-white border-2 border-amber-400 hover:border-amber-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-amber-700 font-bold">মাসিক কিস্তি পরিশোধ</div>
+          <div className="text-2xl font-bold text-amber-600 mt-1">৳{installmentPaid.toLocaleString()}</div>
+          <div className="text-[11px] text-amber-600 font-semibold mt-1">Installment</div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">সংসার খরচ (Household)</div>
-          <div className="text-2xl font-bold text-slate-800 mt-0.5">৳{householdExpense.toLocaleString()}</div>
-          <div className="text-[11px] text-slate-400 mt-1">পারিবারিক খরচ</div>
+        <div className="bg-white border-2 border-slate-300 hover:border-slate-500 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-slate-600 font-bold">সংসার খরচ (Household)</div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">৳{householdExpense.toLocaleString()}</div>
+          <div className="text-[11px] text-slate-500 font-medium mt-1">পারিবারিক খরচ</div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium">খরচ বাদে অবশিষ্ট ক্যাশ</div>
-          <div className={`text-2xl font-bold mt-0.5 ${netCashRemaining >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+        <div className="bg-white border-2 border-emerald-400 hover:border-emerald-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-emerald-700 font-bold">খরচ বাদে অবশিষ্ট ক্যাশ</div>
+          <div className={`text-2xl font-bold mt-1 ${netCashRemaining >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
             ৳{netCashRemaining.toLocaleString()}
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">নিট অবশিষ্ট জমানো টাকা</div>
+          <div className="text-[11px] text-emerald-600 font-semibold mt-1">নিট অবশিষ্ট জমানো টাকা</div>
         </div>
       </div>
 

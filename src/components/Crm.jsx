@@ -127,6 +127,43 @@ export default function Crm({
   ];
   const combinedServices = Array.from(new Set([...catalogServiceTitles, ...defaultServicesList]));
 
+  // Helper to extract numeric price from service price string (e.g. "৳১০,০০০" or "10000")
+  const getServiceSuggestedPrice = (serviceTitle) => {
+    // 1. Check in user services prop
+    const found = services.find(s => s.title === serviceTitle);
+    if (found && found.price) {
+      const cleaned = String(found.price)
+        .replace(/[০-৯]/g, d => '০১২৩৪৫৬৭৮৯'.indexOf(d))
+        .replace(/[^0-9]/g, '');
+      const parsed = parseInt(cleaned, 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    // 2. Built-in defaults mapping
+    const defaultPrices = {
+      'Starter Landing Page': 5000,
+      'Business Website': 10000,
+      'Professional Website': 20000,
+      'Monthly Maintenance': 2000,
+      'E-commerce Website': 25000,
+      'Small Technical Task': 2000
+    };
+    return defaultPrices[serviceTitle] || '';
+  };
+
+  const handleServiceChange = (selectedService) => {
+    if (selectedService === 'CUSTOM') {
+      setNewLead(prev => ({ ...prev, service: 'CUSTOM' }));
+      return;
+    }
+    const suggestedPrice = getServiceSuggestedPrice(selectedService);
+    setNewLead(prev => ({
+      ...prev,
+      service: selectedService,
+      // Auto-fill quoted price if currently empty or matches another service default
+      quotedPrice: suggestedPrice ? String(suggestedPrice) : prev.quotedPrice
+    }));
+  };
+
   const handleAddLead = async (e) => {
     e.preventDefault();
     if (isSaving) return;
@@ -344,26 +381,33 @@ export default function Crm({
 
   return (
     <div className="space-y-6">
-      {/* Header with View Mode Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+      {/* Header Banner (Executive Dark Slate with Emerald Glow) */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500" />
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold mb-1 shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            সেলস ও পাইপলাইন
+          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight flex items-center gap-2">
             👥 ক্লায়েন্ট CRM ও সেলস পাইপলাইন
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-400 font-medium">
             সম্ভাব্য ক্লায়েন্ট ম্যানেজ করুন, ডিল ট্র্যাকিং ও অ্যাডভান্স পেমেন্ট হিসাব রাখুন
           </p>
         </div>
 
-        <div className="flex items-center gap-3 self-start md:self-auto">
+        <div className="relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           {/* Table / Kanban View Toggle */}
-          <div className="hidden md:flex bg-slate-100 p-1 rounded-xl items-center border border-slate-200">
+          <div className="hidden md:flex bg-slate-900/90 p-1 rounded-xl items-center border border-slate-800">
             <button
               onClick={() => setViewMode('table')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-slate-800 text-white shadow-xs border border-slate-700/60'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <TableIcon className="w-3.5 h-3.5" />
@@ -371,10 +415,10 @@ export default function Crm({
             </button>
             <button
               onClick={() => setViewMode('kanban')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'kanban'
-                  ? 'bg-white text-emerald-700 shadow-sm font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-slate-800 text-emerald-300 shadow-xs border border-slate-700/60 font-bold'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
@@ -384,60 +428,59 @@ export default function Crm({
 
           <button
             onClick={() => setShowAddModal(!showAddModal)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all shadow-sm"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-emerald-950/40 cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">নতুন ক্লায়েন্ট / লিড</span>
-            <span className="sm:hidden">নতুন</span>
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>নতুন ক্লায়েন্ট / লিড</span>
           </button>
         </div>
       </div>
 
-      {/* CRM Pipeline Summary Header */}
+      {/* CRM Pipeline Summary Header (White Cards with Distinct Border-2 Accents) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-slate-400" />
+        <div className="bg-white border-2 border-slate-300 hover:border-slate-500 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-slate-500 font-bold flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-slate-500" />
             <span>মোট লিড</span>
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1">{totalLeadsCount} জন</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">সব ক্যাটাগরি</div>
+          <div className="text-2xl font-bold text-slate-900 mt-1">{totalLeadsCount} <span className="text-sm font-semibold text-slate-500">জন</span></div>
+          <div className="text-[11px] text-slate-400 mt-0.5 font-medium">সব ক্যাটাগরি</div>
         </div>
 
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
+        <div className="bg-white border-2 border-blue-400 hover:border-blue-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-blue-700 font-bold flex items-center gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
             <span>সক্রিয় ডিল</span>
           </div>
-          <div className="text-2xl font-bold text-blue-600 mt-1">{activeLeadsCount} জন</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">কথা ও কাজ চলছে</div>
+          <div className="text-2xl font-bold text-blue-600 mt-1">{activeLeadsCount} <span className="text-sm font-semibold text-slate-500">জন</span></div>
+          <div className="text-[11px] text-slate-500 mt-0.5 font-medium">কথা ও কাজ চলছে</div>
         </div>
 
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+        <div className="bg-white border-2 border-emerald-400 hover:border-emerald-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-emerald-700 font-bold flex items-center gap-1.5">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
             <span>অর্জিত / Won</span>
           </div>
-          <div className="text-2xl font-bold text-emerald-600 mt-1">{wonClientsCount} জন</div>
+          <div className="text-2xl font-bold text-emerald-600 mt-1">{wonClientsCount} <span className="text-sm font-semibold text-slate-500">জন</span></div>
           <div className="text-[11px] text-emerald-600 font-medium mt-0.5">কনফার্মড ক্লায়েন্ট</div>
         </div>
 
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-            <XCircle className="w-3.5 h-3.5 text-rose-400" />
+        <div className="bg-white border-2 border-rose-400 hover:border-rose-600 rounded-2xl p-4 shadow-xs transition-all">
+          <div className="text-xs text-rose-700 font-bold flex items-center gap-1.5">
+            <XCircle className="w-3.5 h-3.5 text-rose-600" />
             <span>হাতছাড়া / Lost</span>
           </div>
-          <div className="text-2xl font-bold text-rose-500 mt-1">{lostClientsCount} জন</div>
-          <div className="text-[11px] text-rose-500 font-medium mt-0.5">বাতিলকৃত প্রজেক্ট</div>
+          <div className="text-2xl font-bold text-rose-600 mt-1">{lostClientsCount} <span className="text-sm font-semibold text-slate-500">জন</span></div>
+          <div className="text-[11px] text-rose-600 font-medium mt-0.5">বাতিলকৃত প্রজেক্ট</div>
         </div>
 
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm col-span-2 sm:col-span-1">
-          <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-            <BarChart3 className="w-3.5 h-3.5 text-amber-500" />
+        <div className="bg-white border-2 border-amber-400 hover:border-amber-600 rounded-2xl p-4 shadow-xs col-span-2 sm:col-span-1 transition-all">
+          <div className="text-xs text-amber-700 font-bold flex items-center gap-1.5">
+            <BarChart3 className="w-3.5 h-3.5 text-amber-600" />
             <span>পাইপলাইন ভ্যালু</span>
           </div>
-          <div className="text-2xl font-bold text-slate-800 mt-1">৳{totalPipelineValue.toLocaleString()}</div>
-          <div className="text-[11px] text-teal-600 font-medium mt-0.5">অগ্রিম: ৳{totalAdvanceCollected.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-slate-900 mt-1">৳{totalPipelineValue.toLocaleString()}</div>
+          <div className="text-[11px] text-teal-700 font-semibold mt-0.5">অগ্রিম: ৳{totalAdvanceCollected.toLocaleString()}</div>
         </div>
       </div>
 
@@ -486,7 +529,7 @@ export default function Crm({
               <label className="block text-xs font-semibold text-slate-700 mb-1">সার্ভিস (Service Catalog)</label>
               <select
                 value={newLead.service}
-                onChange={(e) => setNewLead({ ...newLead, service: e.target.value })}
+                onChange={(e) => handleServiceChange(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 {combinedServices.map(s => <option key={s} value={s}>{s}</option>)}
@@ -645,89 +688,118 @@ export default function Crm({
                   key={lead.id} 
                   className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm hover:border-slate-300 transition-all space-y-3"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base font-bold text-slate-900">{lead.businessName}</h3>
-                        <span className="text-xs text-slate-500 font-medium">({lead.clientName})</span>
+                  {/* Card Header & Actions (Mobile First Clean Grid) */}
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2">
+                          <h3 className="text-base font-bold text-slate-900 leading-snug break-words">
+                            {lead.businessName}
+                          </h3>
+                          {lead.clientName && (
+                            <span className="text-xs text-slate-500 font-normal">
+                              ({lead.clientName})
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Top-Right Delete Action (Clearly associated with client card, not status) */}
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmId(lead.id)}
+                          disabled={lead._pending}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
+                          title="এই ক্লায়েন্ট ডিলিট করুন"
+                          aria-label="Delete client"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-3">
-                        <span className="flex items-center gap-1 font-semibold text-emerald-700">
-                          <Briefcase className="w-3.5 h-3.5" /> {lead.service}
+
+                      {/* Service & Entry Date: Neatly aligned side by side */}
+                      <div className="text-xs text-slate-500 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="inline-flex items-center gap-1 font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md shrink-0">
+                          <Briefcase className="w-3.5 h-3.5 shrink-0" /> {lead.service}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-slate-500 font-medium shrink-0">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" /> এন্ট্রি: {lead.date}
                         </span>
                         {lead.contact && (
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-3.5 h-3.5 text-slate-400" /> {lead.contact}
-                          </span>
+                          <a
+                            href={`tel:${lead.contact.trim()}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 shrink-0 text-slate-600 hover:text-emerald-700 bg-slate-50 hover:bg-emerald-50 px-2 py-0.5 rounded-md border border-slate-200/60 hover:border-emerald-200 font-medium transition-colors cursor-pointer group/tel"
+                            title="কল করতে ক্লিক করুন"
+                          >
+                            <Phone className="w-3.5 h-3.5 text-slate-400 group-hover/tel:text-emerald-600 shrink-0" />
+                            <span className="underline decoration-slate-300 group-hover/tel:decoration-emerald-500 underline-offset-2">{lead.contact}</span>
+                          </a>
                         )}
-                        <span className="flex items-center gap-1 text-slate-400">
-                          <Calendar className="w-3.5 h-3.5" /> এন্ট্রি: {lead.date}
-                        </span>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto w-full sm:w-auto">
-                      <button
-                        onClick={() => setSelectedCustomerProfile(lead)}
-                        disabled={lead._pending}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                        title="কাস্টমার প্রোফাইল ও পাওনা দেখুন"
-                      >
-                        <Users className="w-3.5 h-3.5 text-slate-500" />
-                        <span>প্রোফাইল</span>
-                      </button>
+                    {/* Action Controls - Mobile Friendly Clean Row */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto pt-1 sm:pt-0">
+                      {/* Action Buttons: Profile & Payment */}
+                      <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCustomerProfile(lead)}
+                          disabled={lead._pending}
+                          className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 rounded-xl text-xs font-medium transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                          title="কাস্টমার প্রোফাইল ও পাওনা দেখুন"
+                        >
+                          <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span>প্রোফাইল</span>
+                        </button>
 
-                      <button
-                        onClick={() => handleOpenPaymentModal(lead)}
-                        disabled={lead._pending}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>পেমেন্ট নিন</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPaymentModal(lead)}
+                          disabled={lead._pending}
+                          className="flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-semibold transition-all shadow-2xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          <DollarSign className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>পেমেন্ট নিন</span>
+                        </button>
+                      </div>
 
-                      <select
-                        value={lead.status}
-                        onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        disabled={lockedCards.has(String(lead.id)) || lead._pending}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${statusObj.badgeColor} focus:outline-none focus:ring-2 focus:ring-emerald-500 flex-1 min-w-[150px] max-w-full sm:max-w-none text-ellipsis disabled:opacity-50 disabled:cursor-not-allowed`}
-                      >
-                        {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                      </select>
-
-                      <button
-                        onClick={() => setDeleteConfirmId(lead.id)}
-                        disabled={lead._pending}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ml-auto sm:ml-0 disabled:opacity-60 disabled:cursor-not-allowed"
-                        title="মুছে ফেলুন"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {/* Status Dropdown - Clean & Independent */}
+                      <div className="w-full sm:w-auto">
+                        <select
+                          value={lead.status}
+                          onChange={(e) => handleStatusChange(lead.id, e.target.value)}
+                          disabled={lockedCards.has(String(lead.id)) || lead._pending}
+                          className={`w-full text-xs font-semibold px-3 py-2 rounded-xl border ${statusObj.badgeColor} focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-48 text-ellipsis cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Pricing & Follow-up Details */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200/60">
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <span className="text-slate-400 font-medium">বাজেট: </span>
-                        <span className="font-bold text-slate-800">৳{(Number(lead.quotedPrice) || 0).toLocaleString()}</span>
+                  {/* Pricing & Follow-up Details (Clean Responsive Grid) */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200/60">
+                    <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-6 w-full sm:w-auto text-left">
+                      <div className="bg-white sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-slate-200/50">
+                        <span className="block sm:inline text-slate-400 font-normal text-[11px] sm:text-xs">বাজেট: </span>
+                        <span className="block sm:inline font-bold text-slate-800 text-xs sm:text-sm">৳{(Number(lead.quotedPrice) || 0).toLocaleString()}</span>
                       </div>
-                      <div>
-                        <span className="text-slate-400 font-medium">মোট প্রাপ্তি: </span>
-                        <span className="font-bold text-emerald-600">৳{totalReceived.toLocaleString()}</span>
+                      <div className="bg-white sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-slate-200/50">
+                        <span className="block sm:inline text-slate-400 font-normal text-[11px] sm:text-xs">মোট প্রাপ্তি: </span>
+                        <span className="block sm:inline font-bold text-emerald-600 text-xs sm:text-sm">৳{totalReceived.toLocaleString()}</span>
                       </div>
-                      <div>
-                        <span className="text-slate-400 font-medium">অবশিষ্ট বাকি: </span>
-                        <span className="font-bold text-amber-600">
+                      <div className="bg-white sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-slate-200/50">
+                        <span className="block sm:inline text-slate-400 font-normal text-[11px] sm:text-xs">অবশিষ্ট বাকি: </span>
+                        <span className="block sm:inline font-bold text-amber-600 text-xs sm:text-sm">
                           ৳{remainingDue.toLocaleString()}
                         </span>
                       </div>
                     </div>
 
                     {lead.nextFollowUp && (
-                      <div className="flex items-center gap-1.5 text-slate-600 font-semibold bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                        <Clock className="w-3.5 h-3.5 text-blue-600" />
+                      <div className="flex items-center gap-1.5 text-slate-600 font-medium bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 self-start sm:self-auto text-[11px] sm:text-xs">
+                        <Clock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                         <span>ফলো-আপ: {lead.nextFollowUp}</span>
                       </div>
                     )}
@@ -972,9 +1044,19 @@ export default function Crm({
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-extrabold text-base text-white">{client.businessName}</h3>
-                      <p className="text-xs text-slate-300 font-medium">
-                        {client.clientName} {client.contact && `• ${client.contact}`}
-                      </p>
+                      <div className="text-xs text-slate-300 font-medium flex flex-wrap items-center gap-2 mt-0.5">
+                        <span>{client.clientName}</span>
+                        {client.contact && (
+                          <a
+                            href={`tel:${client.contact.trim()}`}
+                            className="inline-flex items-center gap-1 text-emerald-300 hover:text-emerald-200 underline decoration-emerald-400/60 transition-colors"
+                            title="কল করুন"
+                          >
+                            <Phone className="w-3 h-3 text-emerald-400" />
+                            <span>{client.contact}</span>
+                          </a>
+                        )}
+                      </div>
                     </div>
                     <span className="text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2.5 py-1 rounded-full">
                       {client.service}

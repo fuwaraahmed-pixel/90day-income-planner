@@ -251,28 +251,39 @@ export default function Liabilities({
 
   return (
     <div className="space-y-6 animate-fade-in pb-20">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Liabilities & Debts</h2>
-          <p className="text-slate-500 mt-1 text-sm sm:text-base">Manage your loans, EMI, and Hawlads securely.</p>
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 p-6 sm:p-7 rounded-2xl shadow-xl relative overflow-hidden flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-500" />
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-semibold mb-1 shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+            লোন ও দেনা ট্র্যাকিং
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Liabilities & Debts</h2>
+          <p className="text-slate-400 text-xs sm:text-sm font-medium">Manage your loans, EMI, and Hawlads securely.</p>
         </div>
-        <Button onClick={() => setShowAddModal(true)} icon={Plus} className="w-full sm:w-auto">
-          Add Liability
-        </Button>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="relative z-10 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-emerald-950/40 cursor-pointer"
+        >
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <span>Add Liability</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center">
-          <p className="text-sm text-slate-500 font-medium mb-1">Total Active Debt</p>
-          <p className="text-2xl font-bold text-slate-800">৳{totalDebt.toLocaleString()}</p>
+        <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/90 hover:border-slate-400 flex flex-col justify-center transition-all">
+          <p className="text-xs text-slate-500 font-medium mb-1">Total Active Debt</p>
+          <p className="text-2xl font-bold text-slate-900">৳{totalDebt.toLocaleString()}</p>
         </div>
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center">
-          <p className="text-sm text-slate-500 font-medium mb-1">Total Paid</p>
+        <div className="bg-white p-5 rounded-2xl shadow-xs border border-emerald-200 hover:border-emerald-400 flex flex-col justify-center transition-all">
+          <p className="text-xs text-slate-500 font-medium mb-1">Total Paid</p>
           <p className="text-2xl font-bold text-emerald-600">৳{totalPaid.toLocaleString()}</p>
         </div>
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-rose-100 flex flex-col justify-center bg-rose-50/30">
-          <p className="text-sm text-rose-600 font-medium mb-1">Remaining Balance</p>
-          <p className="text-2xl font-bold text-rose-700">৳{totalRemaining.toLocaleString()}</p>
+        <div className="bg-white p-5 rounded-2xl shadow-xs border border-rose-200 hover:border-rose-400 flex flex-col justify-center transition-all">
+          <p className="text-xs text-rose-500 font-medium mb-1">Remaining Balance</p>
+          <p className="text-2xl font-bold text-rose-600">৳{totalRemaining.toLocaleString()}</p>
         </div>
       </div>
 

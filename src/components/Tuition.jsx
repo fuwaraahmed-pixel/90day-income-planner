@@ -383,20 +383,23 @@ export default function Tuition({
         </div>
       )}
 
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-sm flex-shrink-0">
-            <GraduationCap className="w-5 h-5 text-emerald-400" />
+      {/* Header Section (Executive Dark Slate with Emerald Glow) */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500" />
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex items-center gap-3.5">
+          <div className="w-12 h-12 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-2xl flex items-center justify-center font-bold text-lg shadow-sm flex-shrink-0">
+            <GraduationCap className="w-6 h-6 text-emerald-400" />
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">Tuition Management</h1>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Tuition Management</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                 {formatMonthDisplay(selectedMonth)}
               </span>
             </div>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">Manage students, monthly tuition fees, dues, and payments</p>
+            <p className="text-xs sm:text-sm text-slate-400 font-medium mt-0.5">Manage students, monthly tuition fees, dues, and payments</p>
           </div>
         </div>
       </div>
@@ -435,9 +438,9 @@ export default function Tuition({
       {/* 1 column on <380px, 2 columns on sm/md, 4 columns on lg */}
       <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* 1. Total Students */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border-2 border-slate-300 hover:border-slate-500 shadow-xs flex items-center justify-between transition-all">
           <div>
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Total Students</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-600 uppercase tracking-wider">Total Students</p>
             <div className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 sm:mt-1">{activeStudentsCount}</div>
             <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Active ({students.length} Total Registered)</p>
           </div>
@@ -447,11 +450,11 @@ export default function Tuition({
         </div>
 
         {/* 2. Paid This Month */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border-2 border-emerald-400 hover:border-emerald-600 shadow-xs flex items-center justify-between transition-all">
           <div>
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Total Paid This Month</p>
+            <p className="text-[11px] sm:text-xs font-bold text-emerald-700 uppercase tracking-wider">Total Paid This Month</p>
             <div className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5 sm:mt-1">{currency}{getCollectedCashFlow(payments, getLocalCurrentMonthStr()).toLocaleString()}</div>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">This calendar month</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">This calendar month</p>
           </div>
           <div className="w-9 h-9 sm:w-10 sm:h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
             <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -459,11 +462,11 @@ export default function Tuition({
         </div>
 
         {/* 3. Due This Month */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border-2 border-amber-400 hover:border-amber-600 shadow-xs flex items-center justify-between transition-all">
           <div>
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Due for {formatMonthDisplay(selectedMonth)}</p>
+            <p className="text-[11px] sm:text-xs font-bold text-amber-700 uppercase tracking-wider">Due for {formatMonthDisplay(selectedMonth)}</p>
             <div className="text-xl sm:text-2xl font-black text-amber-600 mt-0.5 sm:mt-1">{dueStudents.length}</div>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">{currency}{dueAmount.toLocaleString()} pending</p>
+            <p className="text-[10px] sm:text-[11px] text-amber-700 font-semibold mt-0.5">{currency}{dueAmount.toLocaleString()} pending</p>
           </div>
           <div className="w-9 h-9 sm:w-10 sm:h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center flex-shrink-0">
             <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -471,13 +474,13 @@ export default function Tuition({
         </div>
 
         {/* 4. Total Collection */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border-2 border-teal-400 hover:border-teal-600 shadow-xs flex items-center justify-between transition-all">
           <div>
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">{formatMonthDisplay(selectedMonth)} Collection</p>
-            <div className="text-xl sm:text-2xl font-black text-emerald-700 mt-0.5 sm:mt-1">{currency}{collectedThisMonth.toLocaleString()}</div>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Exp: {currency}{expectedThisMonth.toLocaleString()}</p>
+            <p className="text-[11px] sm:text-xs font-bold text-teal-700 uppercase tracking-wider">{formatMonthDisplay(selectedMonth)} Collection</p>
+            <div className="text-xl sm:text-2xl font-black text-teal-700 mt-0.5 sm:mt-1">{currency}{collectedThisMonth.toLocaleString()}</div>
+            <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">Exp: {currency}{expectedThisMonth.toLocaleString()}</p>
           </div>
-          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center flex-shrink-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-teal-50 text-teal-700 rounded-xl flex items-center justify-center flex-shrink-0">
             <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
@@ -636,7 +639,14 @@ export default function Tuition({
                             {student.guardianName && student.mobile && <span className="text-slate-300">•</span>}
                             {student.mobile && (
                               <div className="flex items-center gap-1.5">
-                                <span className="font-medium text-slate-600">{student.mobile}</span>
+                                <a
+                                  href={`tel:${student.mobile}`}
+                                  onClick={e => e.stopPropagation()}
+                                  className="font-medium text-slate-600 hover:text-emerald-700 underline decoration-slate-300 hover:decoration-emerald-500 underline-offset-2 transition-colors cursor-pointer"
+                                  title="কল করতে ক্লিক করুন"
+                                >
+                                  {student.mobile}
+                                </a>
                                 <div className="flex items-center gap-1">
                                   <a href={`tel:${student.mobile}`} onClick={e => e.stopPropagation()} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors shadow-sm" title="Call">
                                     <Phone className="w-3.5 h-3.5" />
@@ -792,7 +802,14 @@ export default function Tuition({
                           </div>
                           {student.mobile && (
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className="font-medium text-slate-600">{student.mobile}</span>
+                              <a
+                                href={`tel:${student.mobile}`}
+                                onClick={e => e.stopPropagation()}
+                                className="font-medium text-slate-600 hover:text-emerald-700 underline decoration-slate-300 hover:decoration-emerald-500 underline-offset-2 transition-colors cursor-pointer"
+                                title="কল করতে ক্লিক করুন"
+                              >
+                                {student.mobile}
+                              </a>
                               <div className="flex items-center gap-1.5">
                                 <a href={`tel:${student.mobile}`} onClick={e => e.stopPropagation()} className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors shadow-sm" title="Call">
                                   <Phone className="w-3.5 h-3.5" />
@@ -958,7 +975,14 @@ export default function Tuition({
                   <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase block mb-0.5">Mobile</span>
                   {viewingStudent.mobile ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-900">{viewingStudent.mobile}</span>
+                      <a
+                        href={`tel:${viewingStudent.mobile}`}
+                        onClick={e => e.stopPropagation()}
+                        className="text-xs font-semibold text-slate-900 hover:text-emerald-700 underline decoration-slate-300 hover:decoration-emerald-500 underline-offset-2 transition-colors cursor-pointer"
+                        title="কল করতে ক্লিক করুন"
+                      >
+                        {viewingStudent.mobile}
+                      </a>
                       <div className="flex items-center gap-1">
                         <a href={`tel:${viewingStudent.mobile}`} onClick={e => e.stopPropagation()} className="p-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md transition-colors" title="Call">
                           <Phone className="w-3.5 h-3.5" />
