@@ -36,7 +36,9 @@ import {
   Anchor,
   Compass,
   Lock,
-  Sun
+  Sun,
+  Globe,
+  MessageCircle
 } from 'lucide-react';
 
 function StackedCardsNode() {
@@ -863,7 +865,7 @@ export default function LandingPage({ onNavigateToAuth }) {
             <img 
               src="/dremoy.png" 
               alt="Dremoy Logo" 
-              className="h-12 sm:h-20 w-auto object-contain transform scale-110 sm:scale-125 origin-left mix-blend-multiply transition-transform hover:scale-125 sm:hover:scale-[1.35]" 
+              className="h-10 sm:h-16 w-auto object-contain transform origin-left mix-blend-multiply transition-transform hover:scale-105" 
             />
           </button>
 
@@ -2502,7 +2504,7 @@ export default function LandingPage({ onNavigateToAuth }) {
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {[
             {
               q: 'Dremoy কী এবং Dremoy IT কী কী সেবা প্রদান করে?',
@@ -2514,7 +2516,7 @@ export default function LandingPage({ onNavigateToAuth }) {
             },
             {
               q: 'Dremoy-তে কী কী বিজনেস অ্যাক্টিভিটি manage করা যায়?',
-              a: 'দৈনিক আয় ও ব্যয় ট্র্যাকিং, সেলস সিআরএম পাইপলাইন, কাজ ও ফলো-আপ টাস্ক (Daily Tasks), টিউশন ও স্টুডент ফি ড্যাশবোর্ড এবং ৯০ দিনের ইনকাম গোল প্রোগ্রেস।'
+              a: 'দৈনিক আয় ও ব্যয় ট্র্যাকিং, সেলস সিআরএম পাইপলাইন, কাজ ও ফলো-আপ টাস্ক (Daily Tasks), টিউশন ও স্টুডেন্ট ফি ড্যাশবোর্ড এবং ৯০ দিনের ইনকাম গোল প্রোগ্রেস।'
             },
             {
               q: 'Dremoy IT-এর ট্রেনিং ও মেন্টরশিপের সুযোগ কী কী?',
@@ -2533,20 +2535,31 @@ export default function LandingPage({ onNavigateToAuth }) {
               a: 'Dremoy বিজনেস ম্যানেজমেন্ট ড্যাশবোর্ডে বর্তমানে প্রারম্ভিক ফ্রি অ্যাক্সেস দেওয়া হচ্ছে। কাস্টম আইটি সলিউশন বা কাস্টম প্রজেক্টের জন্য প্রয়োজন অনুযায়ী সাশ্রয়ী প্ল্যান রয়েছে।'
             }
           ].map((faq, index) => (
-            <div key={index} className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden transition-all">
+            <div 
+              key={index} 
+              className={`bg-white border-2 rounded-2xl overflow-hidden transition-all duration-200 shadow-sm ${
+                openFaq === index 
+                  ? 'border-emerald-500/80 shadow-md shadow-emerald-500/5' 
+                  : 'border-slate-300 hover:border-slate-400 hover:shadow'
+              }`}
+            >
               <button
                 onClick={() => toggleFaq(index)}
-                className="w-full px-6 py-4.5 text-left font-bold text-slate-900 text-base flex justify-between items-center gap-4 hover:bg-slate-50/80 transition-colors"
+                className="w-full px-6 sm:px-8 py-5 sm:py-6 text-left font-bold text-slate-900 text-base sm:text-lg flex justify-between items-center gap-4 hover:bg-slate-50/70 transition-colors"
               >
-                <span>{faq.q}</span>
+                <span className="leading-snug">{faq.q}</span>
                 {openFaq === index ? (
-                  <ChevronUp className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                    <ChevronUp className="w-5 h-5 text-emerald-600" />
+                  </div>
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                    <ChevronDown className="w-5 h-5 text-slate-500" />
+                  </div>
                 )}
               </button>
               {openFaq === index && (
-                <div className="px-6 pb-4.5 text-sm font-medium text-slate-600 border-t border-slate-100 pt-3 leading-relaxed">
+                <div className="px-6 sm:px-8 pb-6 text-sm sm:text-base font-medium text-slate-600 border-t border-slate-200/90 pt-4 leading-relaxed bg-slate-50/40">
                   {faq.a}
                 </div>
               )}
@@ -2592,17 +2605,50 @@ export default function LandingPage({ onNavigateToAuth }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-slate-800/80">
-            {/* 1. Brand & Info */}
-            <div className="space-y-3 col-span-1 md:col-span-1">
-              <div className="text-white font-bold text-xl flex items-center gap-2">
-                <div className="w-7 h-7 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-extrabold text-sm shadow-sm shadow-emerald-500/30">
-                  D
+            {/* 1. Brand & Info + Direct Contact */}
+            <div className="space-y-4 col-span-1 md:col-span-2">
+              <div className="flex items-center gap-2">
+                <div className="bg-white px-2.5 py-1 rounded-lg inline-block">
+                  <img src="/dremoy.png" alt="Dremoy Logo" className="h-6 w-auto object-contain" />
                 </div>
-                Dremoy
               </div>
-              <p className="text-xs text-slate-400 font-medium leading-relaxed">
+              <p className="text-sm sm:text-base text-slate-300 font-medium leading-relaxed">
                 উদ্যোক্তাদের জন্য স্মার্ট বিজনেস ম্যানেজমেন্ট প্ল্যাটফর্ম।
               </p>
+              
+              {/* WhatsApp & Main Site below slogan vertically stacked with prominent fonts & icons */}
+              <div className="space-y-2.5 pt-1">
+                <div>
+                  <a 
+                    href="https://wa.me/8801622536026"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm sm:text-base font-bold text-slate-200 hover:text-emerald-400 transition-colors group"
+                  >
+                    <span className="p-1.5 rounded-lg bg-[#25D366]/15 text-[#25D366] border border-[#25D366]/30 group-hover:bg-[#25D366]/25 transition-colors flex items-center justify-center">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                        <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.586-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.044c.101-.116.433-.506.549-.68.116-.174.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.099.824zm-3.392-10.416C6.674 4 2.33 8.342 2.33 13.698c0 2.001.609 3.864 1.661 5.418L2 26l7.072-1.855c1.474.805 3.161 1.253 4.959 1.253 5.356 0 9.7-4.342 9.7-9.698C23.731 8.342 19.387 4 12.031 4z"/>
+                      </svg>
+                    </span>
+                    <span className="text-slate-400 font-normal">হোয়াটসঅ্যাপ:</span>
+                    <span className="text-emerald-400 group-hover:underline">01622536026</span>
+                  </a>
+                </div>
+                <div>
+                  <a 
+                    href="https://www.dremoy.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm sm:text-base font-bold text-slate-200 hover:text-emerald-400 transition-colors group"
+                  >
+                    <span className="p-1 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 group-hover:bg-cyan-500/20 transition-colors">
+                      <Globe className="w-4 h-4" />
+                    </span>
+                    <span className="text-slate-400 font-normal">ভিজিট করুন:</span>
+                    <span className="text-white group-hover:underline">www.dremoy.com</span>
+                  </a>
+                </div>
+              </div>
             </div>
 
             {/* 2. Navigation Links */}
@@ -2616,51 +2662,54 @@ export default function LandingPage({ onNavigateToAuth }) {
               </ul>
             </div>
 
-            {/* 3. Account Actions */}
+            {/* 3. Account Actions & Support */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">একাউন্ট</h4>
-              <ul className="space-y-2 text-xs font-semibold text-slate-400">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">একাউন্ট ও সাপোর্ট</h4>
+              <ul className="space-y-2.5 text-xs font-semibold text-slate-400">
                 <li><button onClick={() => onNavigateToAuth('login')} className="hover:text-emerald-400 transition-colors">লগইন করুন</button></li>
                 <li><button onClick={() => onNavigateToAuth('signup')} className="hover:text-emerald-400 transition-colors">শুরু করুন (ফ্রি একাউন্ট)</button></li>
-              </ul>
-            </div>
-
-            {/* 4. Support & Legal Links */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">সাপোর্ট ও লিগ্যাল</h4>
-              <ul className="space-y-2 text-xs font-semibold text-slate-400">
-                <li>
-                  <button 
-                    onClick={() => scrollToSection('faq')} 
-                    className="hover:text-emerald-400 transition-colors text-left"
+                <li className="pt-1">
+                  <a 
+                    href="mailto:dremoyit@gmail.com"
+                    className="hover:text-emerald-400 transition-colors flex items-center gap-1.5"
                   >
-                    Contact / Support (FAQ)
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => setLegalModal('privacy')} 
-                    className="hover:text-emerald-400 transition-colors text-left"
-                  >
-                    Privacy Policy
-                  </button>
-                </li>
-                <li>
-                  <button 
-                    onClick={() => setLegalModal('terms')} 
-                    className="hover:text-emerald-400 transition-colors text-left"
-                  >
-                    Terms of Service
-                  </button>
+                    <span className="text-slate-400">ইমেইল:</span>
+                    <span className="text-slate-300 hover:underline">dremoyit@gmail.com</span>
+                  </a>
                 </li>
               </ul>
             </div>
           </div>
 
-          {/* Bottom Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium">
-            <p>© 2026 Dremoy. All rights reserved.</p>
-            <p className="text-[11px] text-slate-400">Business Management SaaS</p>
+          {/* Bottom Bar: Copyright on Left, Privacy & Terms in Center/Right, Developed By */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium">
+            <p>© {new Date().getFullYear()} Dremoy IT. All rights reserved.</p>
+            
+            {/* Legal Links at the very bottom */}
+            <div className="flex items-center gap-4 text-xs text-slate-400">
+              <button 
+                type="button"
+                onClick={() => setLegalModal('privacy')} 
+                className="hover:text-emerald-400 transition-colors cursor-pointer"
+              >
+                প্রাইভেসি পলিসি
+              </button>
+              <span className="text-slate-700">•</span>
+              <button 
+                type="button"
+                onClick={() => setLegalModal('terms')} 
+                className="hover:text-emerald-400 transition-colors cursor-pointer"
+              >
+                শর্তাবলী
+              </button>
+            </div>
+
+            <p className="flex items-center gap-1.5">
+              <span>Developed with</span>
+              <span className="text-rose-500">❤️</span>
+              <span>by</span>
+              <strong className="text-white font-black tracking-wide">Dremoy</strong>
+            </p>
           </div>
 
         </div>
